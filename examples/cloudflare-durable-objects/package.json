@@ -1,0 +1,20 @@
+{
+  "name": "amb-edge-spike",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node test/drive.mjs"
+  },
+  "dependencies": {
+    "@1440io/msp-api": "^0.1.0",
+    "@1440io/msp-webhooks": "^0.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5",
+    "typescript": "^5.7.2",
+    "wrangler": "^4"
+  }
+}

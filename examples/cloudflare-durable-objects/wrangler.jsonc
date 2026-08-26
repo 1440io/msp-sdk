@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "amb-edge-spike",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-01",
+  "durable_objects": {
+    "bindings": [{ "name": "CONVERSATION", "class_name": "Conversation" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Conversation"] }],
+  "observability": { "enabled": true }
+}
