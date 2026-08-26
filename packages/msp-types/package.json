@@ -1,0 +1,63 @@
+{
+  "name": "@1440io/msp-types",
+  "version": "0.1.0",
+  "description": "TypeScript types generated from the 1440 Apple Messages for Business MSP API OpenAPI spec, plus curated aliases and enum vocabularies.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.10"
+  },
+  "files": [
+    "dist",
+    "!dist/*.tsbuildinfo",
+    "CHANGELOG.md"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./openapi": {
+      "types": "./dist/openapi.d.ts",
+      "import": "./dist/openapi.js",
+      "require": "./dist/openapi.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "generate": "openapi-typescript ../../spec/1440-cloud-openapi.json --output ./src/openapi.ts --root-types --alphabetize",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "keywords": [
+    "1440",
+    "apple-messages-for-business",
+    "amb",
+    "msp",
+    "openapi",
+    "types"
+  ],
+  "devDependencies": {
+    "openapi-typescript": "^7.13.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.7.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/1440io/msp-sdk.git",
+    "directory": "packages/msp-types"
+  },
+  "homepage": "https://github.com/1440io/msp-sdk/tree/main/packages/msp-types#readme",
+  "bugs": {
+    "url": "https://github.com/1440io/msp-sdk/issues"
+  },
+  "author": "1440"
+}

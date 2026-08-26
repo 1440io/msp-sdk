@@ -1,0 +1,44 @@
+{
+  "name": "1440-msp-sdk",
+  "private": true,
+  "version": "0.0.0",
+  "description": "TypeScript SDK for the 1440 Apple Messages for Business MSP API",
+  "type": "module",
+  "engines": {
+    "node": ">=20.10"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "generate": "npm run generate -w @1440io/msp-types",
+    "build": "npm run build -w @1440io/msp-types && npm run build -w @1440io/msp-api && npm run build -w @1440io/msp-webhooks",
+    "typecheck": "npm run typecheck --workspaces --if-present && tsc --noEmit -p examples/tsconfig.json && tsc --noEmit -p integration/tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "npm run typecheck",
+    "clean": "rm -rf packages/*/dist packages/*/*.tsbuildinfo",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "npm run build && changeset publish",
+    "test:integration": "npm run build && vitest run -c vitest.integration.config.ts",
+    "test:integration:watch": "vitest -c vitest.integration.config.ts",
+    "integration:preflight": "npm run build && node --experimental-strip-types integration/scripts/preflight.ts",
+    "integration:cleanup": "npm run build && node --experimental-strip-types integration/scripts/cleanup.ts",
+    "webhook:listen": "npm run build && node --experimental-strip-types integration/scripts/webhook-listen.ts"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.7",
+    "@types/node": "^22.10.2",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "openapi-typescript": "^7.13.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.11"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/1440io/msp-sdk.git"
+  }
+}

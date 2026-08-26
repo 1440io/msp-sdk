@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: ['20', '22', '24']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  spec-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      # Regenerated types must match what is committed, or the spec has moved
+      # underneath the client without anyone regenerating.
+      - run: npm run generate
+      - name: Fail if generated types are stale
+        run: |
+          if ! git diff --exit-code -- packages/msp-types/src/openapi.ts; then
+            echo "::error::packages/msp-types/src/openapi.ts is out of date — run 'npm run generate' and commit the result."
+            exit 1
+          fi
