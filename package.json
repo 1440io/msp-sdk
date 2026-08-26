@@ -13,7 +13,7 @@
   "scripts": {
     "generate": "npm run generate -w @1440io/msp-types",
     "build": "npm run build -w @1440io/msp-types && npm run build -w @1440io/msp-api && npm run build -w @1440io/msp-webhooks",
-    "typecheck": "npm run typecheck --workspaces --if-present && tsc --noEmit -p examples/tsconfig.json && tsc --noEmit -p integration/tsconfig.json",
+    "typecheck": "npm run build && npm run typecheck --workspaces --if-present && tsc --noEmit -p examples/tsconfig.json && tsc --noEmit -p integration/tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "npm run typecheck",
@@ -25,7 +25,8 @@
     "test:integration:watch": "vitest -c vitest.integration.config.ts",
     "integration:preflight": "npm run build && node --experimental-strip-types integration/scripts/preflight.ts",
     "integration:cleanup": "npm run build && node --experimental-strip-types integration/scripts/cleanup.ts",
-    "webhook:listen": "npm run build && node --experimental-strip-types integration/scripts/webhook-listen.ts"
+    "webhook:listen": "npm run build && node --experimental-strip-types integration/scripts/webhook-listen.ts",
+    "prepare": "npm run build"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.7",
