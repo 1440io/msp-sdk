@@ -45,6 +45,7 @@ export default {
       );
     }
 
+    // messaging_invitation.updated can arrive before a conversation exists.
     if (!event.conversationId) {
       return Response.json({ ok: true, note: 'no conversation to route to' });
     }

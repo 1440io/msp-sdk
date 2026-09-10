@@ -11,21 +11,23 @@ async function sign(id, ts, body) {
   return `v1,${btoa(String.fromCharCode(...mac))}`;
 }
 
-const envelope = (id, message) => ({
-  id, type: 'message.received', specVersion: 1, dataVersion: '2026-07-20',
-  occurredAt: new Date().toISOString(), organizationId: 'org_1', clientId: 'c_1',
-  conversationId: CONV,
-  data: { message: { id: crypto.randomUUID(), conversationId: CONV, channelPlatform: 'amb',
-    timestamp: new Date().toISOString(), intentId: null, groupId: null, locale: 'en-US',
-    richRequestIdentifier: null, attachments: [], ...message } },
+const envelope = (eventId, content) => ({
+  eventId, v: 1, type: 'message.received', organizationId: 'org_1',
+  conversationId: CONV, channelAddress: 'urn:mbid:AQAAY',
+  intentId: null, groupId: null, locale: 'en-US', capabilityList: ['QUICK', 'LIST'],
+  message: {
+    id: crypto.randomUUID(), channel: 'amb', externalId: 'urn:mbid:AQAAY',
+    createdAt: new Date().toISOString(), attachments: [],
+    actor: { type: 'customer' }, redacted: false, content,
+  },
 });
 
 async function deliver(event, { corrupt = false } = {}) {
   const body = JSON.stringify(event);
   const ts = Math.floor(Date.now() / 1000);
-  const sig = await sign(event.id, ts, body);
+  const sig = await sign(event.eventId, ts, body);
   return fetch(`${BASE}/webhooks/1440`, { method: 'POST', body: corrupt ? body.replace('amb', 'xxx') : body,
-    headers: { 'webhook-id': event.id, 'webhook-timestamp': String(ts), 'webhook-signature': sig } });
+    headers: { 'webhook-id': event.eventId, 'webhook-timestamp': String(ts), 'webhook-signature': sig } });
 }
 const conv = (action, payload) => fetch(`${BASE}/conv/${CONV}/${action}`, { method: 'POST', body: JSON.stringify(payload) });
 const state = async () => (await conv('state', {})).json();
@@ -33,11 +35,11 @@ const state = async () => (await conv('state', {})).json();
 await conv('reset', {});   // start from a clean object
 
 console.log('\n1. Signature verification at the edge');
-const bad = await deliver(envelope(crypto.randomUUID(), { messageType: 'text', content: { body: 'x' } }), { corrupt: true });
+const bad = await deliver(envelope(crypto.randomUUID(), { kind: 'text', body: 'x' }), { corrupt: true });
 console.log(`   tampered body        -> ${bad.status} ${JSON.stringify((await bad.json()).error).slice(0, 48)}…`);
 
 console.log('\n2. Dedupe — the same Webhook-Id delivered twice');
-const dupEvent = envelope(crypto.randomUUID(), { messageType: 'text', content: { body: 'Hello from the edge' } });
+const dupEvent = envelope(crypto.randomUUID(), { kind: 'text', body: 'Hello from the edge' });
 const d1 = await deliver(dupEvent); const d2 = await deliver(dupEvent);
 console.log(`   first  -> ${d1.status} ${JSON.stringify(await d1.json())}`);
 console.log(`   retry  -> ${d2.status} ${JSON.stringify(await d2.json())}`);
@@ -56,9 +58,12 @@ const requestIdentifier = crypto.randomUUID();
 const p = await conv('prompt', { requestIdentifier, question: 'Pick a size' });
 console.log(`   prompt stored, follow-up alarm set: ${!!(await p.json()).alarmAt}`);
 await deliver(envelope(crypto.randomUUID(), {
-  messageType: 'interactive',
-  content: { responseType: 'list_picker', requestIdentifier, sessionIdentifier: null,
-    selections: [{ id: 'large', title: 'Large' }], selectedStartTime: null, formValues: [], private: false },
+  kind: 'amb.list_picker_response',
+  sessionIdentifier: null,
+  data: {
+    requestIdentifier,
+    listPicker: { sections: [{ title: 'Sizes', items: [{ identifier: 'large', title: 'Large' }] }] },
+  },
 }));
 const s4 = await state();
 console.log(`   log    -> ${s4.log.join(' | ')}`);

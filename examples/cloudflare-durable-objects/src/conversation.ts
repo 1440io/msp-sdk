@@ -1,10 +1,11 @@
 import { DurableObject } from 'cloudflare:workers';
 import {
-  isInteractiveMessage,
-  isTextMessage,
+  isInteractiveResponse,
   respondsTo,
   selectedIds,
   selectedTitles,
+  selectedTimeslot,
+  textBody,
 } from '@1440io/msp-webhooks';
 import type { WebhookEvent, WebhookMessageReceivedEvent } from '@1440io/msp-types';
 
@@ -72,23 +73,29 @@ export class Conversation extends DurableObject<Env> {
    * without a lock, a transaction, or a unique constraint.
    */
   private async onEvent(event: WebhookEvent): Promise<Response> {
-    const seenKey = `seen:${event.id}`;
+    // The envelope's id is `eventId` as of the 0.2.0 spec, and there is no
+    // `occurredAt` — the receipt time is ours to record.
+    const seenKey = `seen:${event.eventId}`;
     if (await this.ctx.storage.get(seenKey)) {
       return Response.json({ ok: true, duplicate: true });
     }
-    await this.ctx.storage.put(seenKey, event.occurredAt);
+    await this.ctx.storage.put(seenKey, new Date().toISOString());
 
     if (event.type !== 'message.received') {
       return Response.json({ ok: true, handled: event.type });
     }
 
-    const { message } = (event as WebhookMessageReceivedEvent).data;
+    // `message` sits at the top level now, and its `content` is a union tagged
+    // by `kind` rather than by a sibling `messageType`.
+    const { message } = event as WebhookMessageReceivedEvent;
+    const { content } = message;
     const log = (await this.ctx.storage.get<string[]>('log')) ?? [];
 
-    if (isTextMessage(message)) {
-      log.push(`text: ${message.content.body}`);
-    } else if (isInteractiveMessage(message)) {
-      const answered = respondsTo(message);
+    const body = textBody(content);
+    if (body !== null) {
+      log.push(`text: ${body}`);
+    } else if (isInteractiveResponse(content)) {
+      const answered = respondsTo(content);
       const outstanding = await this.ctx.storage.get<{ requestIdentifier: string; question: string }>(
         'outstanding',
       );
@@ -98,12 +105,16 @@ export class Conversation extends DurableObject<Env> {
         // follow-up alarm is no longer wanted.
         await this.ctx.storage.delete('outstanding');
         await this.ctx.storage.deleteAlarm();
-        log.push(
-          `answered "${outstanding.question}" with ${JSON.stringify(selectedTitles(message.content))}`,
-        );
+        const slot = selectedTimeslot(content);
+        const chose = slot
+          ? slot.startsAt.toISOString()
+          : JSON.stringify(selectedTitles(content).length ? selectedTitles(content) : selectedIds(content));
+        log.push(`answered "${outstanding.question}" with ${chose}`);
       } else {
-        log.push(`unmatched reply: ${JSON.stringify(selectedIds(message.content))}`);
+        log.push(`unmatched reply: ${JSON.stringify(selectedIds(content))}`);
       }
+    } else if (content?.kind === 'opt_out') {
+      log.push('opted out');
     }
 
     await this.ctx.storage.put('log', log);

@@ -9,8 +9,8 @@
     "test": "node test/drive.mjs"
   },
   "dependencies": {
-    "@1440io/msp-api": "^0.1.0",
-    "@1440io/msp-webhooks": "^0.1.0"
+    "@1440io/msp-api": "^0.2.0",
+    "@1440io/msp-webhooks": "^0.2.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5",

@@ -19,6 +19,14 @@ node test/drive.mjs     # in another terminal
 | Prompt → tap correlation, with a follow-up alarm | reply matched by `requestIdentifier`, alarm cleared on answer |
 | Per-conversation isolation | a different conversation is a different object with its own state |
 
+## Spec revision
+
+Built against `@1440io/msp-*@0.2.0`. The envelope is flat (`eventId`, `message`
+at the top level) and inbound `content` is a union tagged by `kind`, so the
+object dedupes on `event.eventId` and reads replies through
+`textBody` / `selectedIds` / `selectedTimeslot` rather than the message-level
+guards an earlier revision needed.
+
 ## The thing worth knowing
 
 **Durable Objects do not serialize whole request handlers.** This is the most
