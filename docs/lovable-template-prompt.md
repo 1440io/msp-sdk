@@ -19,6 +19,39 @@ The 1440 integration API key (`msp_…`) and webhook signing secret (`whsec_…`
 
 If a step seems to need the key in the frontend, that step belongs in an edge function instead.
 
+## Non-negotiable: the whole app is an admin portal behind a login
+
+This is an internal agent console holding customer PII — names, phone numbers, email addresses, and the full text of private conversations. There is no public surface. Every route, every screen, and every piece of data requires an authenticated, **authorized** session.
+
+Use **Supabase Auth** with email/password plus magic link. Then get the three things right that a login page alone does not give you:
+
+**1. Unauthenticated users see only the sign-in page.** A single route guard, applied at the router level rather than per-page, so a new screen is protected by default. No conversation, no message, no customer name renders before a session resolves — not even briefly while loading. On sign-out, clear all cached data.
+
+**2. Authenticated is not authorized.** Supabase projects allow public sign-up by default, so `auth.uid() is not null` would let anyone who finds the URL create an account and read every conversation. Gate on membership instead:
+
+```sql
+create table portal_users (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  email text not null,
+  role text not null default 'agent' check (role in ('agent', 'admin')),
+  created_at timestamptz not null default now()
+);
+
+-- Every policy on every table checks membership, never just a session.
+create policy "portal members read conversations" on conversations for select
+  using (exists (select 1 from portal_users where user_id = auth.uid()));
+```
+
+Apply that same `exists (…)` predicate to `conversations`, `messages`, `webhook_events`, and `outbound_log`. Writes stay service-role only. In Supabase Auth settings, **turn public sign-up off** — members are invited.
+
+Bootstrapping: the first account to sign up becomes `admin` if `portal_users` is empty, and every account after that must already have a row. Show the Setup screen this state so a cloner understands why their second colleague cannot get in yet.
+
+**3. Edge functions verify the caller, not just the token.** `msp-send` runs with `verify_jwt` on, which proves the JWT is valid — it does not prove the holder belongs to this portal. Resolve the user from the JWT and confirm a `portal_users` row before touching the 1440 API, or a stranger's valid Supabase token from any project sends messages as your business.
+
+**The one public endpoint is `msp-webhook`**, and deliberately so: 1440 authenticates with an HMAC signature rather than a Supabase JWT, so it runs with `verify_jwt = false` and is protected by signature verification instead. Do not put it behind the login — that breaks every delivery with a 401.
+
+Roles: `admin` sees Setup and can invite members; `agent` sees the inbox and can send. Keep the distinction thin but real.
+
 ## Packages
 
 The official SDK, imported with `npm:` specifiers (verified working on Deno — no Node built-ins, Web Crypto only):
@@ -43,7 +76,7 @@ If a build fails with *"blocked by the minimum dependency age policy"*, that is 
 
 ## Data model
 
-Postgres, RLS on every table: authenticated users of the project read; only the service role (edge functions) writes.
+Postgres, RLS on every table. Reads require a `portal_users` row for `auth.uid()` — not merely a session (see above); only the service role (edge functions) writes.
 
 **conversations** — `id` uuid pk (the 1440 conversation id), `channel_platform`, `first_name`, `last_name`, `status`, `agent_status`, `opted_out` bool, `capability_list` text[] (the rich features the customer's device advertised, from the last inbound event), `last_message_at`, `last_message_preview`, `unread_count`, `created_at`, `updated_at`
 
@@ -51,7 +84,9 @@ Postgres, RLS on every table: authenticated users of the project read; only the 
 
 **webhook_events** — `id` uuid pk (the `Webhook-Id` header, equal to the envelope's `eventId`), `event_type`, `payload` jsonb, `received_at`. Doubles as the replay cache: retries reuse the id, so a primary-key conflict *is* "already handled".
 
-**outbound_log** — `request_message_id` uuid pk, `conversation_id`, `kind` (`text`|`template`|`raw`), `status`, `error_code`, `reasons` jsonb, `created_at`. Lets the UI explain a rejected send.
+**outbound_log** — `request_message_id` uuid pk, `conversation_id`, `kind` (`text`|`template`|`raw`), `status`, `error_code`, `issues` jsonb, `sent_by` uuid (the `portal_users.user_id` who sent it), `created_at`. Lets the UI explain a rejected send, and says which agent sent what — the audit trail an internal console handling customer conversations needs.
+
+**portal_users** — as defined above. The allowlist every read policy checks.
 
 Turn on **Realtime** for `messages` and `conversations` so the inbox updates without polling.
 
@@ -95,7 +130,7 @@ Two things to get right:
 
 ### `msp-send` — sends on behalf of a signed-in agent
 
-Keep `verify_jwt` on; this one is called by the app. Accepts `{ conversationId, body?, attachmentIds?, templateId?, variables? }` and calls `sendText` or `sendTemplate`.
+Keep `verify_jwt` on, then **authorize** the caller: read the user id from the JWT, confirm a `portal_users` row exists for it, and return 403 if not. A valid JWT alone only proves the token came from some Supabase project. Record the sender in `outbound_log.sent_by`. Accepts `{ conversationId, body?, attachmentIds?, templateId?, variables? }` and calls `sendText` or `sendTemplate`.
 
 Mint the `requestMessageId` with `uuidv7()` and write it to `outbound_log` **before** sending; reuse it on retry. That key is what makes a retry safe rather than a double-send — the API returns the original result with `duplicate: true`.
 
@@ -112,6 +147,8 @@ for await (const conversation of client.conversations.list({ status: "active" })
 Triggered from Setup, and once automatically after secrets are first configured.
 
 ## Screens
+
+**Sign in** — the only route reachable without a session. Email/password and magic link, a clear error when an account exists but is not a portal member ("your account is not authorized for this console — ask an admin to invite you"), and nothing else on the page: no customer data, no counts, no hint of what is inside.
 
 **Inbox** — conversation list: customer name (or the channel address when unnamed), last-message preview, relative time, unread badge. Filter by status; conversations are AMB-only in this API revision, so a channel filter has nothing to filter. Search included. Updates live via Realtime.
 
@@ -133,11 +170,11 @@ Also check the conversation's stored `capability_list` before offering a rich te
 
 **Templates** — gallery of published templates with per-channel readiness badges, filterable by `templateType` (`text`, `quick_reply`, `list_picker`, `time_picker`, `form`, `rich_link`, `imessage_app`, `app_clip_rich_link`, `authentication`). Empty state matters: a new org has none, so say so and link to where they are authored.
 
-**Setup** — the screen that makes this a template. A checklist showing: whether `MSP_API_KEY` and `MSP_WEBHOOK_SECRET` are set; the exact webhook URL to paste into the 1440 console (this project's deployed `msp-webhook` URL, with a copy button); a "Run backfill" button; and a live tail of recent `webhook_events` so someone can watch a delivery land and know it works.
+**Setup** (admin only) — the screen that makes this a template. Non-admins get a clear "ask an admin" message rather than a blank page. A checklist showing: whether public sign-up is disabled and how many portal members exist; whether `MSP_API_KEY` and `MSP_WEBHOOK_SECRET` are set; the exact webhook URL to paste into the 1440 console (this project's deployed `msp-webhook` URL, with a copy button); a "Run backfill" button; a live tail of recent `webhook_events` so someone can watch a delivery land and know it works; and an invite form that adds a `portal_users` row for a colleague.
 
 ## Demo mode
 
-With no secrets configured, seed realistic sample conversations — including an interactive reply and an attachment — so a fresh clone looks alive instead of broken. Show an unmistakable "Demo data" banner linking to Setup. Real data replaces it after the first backfill.
+Demo data lives **behind the login like everything else** — the sign-in page never previews it. Once signed in with no secrets configured, seed realistic sample conversations — including an interactive reply and an attachment — so a fresh clone looks alive instead of broken. Show an unmistakable "Demo data" banner linking to Setup. Real data replaces it after the first backfill.
 
 ## Apple Messages quirks — confirmed against the live platform
 
@@ -158,6 +195,10 @@ A calm, dense agent console — a tool, not a landing page. Two panes: conversat
 
 ## Done means
 
+- Signing out and visiting any URL directly lands on the sign-in page, with no customer data rendered first.
+- An account that signs up but has no `portal_users` row can authenticate and still read nothing — verify by querying a table directly with that session's token, not just by looking at the UI.
+- `msp-send` refuses a valid JWT whose user is not a portal member.
+- `msp-webhook` still accepts a signed delivery with no Supabase session at all.
 - No secret appears in frontend source or the network tab.
 - A tampered or unsigned delivery is rejected with 400; a delivery sent twice is stored once.
 - Sending a message shows it in the thread, and a customer's reply arrives live with no refresh.
