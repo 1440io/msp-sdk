@@ -41,5 +41,8 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/1440io/msp-sdk.git"
+  },
+  "overrides": {
+    "human-id": "^3.0.1"
   }
 }

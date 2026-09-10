@@ -12,11 +12,8 @@ export interface UploadMediaParams extends RequestOverrides {
   filename: string;
   /** MIME type. Required in practice for TikTok (`image/jpeg` or `image/png`). */
   contentType?: string;
-  /**
-   * Destination channel. Tightens validation when set — TikTok accepts only
-   * JPG/PNG and caps assets at 3 MiB instead of the default 100 MiB.
-   */
-  targetChannel?: 'amb' | 'tiktok';
+  /** Destination channel. Only `amb` is accepted today. */
+  targetChannel?: 'amb';
   /**
    * Declared body size. Inferred from `body` when it exposes a length; supply
    * it yourself when streaming so the ceiling is checked before the transfer.
@@ -24,10 +21,8 @@ export interface UploadMediaParams extends RequestOverrides {
   contentLength?: number;
 }
 
-/** Size ceiling for a general-purpose attachment: 100 MiB. */
+/** Size ceiling for an uploaded asset: 100 MiB. */
 export const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
-/** Size ceiling for a TikTok-destined asset: 3 MiB. */
-export const MAX_TIKTOK_UPLOAD_BYTES = 3 * 1024 * 1024;
 
 /** Media attachments: uploading bytes and minting signed read URLs. */
 export class MediaResource extends Resource {
@@ -41,12 +36,9 @@ export class MediaResource extends Resource {
     if (!params.filename) throw new MspConfigError('filename is required for a media upload');
 
     const declaredLength = params.contentLength ?? inferLength(params.body);
-    const ceiling =
-      params.targetChannel === 'tiktok' ? MAX_TIKTOK_UPLOAD_BYTES : MAX_UPLOAD_BYTES;
-    if (declaredLength !== undefined && declaredLength > ceiling) {
+    if (declaredLength !== undefined && declaredLength > MAX_UPLOAD_BYTES) {
       throw new MspConfigError(
-        `Asset is ${declaredLength} bytes, over the ${ceiling}-byte ceiling for ` +
-          `${params.targetChannel ?? 'general-purpose'} uploads`,
+        `Asset is ${declaredLength} bytes, over the ${MAX_UPLOAD_BYTES}-byte upload ceiling`,
       );
     }
 

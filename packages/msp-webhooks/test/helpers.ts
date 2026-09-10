@@ -27,28 +27,25 @@ export function makeSecret(seed = 1, bytes = 32): string {
 }
 
 export const messageReceivedEvent = {
-  id: '0196f1f8-4a2b-7a31-8f5c-0d9e7b6a1234',
+  eventId: '0196f1f8-4a2b-7a31-8f5c-0d9e7b6a1234',
+  v: 1,
   type: 'message.received',
-  specVersion: 1,
-  dataVersion: '2026-07-20',
-  occurredAt: '2026-07-20T14:30:00.000Z',
   organizationId: 'org_123',
-  clientId: 'client_123',
   conversationId: '0196f1f8-4a2b-7a31-8f5c-0d9e7b6a5678',
-  data: {
-    message: {
-      id: '0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9012',
-      conversationId: '0196f1f8-4a2b-7a31-8f5c-0d9e7b6a5678',
-      channelPlatform: 'amb',
-      messageType: 'text',
-      content: { body: 'Hello, I need help with my order.' },
-      timestamp: '2026-07-20T14:30:00.000Z',
-      intentId: null,
-      groupId: null,
-      locale: 'en-US',
-      richRequestIdentifier: null,
-      attachments: [],
-    },
+  channelAddress: 'urn:mbid:AQAAY',
+  intentId: null,
+  groupId: null,
+  locale: 'en-US',
+  capabilityList: null,
+  message: {
+    id: '0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9012',
+    channel: 'amb',
+    externalId: 'urn:mbid:AQAAY',
+    createdAt: '2026-07-20T14:30:00.000Z',
+    attachments: [],
+    actor: { type: 'customer' },
+    redacted: false,
+    content: { kind: 'text', body: 'Hello, I need help with my order.' },
   },
 } as const;
 
@@ -59,7 +56,7 @@ export async function buildDelivery(options: {
   id?: string;
   timestampSeconds?: number;
 }): Promise<{ headers: Record<string, string>; body: string }> {
-  const id = options.id ?? messageReceivedEvent.id;
+  const id = options.id ?? messageReceivedEvent.eventId;
   const timestamp = options.timestampSeconds ?? Math.floor(Date.now() / 1000);
   const body = JSON.stringify(options.event ?? messageReceivedEvent);
   const signature = await signDelivery({ id, timestamp, body, secret: options.secret });

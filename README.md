@@ -47,10 +47,11 @@ export const POST = createFetchWebhookHandler({
   secret: process.env.MSP_WEBHOOK_SECRET!,
   on: {
     'message.received': async (event) => {
-      console.log(event.conversationId, event.data.message.messageType);
+      console.log(event.conversationId, event.message.content?.kind);
     },
-    'initiation.updated': async (event) => {
-      console.log(event.data.initiationId, event.data.status);
+    'messaging_invitation.updated': async (event) => {
+      const { messagingInvitationId, status } = event.messagingInvitation;
+      console.log(messagingInvitationId, status);
     },
   },
 });
@@ -115,7 +116,7 @@ npm run release          # build, then publish
 ## Design notes
 
 - **The spec is the source of truth.** Types are generated; the client is hand-written over them, so the ergonomics are ours and the shapes are the server's.
-- **Idempotency is on by default.** Sends mint a UUIDv7 `requestMessageId` and initiations take an `idempotencyKey`, which is what makes it safe for the client to retry a failed write. Supply your own key when a retry may span process restarts.
+- **Idempotency is on by default.** Sends and invitations both mint a UUIDv7 `requestMessageId`, which is what makes it safe for the client to retry a failed write. Supply your own key when a retry may span process restarts.
 - **Raw bytes reach the verifier.** Every webhook adapter passes the exact request body through — a JSON parser upstream breaks the HMAC, so the Express and Fastify adapters say so loudly rather than failing mysteriously.
 - **No runtime dependencies.** Both runtime packages depend only on `@1440io/msp-types`, which is types plus a handful of frozen arrays.
 

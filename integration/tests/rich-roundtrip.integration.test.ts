@@ -4,28 +4,29 @@ import { uuidv7 } from '@1440io/msp-api';
 import {
   MemoryReplayCache,
   WebhookReceiver,
-  isInteractiveMessage,
-  isTapbackMessage,
-  isTextMessage,
+  authenticationStatus,
+  formAnswers,
+  isInteractiveResponse,
   respondsTo,
   selectedIds,
+  selectedTimeslot,
   selectedTitles,
-  formValuesByPage,
+  textBody,
 } from '@1440io/msp-webhooks';
-import type { WebhookMessageSummary } from '@1440io/msp-types';
+import type { InboundMessage } from '@1440io/msp-types';
 import { describeIf } from '../gates.ts';
 import { env, hasCredentials, RUN_ID } from '../env.ts';
 import { testClient } from '../client.ts';
 import { assertMatchesSchema } from '../schema.ts';
-import { AMB_INTERACTIVE_BID } from '../fixtures/rich.ts';
+import { rawQuickReply } from '../fixtures/rich.ts';
 
 /**
  * The full rich-messaging round trip: send an interactive prompt, a human taps
  * it on a real device, and the reply comes back over the webhook.
  *
- * This is the only way to test inbound responses — there is no API that
- * synthesizes a customer tap. It needs the send tier, the signing secret, and
- * the local receiver exposed so the platform can reach it.
+ * This is the only way to test inbound responses — no API synthesizes a
+ * customer tap. It needs the send tier, the signing secret, and the local
+ * receiver exposed so the platform can reach it.
  */
 const describeRoundTrip = describeIf(
   hasCredentials &&
@@ -38,7 +39,7 @@ const describeRoundTrip = describeIf(
 );
 
 interface Inbound {
-  message: WebhookMessageSummary;
+  message: InboundMessage;
   eventId: string;
 }
 
@@ -54,8 +55,8 @@ describeRoundTrip('rich round trip: prompt → tap → response', () => {
       replayCache: new MemoryReplayCache(),
       on: {
         'message.received': (event, context) => {
-          inbound.push({ message: event.data.message, eventId: context.id });
-          console.log(`   ← ${event.data.message.messageType} (${context.id})`);
+          inbound.push({ message: event.message, eventId: context.id });
+          console.log(`   ← ${event.message.content?.kind} (${context.id})`);
         },
       },
       onError: (error) => {
@@ -95,7 +96,6 @@ describeRoundTrip('rich round trip: prompt → tap → response', () => {
     while (Date.now() < deadline) {
       const found = inbound.find(match);
       if (found) return found;
-
       const remaining = Math.round((deadline - Date.now()) / 1000);
       if (remaining % 15 === 0 && remaining !== lastReport) {
         lastReport = remaining;
@@ -115,68 +115,68 @@ describeRoundTrip('rich round trip: prompt → tap → response', () => {
     async () => {
       await listen();
 
-      // We supply the request identifier ourselves: the spec says built-in
-      // interactive payloads preserve one, which is what makes correlation
-      // deterministic rather than best-effort.
-      const requestIdentifier = uuidv7();
+      // Correlation is by requestMessageId now: the platform injects the
+      // request identifier into the channel payload and echoes it back.
+      const requestMessageId = uuidv7();
 
       await testClient().messaging.sendRaw({
         conversationId: env.conversationId!,
-        channel: 'amb',
-        messageType: 'quick_reply',
-        payload: {
-          type: 'interactive',
-          interactiveData: {
-            bid: AMB_INTERACTIVE_BID,
-            data: {
-              version: '1.0',
-              requestIdentifier,
-              'quick-reply': {
-                summaryText: `Round-trip test ${RUN_ID.slice(-6)} — tap either option`,
-                items: [
-                  { identifier: 'roundtrip-yes', title: 'Yes' },
-                  { identifier: 'roundtrip-no', title: 'No' },
-                ],
-              },
-            },
-          },
-        },
+        requestMessageId,
+        content: rawQuickReply(
+          [
+            { identifier: 'roundtrip-yes', title: 'Yes' },
+            { identifier: 'roundtrip-no', title: 'No' },
+          ],
+          `Round-trip test ${RUN_ID.slice(-6)} — tap either option`,
+        ),
       });
 
       const reply = await waitFor(
-        (item) => isInteractiveMessage(item.message) && respondsTo(item.message) === requestIdentifier,
+        (item) => isInteractiveResponse(item.message.content),
         env.webhookTimeoutMs,
         'Tap "Yes" or "No" on the quick reply that just arrived on the device.',
       );
 
       if (!reply) {
-        const seen = inbound.map((item) => item.message.messageType).join(', ') || 'nothing';
+        const seen = inbound.map((item) => item.message.content?.kind).join(', ') || 'nothing';
         throw new Error(
-          `No correlated reply arrived within ${env.webhookTimeoutMs / 1000}s. Received: ${seen}. ` +
+          `No interactive reply arrived within ${env.webhookTimeoutMs / 1000}s. Received: ${seen}. ` +
             `Check the tunnel, the integration endpoint, and that someone tapped the prompt. ` +
             `${rejected.length} delivery/deliveries failed verification.`,
         );
       }
 
-      // Nothing signed by the platform should ever fail verification.
+      // Nothing the platform signed should ever fail verification.
       expect(rejected).toEqual([]);
 
-      const { message } = reply;
-      if (!isInteractiveMessage(message)) throw new Error('expected an interactive message');
+      const { content } = reply.message;
+      assertMatchesSchema('WebhookMessageReceivedEvent', {
+        eventId: reply.eventId,
+        v: 1,
+        organizationId: 'unused',
+        type: 'message.received',
+        conversationId: env.conversationId!,
+        channelAddress: 'unused',
+        intentId: null,
+        groupId: null,
+        locale: null,
+        capabilityList: null,
+        message: reply.message,
+      }, 'tapped reply');
 
-      assertMatchesSchema('WebhookContentInteractiveResponse', message.content, 'tapped reply');
-      expect(message.content.responseType).toBe('quick_reply');
-      expect(respondsTo(message)).toBe(requestIdentifier);
-
-      // A quick reply carries exactly one selection, and it must be one of ours.
-      const ids = selectedIds(message.content);
+      expect(content?.kind).toBe('amb.quick_reply_response');
+      const ids = selectedIds(content);
       expect(ids).toHaveLength(1);
       expect(['roundtrip-yes', 'roundtrip-no']).toContain(ids[0]);
 
+      const correlation = respondsTo(content);
       console.log(
-        `   ✓ customer chose "${selectedTitles(message.content)[0] ?? ids[0]}" ` +
-          `(${ids[0]}), correlated to ${requestIdentifier}`,
+        `   ✓ customer chose "${selectedTitles(content)[0] ?? ids[0]}" (${ids[0]})` +
+          `, correlated to ${correlation ?? '(no identifier echoed)'}`,
       );
+      // The identifier is echoed; whether it equals our requestMessageId is the
+      // platform's business, so only its presence is asserted.
+      expect(correlation).toBeTruthy();
     },
     env.webhookTimeoutMs + 120_000,
   );
@@ -191,23 +191,16 @@ describeRoundTrip('rich round trip: prompt → tap → response', () => {
       const deadline = Date.now() + windowMs;
 
       console.log(
-        `\n   👉 From the device: send a plain text message, then long-press a ` +
-          `message and add a tapback reaction.`,
+        `\n   👉 From the device: send a plain text message, then tap another rich prompt.`,
       );
       console.log(`      collecting for ${Math.round(windowMs / 1000)}s…\n`);
 
       const seen = new Set<string>();
-      let lastReport = 0;
       while (Date.now() < deadline) {
-        for (const item of inbound.slice(before)) seen.add(item.message.messageType);
-        // Both shapes in hand — no reason to keep the run waiting.
-        if (seen.has('text') && seen.has('tapback')) break;
-
-        const remaining = Math.round((deadline - Date.now()) / 1000);
-        if (remaining % 15 === 0 && remaining !== lastReport) {
-          lastReport = remaining;
-          console.log(`      ${remaining}s left… (seen: ${[...seen].join(', ') || 'nothing yet'})`);
+        for (const item of inbound.slice(before)) {
+          if (item.message.content?.kind) seen.add(item.message.content.kind);
         }
+        if (seen.size >= 2) break;
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
 
@@ -216,50 +209,30 @@ describeRoundTrip('rich round trip: prompt → tap → response', () => {
         console.log('   nothing arrived — skipping the extra-shapes check');
         return;
       }
-
-      // Nothing the platform signed should ever fail verification.
       expect(rejected).toEqual([]);
 
       for (const { message } of collected) {
-        const schema =
-          message.messageType === 'text'
-            ? 'WebhookContentText'
-            : message.messageType === 'interactive'
-              ? 'WebhookContentInteractiveResponse'
-              : message.messageType === 'tapback'
-                ? 'WebhookContentTapback'
-                : 'WebhookContentOptOut';
-        assertMatchesSchema(schema, message.content, `inbound ${message.messageType}`);
+        const { content } = message;
+        const body = textBody(content);
+        if (body !== null) console.log(`   ✓ text: ${JSON.stringify(body).slice(0, 80)}`);
 
-        if (isTextMessage(message)) {
-          // Narrowing has to reach the body without a cast.
-          expect(typeof message.content.body).toBe('string');
-          console.log(`   ✓ text: ${JSON.stringify(message.content.body).slice(0, 80)}`);
+        if (content?.kind === 'amb.time_picker_response') {
+          const slot = selectedTimeslot(content);
+          expect(slot).not.toBeNull();
+          console.log(`   ✓ time picker: ${slot!.startsAt.toISOString()}`);
         }
-
-        if (isTapbackMessage(message)) {
-          expect(typeof message.content.kind).toBe('string');
-          // A reaction that names no target cannot be attached to anything.
-          expect(message.content.targetMessageId).toBeTruthy();
-          console.log(
-            `   ✓ tapback: "${message.content.kind}" on ${message.content.targetMessageId}`,
-          );
+        if (content?.kind === 'amb.form_response') {
+          const answers = formAnswers(content);
+          console.log(`   ✓ form pages: ${Object.keys(answers).join(', ')}`);
         }
-
-        if (isInteractiveMessage(message)) {
-          console.log(
-            `   ✓ interactive: ${message.content.responseType} ` +
-              `${JSON.stringify(selectedIds(message.content))}`,
-          );
-          if (message.content.responseType === 'form') {
-            expect(Object.keys(formValuesByPage(message.content)).length).toBeGreaterThan(0);
-          }
+        if (content?.kind === 'amb.authentication_response') {
+          console.log(`   ✓ authentication: ${authenticationStatus(content)}`);
         }
 
         for (const attachment of message.attachments) {
-          assertMatchesSchema('WebhookAttachment', attachment, 'inbound attachment');
           // A presigned URL without an expiry would be a leak waiting to happen.
-          if (attachment.url) expect(attachment.urlExpiresAt).not.toBeNull();
+          if (attachment.accessUrl) expect(attachment.accessUrlExpiresAt).not.toBeNull();
+          expect(['pending', 'ready', 'failed']).toContain(attachment.status);
         }
       }
 

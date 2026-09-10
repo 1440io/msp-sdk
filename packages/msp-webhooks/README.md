@@ -12,8 +12,10 @@ Verification is built on Web Crypto, so the same code runs on Node 20.10+, Cloud
 
 | Type | Fires when |
 | --- | --- |
-| `message.received` | A customer sends an inbound message. `data.message.content` varies by `messageType` — `text`, `interactive`, `tapback`, `opt_out`. |
-| `initiation.updated` | A conversation initiation changes status. |
+| `message.received` | A customer sends an inbound message. `message.content` is a union tagged by `kind` — `text`, `opt_out`, `amb.quick_reply_response`, `amb.list_picker_response`, `amb.time_picker_response`, `amb.form_response`, `amb.authentication_response`, and a few more. |
+| `messaging_invitation.updated` | A messaging invitation changes status. |
+
+The envelope carries `eventId`, `v`, `organizationId`, `conversationId`, `channelAddress`, `intentId`, `groupId`, `locale`, and `capabilityList` — the rich-messaging capabilities the customer's device advertised, which is what to check before choosing a template.
 
 Both arrive as an HTTP POST with a `Webhook-Id`, `Webhook-Timestamp`, and `Webhook-Signature` header. Any 2xx acknowledges; a non-2xx or a timeout is retried with backoff over several minutes and then abandoned. A `410 Gone` is terminal and disables delivery for the integration, so never return one by accident.
 
@@ -25,6 +27,7 @@ Verification is easy to get subtly wrong, so all of it is handled here:
 - The HMAC covers the **exact request bytes**. Parsing and re-serializing the JSON changes key order or whitespace and breaks the signature — every adapter here passes raw bytes through.
 - `Webhook-Signature` may carry several space-delimited `v1,…` tokens during a key rotation. The delivery is accepted if **any** token matches, and unknown scheme versions are ignored rather than rejected.
 - Deliveries more than five minutes from now are rejected.
+- The envelope's `eventId` must match the `Webhook-Id` header; a mismatch means the body and the signature headers describe different events, and is rejected.
 - Retries reuse the same `Webhook-Id`, so dedupe on it.
 - Header lookups are case-insensitive, and any verification error is a rejection.
 
@@ -38,10 +41,11 @@ const receiver = new WebhookReceiver({
   replayCache: new MemoryReplayCache(),
   on: {
     'message.received': async (event, context) => {
-      console.log(context.id, event.conversationId, event.data.message.messageType);
+      console.log(context.id, event.conversationId, event.message.content?.kind);
     },
-    'initiation.updated': async (event) => {
-      console.log(event.data.initiationId, event.data.status);
+    'messaging_invitation.updated': async (event) => {
+      const { messagingInvitationId, status } = event.messagingInvitation;
+      console.log(messagingInvitationId, status);
     },
   },
   onError: (error) => logger.warn({ error }, 'webhook rejected'),
@@ -131,6 +135,107 @@ const { event, id, timestamp } = await verifier.verify({ headers, body: rawBody 
 Keep one verifier around rather than constructing per request — it imports the HMAC key once.
 
 `verify()` throws `WebhookVerificationError` with a `code`: `missing_headers`, `malformed_timestamp`, `stale_timestamp`, `invalid_signature_header`, `invalid_signature`, `invalid_secret`, `invalid_payload`, or `duplicate`. Treat them all as rejections except `duplicate`, which means you have already handled the event — acknowledge it with a 2xx.
+
+## Rotating a secret
+
+Pass both, and either verifies:
+
+```ts
+new WebhookVerifier({ secret: [process.env.MSP_WEBHOOK_SECRET_OLD!, process.env.MSP_WEBHOOK_SECRET_NEW!] });
+```
+
+## Replay protection
+
+`MemoryReplayCache` is bounded and TTL'd (an hour by default), which is enough for a single long-lived process. Across instances, or anywhere the process is short-lived, implement the one-method `ReplayCache` interface over shared storage:
+
+```ts
+import type { ReplayCache } from '@1440io/msp-webhooks';
+
+const redisCache: ReplayCache = {
+  async seen(id) {
+    // SET NX returns null when the key already exists.
+    return (await redis.set(`webhook:${id}`, '1', 'EX', 3600, 'NX')) === null;
+  },
+};
+```
+
+## Narrowing events
+
+```ts
+import { isMessageReceived, isInitiationUpdated } from '@1440io/msp-webhooks';
+
+if (isMessageReceived(event)) {
+  event.data.message; // narrowed to the inbound message
+}
+```
+
+`dataVersion` is date-pinned and changes additively, so pin the version you understand and ignore fields you do not recognize.
+
+## Handling customer replies
+
+`content` is a union tagged by `kind`, so TypeScript narrows it natively — no guard needed:
+
+```ts
+if (message.content?.kind === 'text') {
+  message.content.body;      // narrowed
+}
+```
+
+What the helpers add is normalization. The interactive payloads arrive in Apple's native shape — hyphenated keys, per-kind nesting, timestamps that are not RFC 3339 — and reading them by hand is where the bugs live:
+
+```ts
+import {
+  textBody, selectedIds, selectedTitles, selectedTimeslot,
+  formAnswers, authenticationStatus, respondsTo, sessionOf,
+  isInteractiveResponse, isRedacted, isKind,
+} from '@1440io/msp-webhooks';
+
+on: {
+  'message.received': async (event) => {
+    const { content } = event.message;
+
+    // A private form response arrives with its body withheld.
+    if (isRedacted(event.message)) return;
+
+    const body = textBody(content);
+    if (body !== null) console.log(body);
+
+    if (isInteractiveResponse(content)) {
+      const prompt = respondsTo(content);   // which rich message was answered
+      const session = sessionOf(content);
+
+      switch (content.kind) {
+        case 'amb.quick_reply_response':
+        case 'amb.list_picker_response':
+          console.log(selectedIds(content), selectedTitles(content));
+          break;
+        case 'amb.time_picker_response': {
+          const slot = selectedTimeslot(content);   // { id, startsAt: Date, durationSeconds }
+          break;
+        }
+        case 'amb.form_response':
+          console.log(formAnswers(content));        // keyed by page identifier
+          break;
+        case 'amb.authentication_response':
+          console.log(authenticationStatus(content));  // success | failure | cancel | unknown
+          break;
+      }
+    }
+
+    if (isKind(content, 'opt_out')) await suppress(event.conversationId);
+  },
+}
+```
+
+### Correlating a reply with its prompt
+
+`respondsTo(content)` returns the identifier of the rich message being answered, so a bot holding several prompts open knows which was tapped. It returns `null` when the channel made no correlation promise — custom iMessage apps carry none — so never assume it is present.
+
+### Two things production does that the spec does not describe
+
+**Reactions arrive as text.** A "Liked" reaction comes through as `kind: 'text'` with the body `"Liked 1 Business Message"`. This revision dropped the `tapback` kind entirely, which matches the behaviour, so there is nothing to narrow to.
+
+**Time-picker times are not RFC 3339.** The schema pins them to `YYYY-MM-DDTHH:mm+0000` — no seconds, no colon in the offset. JavaScript's `Date` accepts it, so the problem stays hidden until the value reaches a stricter parser (`Temporal.Instant.from`, `date-fns/parseISO`, Go, Java, Python). `selectedTimeslot()` and `parseAppleTimestamp()` handle both forms and hand back a real `Date`.
 
 ## Rotating a secret
 

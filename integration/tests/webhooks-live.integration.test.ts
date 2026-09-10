@@ -90,19 +90,17 @@ describeWebhookLive('webhooks: live end-to-end', () => {
     async () => {
       await listen();
 
-      // An initiation is the one event we can provoke on demand: creating one
-      // produces initiation.updated transitions addressed to this endpoint.
-      let expectedInitiationId: string | undefined;
+      // An invitation is the one event we can provoke on demand: creating one
+      // produces messaging_invitation.updated transitions to this endpoint.
+      let expectedInvitationId: string | undefined;
       if (env.allowInitiate && env.phoneNumber) {
-        const initiation = await testClient().initiations.create({
-          channel: env.channel,
+        const invitation = await testClient().invitations.create({
           phoneNumber: env.phoneNumber,
-          idempotencyKey: `${RUN_ID}-live-webhook`,
           callerReference: `${RUN_ID}-live-webhook`,
           targetAgentStatus: 'bot',
         });
-        expectedInitiationId = initiation.id;
-        console.log(`   provoked initiation ${initiation.id} — waiting for its webhook`);
+        expectedInvitationId = invitation.id;
+        console.log(`   provoked invitation ${invitation.id} — waiting for its webhook`);
       } else {
         console.log(
           `   waiting up to ${env.webhookTimeoutMs / 1000}s for any delivery — ` +
@@ -112,9 +110,9 @@ describeWebhookLive('webhooks: live end-to-end', () => {
 
       const delivery = await waitFor(
         (item) =>
-          expectedInitiationId === undefined ||
-          (item.event.type === 'initiation.updated' &&
-            item.event.data.initiationId === expectedInitiationId),
+          expectedInvitationId === undefined ||
+          (item.event.type === 'messaging_invitation.updated' &&
+            item.event.messagingInvitation.messagingInvitationId === expectedInvitationId),
         env.webhookTimeoutMs,
       );
 
@@ -133,10 +131,10 @@ describeWebhookLive('webhooks: live end-to-end', () => {
       const schema =
         delivery.event.type === 'message.received'
           ? 'WebhookMessageReceivedEvent'
-          : 'WebhookInitiationUpdatedEvent';
+          : 'WebhookMessagingInvitationUpdatedEvent';
       assertMatchesSchema(schema, delivery.event, 'live delivery');
-      expect(delivery.event.specVersion).toBe(1);
-      expect(delivery.id).toBe(delivery.event.id); // Webhook-Id equals the envelope id
+      // Webhook-Id equals the envelope eventId — the verifier enforces this.
+      expect(delivery.id).toBe(delivery.event.eventId);
     },
     // The wait itself sets the pace; give the hook room beyond it.
     env.webhookTimeoutMs + 60_000,

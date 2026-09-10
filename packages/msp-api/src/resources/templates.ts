@@ -1,15 +1,22 @@
-import type { RichTemplateDetail, RichTemplateList, RichTemplateSummary } from '@1440io/msp-types';
+import type {
+  RichTemplateDetail,
+  RichTemplateList,
+  RichTemplateSummary,
+  RichTemplateType,
+} from '@1440io/msp-types';
 import { Paginator } from '../pagination.js';
 import { Resource, type RequestOverrides } from './base.js';
 
 export interface ListTemplatesParams extends RequestOverrides {
-  /** Page size. */
+  /** Only templates producing this kind of message. */
+  templateType?: RichTemplateType;
+  /** Page size, capped at 100. */
   count?: number;
   /** Return templates older than this template id. */
   before?: string;
 }
 
-/** Published rich templates, as seen by a sending integration. */
+/** Published rich templates, as a sending integration sees them. */
 export class TemplatesResource extends Resource {
   /** List published templates. */
   list(params: ListTemplatesParams = {}): Paginator<RichTemplateSummary, RichTemplateList> {
@@ -17,7 +24,11 @@ export class TemplatesResource extends Resource {
       this.http.request<RichTemplateList>({
         method: 'GET',
         path: '/api/v0/templates',
-        query: { count: params.count, before: before ?? params.before },
+        query: {
+          templateType: params.templateType,
+          count: params.count,
+          before: before ?? params.before,
+        },
         headers: params.headers,
         signal: params.signal,
         timeoutMs: params.timeoutMs,
@@ -27,11 +38,11 @@ export class TemplatesResource extends Resource {
       first: fetchPage(),
       fetchNext: (cursor) => fetchPage(cursor),
       getItems: (page) => page.templates,
-      getCursor: (page) => (page.hasMore ? page.nextCursor : null),
+      getCursor: (page) => page.nextCursor,
     });
   }
 
-  /** Get one published template, including its definition. */
+  /** Get one published template, including its definition and readiness. */
   async get(templateId: string, options: RequestOverrides = {}): Promise<RichTemplateDetail> {
     return this.http.request<RichTemplateDetail>({
       method: 'GET',

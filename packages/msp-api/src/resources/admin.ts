@@ -1,17 +1,6 @@
 import type {
   AdminBusinessChannel,
-  AdminBusinessContext,
-  AdminBusinessMember,
-  AdminCreateBusinessChannelBody,
-  AdminSandboxList,
-  AdminSandboxMemberSyncResult,
   BusinessSettings,
-  CatalogPermission,
-  Integration,
-  IntegrationApiKey,
-  IntegrationDelivery,
-  PermissionSetBody,
-  PermissionSetView,
   RichAssetItem,
   RichAssetList,
   RichAssetUsage,
@@ -19,6 +8,7 @@ import type {
   RichTemplateList,
   RichTemplateStatus,
   RichTemplateSummary,
+  RichTemplateType,
   RichTemplateWriteBody,
   Schemas,
   TikTokChannelStatus,
@@ -28,27 +18,19 @@ import { Resource, type RequestOverrides } from './base.js';
 
 const ADMIN = '/api/admin/businesses';
 
-/** Business-admin routes. All of them require the `admin` membership tier. */
+/**
+ * Business-admin routes, as documented in the spec.
+ *
+ * Requires the `admin` membership tier. Earlier versions of this SDK also
+ * exposed members, sandboxes, integrations, permission sets, and the business
+ * context; those routes are no longer part of the published API surface and
+ * were removed in 0.2.0.
+ */
 export class AdminResource extends Resource {
   /** Rich templates and their asset library. */
   readonly templates = new AdminTemplatesResource(this.http);
-  /** Integrations, their API keys, and their webhook delivery log. */
-  readonly integrations = new AdminIntegrationsResource(this.http);
-  /** Permission sets and the permission catalog. */
-  readonly permissions = new AdminPermissionsResource(this.http);
   /** Connected messaging channels. */
   readonly channels = new AdminChannelsResource(this.http);
-
-  /** Get the authenticated member's business-admin context. */
-  async context(options: RequestOverrides = {}): Promise<AdminBusinessContext> {
-    return this.http.request<AdminBusinessContext>({
-      method: 'GET',
-      path: `${ADMIN}/context`,
-      headers: options.headers,
-      signal: options.signal,
-      timeoutMs: options.timeoutMs,
-    });
-  }
 
   /** Get business-level settings. */
   async settings(options: RequestOverrides = {}): Promise<BusinessSettings> {
@@ -60,53 +42,12 @@ export class AdminResource extends Resource {
       timeoutMs: options.timeoutMs,
     });
   }
-
-  /** List the business's members. Capped at 100 per call; no cursor yet. */
-  async listMembers(
-    params: RequestOverrides & { count?: number } = {},
-  ): Promise<AdminBusinessMember[]> {
-    return this.http.request<AdminBusinessMember[]>({
-      method: 'GET',
-      path: `${ADMIN}/members`,
-      query: { count: params.count },
-      headers: params.headers,
-      signal: params.signal,
-      timeoutMs: params.timeoutMs,
-    });
-  }
-
-  /** List sandbox organizations under the parent business, with the cap. */
-  async listSandboxes(options: RequestOverrides = {}): Promise<AdminSandboxList> {
-    return this.http.request<AdminSandboxList>({
-      method: 'GET',
-      path: `${ADMIN}/sandboxes`,
-      headers: options.headers,
-      signal: options.signal,
-      timeoutMs: options.timeoutMs,
-    });
-  }
-
-  /** Resync sandbox memberships from the parent org. */
-  async syncSandboxMembers(
-    options: RequestOverrides = {},
-  ): Promise<AdminSandboxMemberSyncResult> {
-    return this.http.request<AdminSandboxMemberSyncResult>({
-      method: 'POST',
-      path: `${ADMIN}/sandboxes/member-sync`,
-      idempotent: true,
-      headers: options.headers,
-      signal: options.signal,
-      timeoutMs: options.timeoutMs,
-    });
-  }
 }
 
 /** Messaging channels connected to the business. */
 export class AdminChannelsResource extends Resource {
-  /** List connected channels. Capped at 100 per call; no cursor yet. */
-  async list(
-    params: RequestOverrides & { count?: number } = {},
-  ): Promise<AdminBusinessChannel[]> {
+  /** List connected channels. Capped at 100 per call; no cursor. */
+  async list(params: RequestOverrides & { count?: number } = {}): Promise<AdminBusinessChannel[]> {
     return this.http.request<AdminBusinessChannel[]>({
       method: 'GET',
       path: `${ADMIN}/channels`,
@@ -114,21 +55,6 @@ export class AdminChannelsResource extends Resource {
       headers: params.headers,
       signal: params.signal,
       timeoutMs: params.timeoutMs,
-    });
-  }
-
-  /** Connect a messaging channel to the business. */
-  async create(
-    body: AdminCreateBusinessChannelBody,
-    options: RequestOverrides = {},
-  ): Promise<AdminBusinessChannel> {
-    return this.http.request<AdminBusinessChannel>({
-      method: 'POST',
-      path: `${ADMIN}/channels`,
-      body,
-      headers: options.headers,
-      signal: options.signal,
-      timeoutMs: options.timeoutMs,
     });
   }
 
@@ -147,7 +73,9 @@ export class AdminChannelsResource extends Resource {
 export interface AdminListTemplatesParams extends RequestOverrides {
   /** Only templates in this publication state. */
   status?: RichTemplateStatus;
-  /** Page size. */
+  /** Only templates producing this kind of message. */
+  templateType?: RichTemplateType;
+  /** Page size, capped at 100. */
   count?: number;
   /** Return templates older than this template id. */
   before?: string;
@@ -155,10 +83,10 @@ export interface AdminListTemplatesParams extends RequestOverrides {
 
 export interface AdminListAssetsParams extends RequestOverrides {
   /** Only assets for this channel. */
-  channel?: 'amb' | 'tiktok';
+  channel?: 'amb';
   /** Only assets filling this rich-message slot. */
   usage?: RichAssetUsage;
-  /** Page size. */
+  /** Page size, capped at 100. */
   count?: number;
   /** Return assets older than this asset id. */
   before?: string;
@@ -166,10 +94,10 @@ export interface AdminListAssetsParams extends RequestOverrides {
 
 export interface UploadRichAssetParams extends RequestOverrides {
   /** Channel the asset belongs to. */
-  channel: 'amb' | 'tiktok';
+  channel: 'amb';
   /** Rich-message usage slot the asset fills. */
   usage: NonNullable<RichAssetUsage>;
-  /** Library display name, 1–200 characters. */
+  /** Library display name. */
   displayName: string;
   /** PNG image bytes. */
   file: Blob | Uint8Array | ArrayBuffer;
@@ -187,7 +115,12 @@ export class AdminTemplatesResource extends Resource {
       this.http.request<RichTemplateList>({
         method: 'GET',
         path: `${ADMIN}/templates`,
-        query: { status: params.status, count: params.count, before: before ?? params.before },
+        query: {
+          status: params.status,
+          templateType: params.templateType,
+          count: params.count,
+          before: before ?? params.before,
+        },
         headers: params.headers,
         signal: params.signal,
         timeoutMs: params.timeoutMs,
@@ -197,7 +130,7 @@ export class AdminTemplatesResource extends Resource {
       first: fetchPage(),
       fetchNext: (cursor) => fetchPage(cursor),
       getItems: (page) => page.templates,
-      getCursor: (page) => (page.hasMore ? page.nextCursor : null),
+      getCursor: (page) => page.nextCursor,
     });
   }
 
@@ -244,7 +177,7 @@ export class AdminTemplatesResource extends Resource {
     });
   }
 
-  /** Delete a draft template. Published templates must be archived instead. */
+  /** Delete a never-published draft. Published templates can only be archived. */
   async delete(
     templateId: string,
     options: RequestOverrides = {},
@@ -304,7 +237,7 @@ export class AdminTemplatesResource extends Resource {
       first: fetchPage(),
       fetchNext: (cursor) => fetchPage(cursor),
       getItems: (page) => page.assets,
-      getCursor: (page) => (page.hasMore ? page.nextCursor : null),
+      getCursor: (page) => page.nextCursor,
     });
   }
 
@@ -338,136 +271,6 @@ export class AdminTemplatesResource extends Resource {
     return this.http.request<Schemas['RichAssetDeleteResult']>({
       method: 'DELETE',
       path: `${ADMIN}/templates/assets/${encodeURIComponent(assetId)}`,
-      idempotent: true,
-      headers: options.headers,
-      signal: options.signal,
-      timeoutMs: options.timeoutMs,
-    });
-  }
-}
-
-/** Integrations, their API keys, and their webhook delivery log. */
-export class AdminIntegrationsResource extends Resource {
-  /** List integrations. Capped at 100 per call; no cursor yet. */
-  async list(params: RequestOverrides & { count?: number } = {}): Promise<Integration[]> {
-    return this.http.request<Integration[]>({
-      method: 'GET',
-      path: `${ADMIN}/integrations`,
-      query: { count: params.count },
-      headers: params.headers,
-      signal: params.signal,
-      timeoutMs: params.timeoutMs,
-    });
-  }
-
-  /** Get one integration. */
-  async get(integrationId: string, options: RequestOverrides = {}): Promise<Integration> {
-    return this.http.request<Integration>({
-      method: 'GET',
-      path: `${ADMIN}/integrations/${encodeURIComponent(integrationId)}`,
-      headers: options.headers,
-      signal: options.signal,
-      timeoutMs: options.timeoutMs,
-    });
-  }
-
-  /** List an integration's API keys. Secrets are never returned. */
-  async listApiKeys(
-    integrationId: string,
-    params: RequestOverrides & { count?: number } = {},
-  ): Promise<IntegrationApiKey[]> {
-    return this.http.request<IntegrationApiKey[]>({
-      method: 'GET',
-      path: `${ADMIN}/integrations/${encodeURIComponent(integrationId)}/keys`,
-      query: { count: params.count },
-      headers: params.headers,
-      signal: params.signal,
-      timeoutMs: params.timeoutMs,
-    });
-  }
-
-  /** Read the webhook delivery log for an integration. */
-  async listDeliveries(
-    integrationId: string,
-    options: RequestOverrides = {},
-  ): Promise<IntegrationDelivery[]> {
-    return this.http.request<IntegrationDelivery[]>({
-      method: 'GET',
-      path: `${ADMIN}/integrations/${encodeURIComponent(integrationId)}/deliveries`,
-      headers: options.headers,
-      signal: options.signal,
-      timeoutMs: options.timeoutMs,
-    });
-  }
-}
-
-/** Permission sets and the permission catalog they draw from. */
-export class AdminPermissionsResource extends Resource {
-  /** List the live (non-deprecated) permission catalog. */
-  async catalog(options: RequestOverrides = {}): Promise<CatalogPermission[]> {
-    return this.http.request<CatalogPermission[]>({
-      method: 'GET',
-      path: `${ADMIN}/permissions`,
-      headers: options.headers,
-      signal: options.signal,
-      timeoutMs: options.timeoutMs,
-    });
-  }
-
-  /** List permission sets defined for the business. */
-  async listSets(
-    params: RequestOverrides & { count?: number } = {},
-  ): Promise<PermissionSetView[]> {
-    return this.http.request<PermissionSetView[]>({
-      method: 'GET',
-      path: `${ADMIN}/permission-sets`,
-      query: { count: params.count },
-      headers: params.headers,
-      signal: params.signal,
-      timeoutMs: params.timeoutMs,
-    });
-  }
-
-  /** Create a permission set. */
-  async createSet(
-    body: PermissionSetBody,
-    options: RequestOverrides = {},
-  ): Promise<PermissionSetView> {
-    return this.http.request<PermissionSetView>({
-      method: 'POST',
-      path: `${ADMIN}/permission-sets`,
-      body,
-      headers: options.headers,
-      signal: options.signal,
-      timeoutMs: options.timeoutMs,
-    });
-  }
-
-  /** Update a permission set. `permissions` fully replaces the prior list. */
-  async updateSet(
-    permissionSetId: string,
-    body: PermissionSetBody,
-    options: RequestOverrides = {},
-  ): Promise<PermissionSetView> {
-    return this.http.request<PermissionSetView>({
-      method: 'PATCH',
-      path: `${ADMIN}/permission-sets/${encodeURIComponent(permissionSetId)}`,
-      body,
-      idempotent: true,
-      headers: options.headers,
-      signal: options.signal,
-      timeoutMs: options.timeoutMs,
-    });
-  }
-
-  /** Delete a permission set. */
-  async deleteSet(
-    permissionSetId: string,
-    options: RequestOverrides = {},
-  ): Promise<Schemas['PermissionSetDeleteResult']> {
-    return this.http.request<Schemas['PermissionSetDeleteResult']>({
-      method: 'DELETE',
-      path: `${ADMIN}/permission-sets/${encodeURIComponent(permissionSetId)}`,
       idempotent: true,
       headers: options.headers,
       signal: options.signal,

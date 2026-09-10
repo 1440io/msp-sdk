@@ -71,12 +71,6 @@ for (const asset of assets) {
   );
 }
 
-const sets = await client.admin.permissions.listSets({ count: 100 }).catch(() => []);
-for (const set of sets) {
-  if (!set.name.startsWith(RESOURCE_PREFIX) || set.isBuiltIn) continue;
-  await remove('permission set', set.id, set.name, () => client.admin.permissions.deleteSet(set.id));
-}
-
 console.log(
   `\n${found} orphan(s) found${apply ? `, ${removed} deleted` : ' — re-run with --apply to delete'}.\n`,
 );

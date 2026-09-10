@@ -26,8 +26,9 @@ describeApi('templates: reading published templates', () => {
 
     assertMatchesSchema('RichTemplateList', page, 'GET /api/v0/templates');
     assertEachMatchesSchema('RichTemplateSummary', page.templates, 'templates');
-    expect(typeof page.hasMore).toBe('boolean');
-    console.log(`   ${page.templates.length} published template(s), hasMore=${page.hasMore}`);
+    console.log(
+      `   ${page.templates.length} published template(s), nextCursor=${page.nextCursor}`,
+    );
   });
 
   it('only lists templates that are actually published', async () => {

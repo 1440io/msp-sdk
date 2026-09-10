@@ -1,5 +1,4 @@
 import type {
-  ChannelPlatform,
   Conversation,
   ConversationDetail,
   ConversationListResponse,
@@ -15,8 +14,6 @@ export interface ListConversationsParams extends RequestOverrides {
   cursor?: string;
   /** Only conversations in this lifecycle status. */
   status?: ConversationStatus;
-  /** Only conversations on this channel platform. */
-  platform?: Extract<ChannelPlatform, 'amb' | 'tiktok' | 'custom'>;
 }
 
 export interface GetConversationParams extends RequestOverrides {
@@ -39,12 +36,7 @@ export class ConversationsResource extends Resource {
       this.http.request<ConversationListResponse>({
         method: 'GET',
         path: '/api/v0/conversations',
-        query: {
-          count: params.count,
-          cursor: cursor ?? params.cursor,
-          status: params.status,
-          platform: params.platform,
-        },
+        query: { count: params.count, cursor: cursor ?? params.cursor, status: params.status },
         headers: params.headers,
         signal: params.signal,
         timeoutMs: params.timeoutMs,

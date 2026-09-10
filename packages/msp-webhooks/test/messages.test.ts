@@ -1,273 +1,290 @@
 import { describe, expect, it } from 'vitest';
-import type { WebhookMessageSummary } from '@1440io/msp-types';
+import type { InboundContent, InboundMessage } from '@1440io/msp-types';
 import {
-  formValuesByPage,
-  isInteractiveMessage,
-  isOptOutMessage,
-  isTapbackMessage,
-  isTextMessage,
+  authenticationStatus,
+  formAnswers,
+  isInteractiveResponse,
+  isKind,
+  isPrivateForm,
+  isRedacted,
   parseAppleTimestamp,
   respondsTo,
   selectedIds,
-  selectedStartTime,
+  selectedTimeslot,
   selectedTitles,
+  sessionOf,
+  textBody,
 } from '../src/index.js';
 
-/** Build a message summary with the boilerplate filled in. */
-function message(overrides: Partial<WebhookMessageSummary>): WebhookMessageSummary {
+/** An inbound message with the boilerplate filled in. */
+function message(content: unknown, overrides: Partial<InboundMessage> = {}): InboundMessage {
   return {
     id: '0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9012',
-    conversationId: '0196f1f8-4a2b-7a31-8f5c-0d9e7b6a5678',
-    channelPlatform: 'amb',
-    messageType: 'text',
-    content: { body: 'hello' },
-    timestamp: '2026-07-20T14:30:00.000Z',
-    intentId: null,
-    groupId: null,
-    locale: 'en-US',
-    richRequestIdentifier: null,
+    channel: 'amb',
+    externalId: 'urn:mbid:AQAAY',
+    createdAt: '2026-07-20T14:30:00.000Z',
     attachments: [],
+    actor: { type: 'customer' },
+    redacted: false,
+    content,
     ...overrides,
-  } as WebhookMessageSummary;
+  } as InboundMessage;
 }
 
-const interactive = (
-  content: Partial<Extract<WebhookMessageSummary['content'], { responseType: string }>>,
-) =>
-  message({
-    messageType: 'interactive',
-    content: {
-      responseType: 'quick_reply',
-      requestIdentifier: null,
-      sessionIdentifier: null,
-      selections: [],
-      selectedStartTime: null,
-      formValues: [],
-      private: false,
-      ...content,
-    },
-  } as Partial<WebhookMessageSummary>);
+const content = (c: unknown) => message(c).content as InboundContent;
 
-describe('message narrowing', () => {
-  it('narrows a text message to its body', () => {
-    const msg = message({ messageType: 'text', content: { body: 'I need help' } });
+describe('content narrowing', () => {
+  it('narrows text natively on the kind tag', () => {
+    const c = content({ kind: 'text', body: 'I need help', subject: 'Order 12' });
 
-    expect(isTextMessage(msg)).toBe(true);
-    if (isTextMessage(msg)) {
-      // The whole point: no cast needed to reach content.body.
-      expect(msg.content.body).toBe('I need help');
-    }
-    expect(isInteractiveMessage(msg)).toBe(false);
+    // The union is discriminated by `kind`, so no guard is needed for this.
+    expect(c?.kind).toBe('text');
+    if (c?.kind === 'text') expect(c.body).toBe('I need help');
+    expect(textBody(c)).toBe('I need help');
   });
 
-  it('narrows an interactive reply to its response fields', () => {
-    const msg = interactive({ responseType: 'list_picker' });
-
-    expect(isInteractiveMessage(msg)).toBe(true);
-    if (isInteractiveMessage(msg)) {
-      expect(msg.content.responseType).toBe('list_picker');
-      expect(msg.content.selections).toEqual([]);
-    }
+  it('returns null from textBody for non-text content', () => {
+    expect(textBody(content({ kind: 'opt_out' }))).toBeNull();
   });
 
-  it('narrows a tapback to its target', () => {
-    const msg = message({
-      messageType: 'tapback',
-      content: { kind: 'love', targetMessageId: 'abc' },
-    } as Partial<WebhookMessageSummary>);
-
-    expect(isTapbackMessage(msg)).toBe(true);
-    if (isTapbackMessage(msg)) {
-      expect(msg.content.targetMessageId).toBe('abc');
-      expect(msg.content.kind).toBe('love');
-    }
+  it('recognizes an opt-out', () => {
+    expect(isKind(content({ kind: 'opt_out' }), 'opt_out')).toBe(true);
   });
 
-  it('narrows an opt-out to its reason', () => {
-    const msg = message({
-      messageType: 'opt_out',
-      content: { reason: 'unsubscribe' },
-    } as Partial<WebhookMessageSummary>);
-
-    expect(isOptOutMessage(msg)).toBe(true);
-    if (isOptOutMessage(msg)) expect(msg.content.reason).toBe('unsubscribe');
+  it('separates interactive replies from plain messages', () => {
+    expect(isInteractiveResponse(content({ kind: 'text', body: 'x' }))).toBe(false);
+    expect(isInteractiveResponse(content({ kind: 'opt_out' }))).toBe(false);
+    expect(
+      isInteractiveResponse(content({ kind: 'amb.quick_reply_response', data: {} })),
+    ).toBe(true);
   });
 
-  it('keeps the guards mutually exclusive', () => {
-    const msg = interactive({});
-
-    expect([isTextMessage(msg), isTapbackMessage(msg), isOptOutMessage(msg)]).toEqual([
-      false,
-      false,
-      false,
-    ]);
+  it('treats a withheld body as redacted', () => {
+    expect(isRedacted(message({ kind: 'text', body: 'x' }))).toBe(false);
+    expect(isRedacted(message(undefined, { redacted: true }))).toBe(true);
+    expect(isRedacted(message(null))).toBe(true);
   });
 });
 
 describe('quick reply responses', () => {
-  it('reads the single chosen item', () => {
-    const msg = interactive({
-      responseType: 'quick_reply',
+  const reply = content({
+    kind: 'amb.quick_reply_response',
+    sessionIdentifier: 'sess-1',
+    data: {
       requestIdentifier: 'req-1',
-      selections: [{ id: 'yes', title: 'Yes, please' }],
-    });
+      'quick-reply': {
+        selectedIndex: 1,
+        selectedIdentifier: 'no',
+        items: [
+          { identifier: 'yes', title: 'Yes please' },
+          { identifier: 'no', title: 'No thanks' },
+        ],
+      },
+    },
+  });
 
-    if (!isInteractiveMessage(msg)) throw new Error('expected interactive');
-    expect(selectedIds(msg.content)).toEqual(['yes']);
-    expect(selectedTitles(msg.content)).toEqual(['Yes, please']);
-    expect(respondsTo(msg)).toBe('req-1');
+  it('reads the chosen id out of the hyphenated Apple key', () => {
+    expect(selectedIds(reply)).toEqual(['no']);
+  });
+
+  it('resolves the title by matching the selected identifier', () => {
+    // The payload lists every item, not just the chosen one.
+    expect(selectedTitles(reply)).toEqual(['No thanks']);
+  });
+
+  it('correlates back to the originating send', () => {
+    expect(respondsTo(reply)).toBe('req-1');
+    expect(sessionOf(reply)).toBe('sess-1');
+  });
+
+  it('survives a payload with no selection', () => {
+    expect(selectedIds(content({ kind: 'amb.quick_reply_response', data: {} }))).toEqual([]);
+    expect(selectedTitles(content({ kind: 'amb.quick_reply_response', data: {} }))).toEqual([]);
   });
 });
 
 describe('list picker responses', () => {
-  it('reads several chosen items in order', () => {
-    const msg = interactive({
-      responseType: 'list_picker',
-      selections: [
-        { id: 'sku-1', title: 'Small' },
-        { id: 'sku-3', title: 'Large' },
-      ],
+  it('flattens selections across sections, in order', () => {
+    const c = content({
+      kind: 'amb.list_picker_response',
+      data: {
+        requestIdentifier: 'req-2',
+        listPicker: {
+          sections: [
+            { title: 'Sizes', items: [{ identifier: 'small', title: 'Small' }] },
+            { title: 'Extras', items: [{ identifier: 'olives', title: 'Olives' }, { identifier: 'basil' }] },
+          ],
+        },
+      },
     });
 
-    if (!isInteractiveMessage(msg)) throw new Error('expected interactive');
-    expect(selectedIds(msg.content)).toEqual(['sku-1', 'sku-3']);
-  });
-
-  it('survives a channel that echoes no titles', () => {
-    const msg = interactive({
-      responseType: 'list_picker',
-      selections: [
-        { id: 'sku-1', title: null },
-        { id: 'sku-2', title: 'Medium' },
-      ],
-    });
-
-    if (!isInteractiveMessage(msg)) throw new Error('expected interactive');
-    expect(selectedIds(msg.content)).toEqual(['sku-1', 'sku-2']);
-    expect(selectedTitles(msg.content)).toEqual(['Medium']); // nulls dropped, not stringified
+    expect(selectedIds(c)).toEqual(['small', 'olives', 'basil']);
+    // The item with no title is dropped rather than stringified.
+    expect(selectedTitles(c)).toEqual(['Small', 'Olives']);
   });
 });
 
 describe('time picker responses', () => {
-  it('exposes the chosen slot and its start time', () => {
-    const msg = interactive({
-      responseType: 'time_picker',
-      selections: [{ id: 'slot-2', title: 'Tue 2:00 PM' }],
-      selectedStartTime: '2026-08-26T14:00:00.000Z',
-    });
+  const c = content({
+    kind: 'amb.time_picker_response',
+    data: {
+      requestIdentifier: 'req-3',
+      event: {
+        identifier: 'evt-1',
+        title: 'Appointment',
+        timeslots: [{ identifier: 'slot-2', startTime: '2026-08-25T23:55+0000', duration: 1800 }],
+      },
+    },
+  });
 
-    if (!isInteractiveMessage(msg)) throw new Error('expected interactive');
-    expect(selectedIds(msg.content)).toEqual(['slot-2']);
-    expect(Date.parse(msg.content.selectedStartTime!)).toBeGreaterThan(0);
+  it('returns the chosen slot as a real instant', () => {
+    const slot = selectedTimeslot(c);
+
+    expect(slot?.id).toBe('slot-2');
+    expect(slot?.startsAt.toISOString()).toBe('2026-08-25T23:55:00.000Z');
+    expect(slot?.durationSeconds).toBe(1800);
+  });
+
+  it('exposes the slot id through selectedIds too', () => {
+    expect(selectedIds(c)).toEqual(['slot-2']);
+  });
+
+  it('returns null for content carrying no slot', () => {
+    expect(selectedTimeslot(content({ kind: 'text', body: 'x' }))).toBeNull();
+    expect(selectedTimeslot(content({ kind: 'amb.time_picker_response', data: {} }))).toBeNull();
   });
 });
 
 describe('form responses', () => {
-  it('groups submitted values by page', () => {
-    const msg = interactive({
-      responseType: 'form',
-      formValues: [
-        { pageId: 'name', values: ['Ada Lovelace'] },
-        { pageId: 'toppings', values: ['olives', 'basil'] },
-      ],
-    });
-
-    if (!isInteractiveMessage(msg)) throw new Error('expected interactive');
-    // Forms carry no selections — the values are the answer.
-    expect(selectedIds(msg.content)).toEqual([]);
-    expect(formValuesByPage(msg.content)).toEqual({
-      name: ['Ada Lovelace'],
-      toppings: ['olives', 'basil'],
-    });
+  const c = content({
+    kind: 'amb.form_response',
+    data: {
+      requestIdentifier: 'req-4',
+      dynamic: {
+        version: '1.2',
+        template: 'messageForms',
+        private: false,
+        selections: [
+          {
+            pageIdentifier: 'name',
+            items: [{ identifier: 'full', type: 'input', title: 'Name', value: 'Ada Lovelace' }],
+          },
+          {
+            pageIdentifier: 'toppings',
+            items: [
+              { identifier: 'a', type: 'select', title: 'Olives', value: 'yes' },
+              { identifier: 'b', type: 'select', title: 'Basil', value: 'no' },
+            ],
+          },
+        ],
+      },
+    },
   });
 
-  it('flags a private form response', () => {
-    const msg = interactive({ responseType: 'form', private: true });
+  it('groups answers by page identifier', () => {
+    const answers = formAnswers(c);
 
-    if (!isInteractiveMessage(msg)) throw new Error('expected interactive');
-    // Private responses are access-restricted on read surfaces — callers need
-    // to know before they log or forward the values.
-    expect(msg.content.private).toBe(true);
+    expect(Object.keys(answers)).toEqual(['name', 'toppings']);
+    expect(answers['name']).toEqual([
+      { id: 'full', title: 'Name', value: 'Ada Lovelace', type: 'input' },
+    ]);
+    expect(answers['toppings']).toHaveLength(2);
+  });
+
+  it('flags a private form so its values are not logged', () => {
+    expect(isPrivateForm(c)).toBe(false);
+    const privateForm = content({
+      kind: 'amb.form_response',
+      data: { dynamic: { version: '1.2', template: 'messageForms', private: true, selections: [] } },
+    });
+    expect(isPrivateForm(privateForm)).toBe(true);
+  });
+
+  it('returns an empty map for non-form content', () => {
+    expect(formAnswers(content({ kind: 'text', body: 'x' }))).toEqual({});
   });
 });
 
-describe('correlation', () => {
-  it('prefers the response identifier over the message-level one', () => {
-    const msg = interactive({ requestIdentifier: 'from-content' });
-    const withBoth = { ...msg, richRequestIdentifier: 'from-message' } as WebhookMessageSummary;
+describe('authentication responses', () => {
+  it('reports the OAuth outcome', () => {
+    const c = content({
+      kind: 'amb.authentication_response',
+      data: { requestIdentifier: 'req-5', authenticate: { status: 'success' } },
+    });
 
-    expect(respondsTo(withBoth)).toBe('from-content');
+    expect(authenticationStatus(c)).toBe('success');
+    expect(respondsTo(c)).toBe('req-5');
   });
 
-  it('falls back to the message-level identifier', () => {
-    const msg = interactive({ requestIdentifier: null });
-    const withMessageLevel = {
-      ...msg,
-      richRequestIdentifier: 'from-message',
-    } as WebhookMessageSummary;
+  it('reports a failure with its error code intact', () => {
+    const c = content({
+      kind: 'amb.authentication_response',
+      data: { authenticate: { status: 'failure', error_code: 'access_denied' } },
+    });
 
-    expect(respondsTo(withMessageLevel)).toBe('from-message');
+    expect(authenticationStatus(c)).toBe('failure');
   });
 
+  it('returns null for content that is not an authentication reply', () => {
+    expect(authenticationStatus(content({ kind: 'text', body: 'x' }))).toBeNull();
+  });
+});
+
+describe('invitation responses', () => {
+  it('correlates from the top level rather than from data', () => {
+    const c = content({
+      kind: 'amb.invitation_response',
+      result: 'accepted',
+      requestIdentifier: 'req-6',
+      sessionIdentifier: null,
+    });
+
+    // This variant puts requestIdentifier on the content, not under data.
+    expect(respondsTo(c)).toBe('req-6');
+    expect(sessionOf(c)).toBeNull();
+  });
+});
+
+describe('correlation edge cases', () => {
   it('returns null when the channel made no correlation promise', () => {
-    // Custom iMessage apps are documented as having no correlation at all.
-    expect(respondsTo(interactive({ requestIdentifier: null }))).toBeNull();
+    expect(respondsTo(content({ kind: 'text', body: 'x' }))).toBeNull();
+    expect(respondsTo(content({ kind: 'amb.imessage_app_response', bid: 'com.example' }))).toBeNull();
+  });
+
+  it('returns null for redacted content', () => {
+    expect(respondsTo(null as unknown as InboundContent)).toBeNull();
   });
 });
 
 describe('Apple time-picker timestamps', () => {
-  it('parses the basic format production actually sends', () => {
-    // Confirmed against production: no seconds, no colon in the offset.
-    const parsed = parseAppleTimestamp('2026-08-25T23:55+0000');
-
-    expect(parsed).not.toBeNull();
-    expect(parsed!.toISOString()).toBe('2026-08-25T23:55:00.000Z');
+  it('parses the format the spec now pins', () => {
+    // The spec documents ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}\+0000$ — not RFC 3339.
+    expect(parseAppleTimestamp('2026-08-25T23:55+0000')!.toISOString()).toBe(
+      '2026-08-25T23:55:00.000Z',
+    );
   });
 
   it('parses a non-UTC basic offset', () => {
-    const parsed = parseAppleTimestamp('2026-08-25T18:55-0500');
-
-    expect(parsed!.toISOString()).toBe('2026-08-25T23:55:00.000Z');
-  });
-
-  it('still parses proper RFC 3339, in case the server is fixed', () => {
-    expect(parseAppleTimestamp('2026-08-25T23:55:00Z')!.toISOString()).toBe(
+    expect(parseAppleTimestamp('2026-08-25T18:55-0500')!.toISOString()).toBe(
       '2026-08-25T23:55:00.000Z',
     );
-    expect(parseAppleTimestamp('2026-08-25T23:55:30+00:00')!.toISOString()).toBe(
+  });
+
+  it('still parses proper RFC 3339, in case the server changes', () => {
+    expect(parseAppleTimestamp('2026-08-25T23:55:30Z')!.toISOString()).toBe(
       '2026-08-25T23:55:30.000Z',
     );
   });
 
   it('produces a string strict parsers accept', () => {
-    const parsed = parseAppleTimestamp('2026-08-25T23:55+0000')!;
-
-    // The whole point: hand downstream systems something RFC 3339-shaped.
-    expect(parsed.toISOString()).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+    expect(parseAppleTimestamp('2026-08-25T23:55+0000')!.toISOString()).toMatch(
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+    );
   });
 
   it('returns null rather than an Invalid Date', () => {
-    expect(parseAppleTimestamp(null)).toBeNull();
-    expect(parseAppleTimestamp(undefined)).toBeNull();
-    expect(parseAppleTimestamp('')).toBeNull();
-    expect(parseAppleTimestamp('not a timestamp')).toBeNull();
-  });
-
-  it('reads the chosen slot straight off a time-picker reply', () => {
-    const msg = interactive({
-      responseType: 'time_picker',
-      selections: [{ id: 'slot-1', title: null }],
-      selectedStartTime: '2026-08-25T23:55+0000',
-    });
-
-    if (!isInteractiveMessage(msg)) throw new Error('expected interactive');
-    expect(selectedStartTime(msg.content)!.toISOString()).toBe('2026-08-25T23:55:00.000Z');
-  });
-
-  it('returns null for replies that carry no time', () => {
-    const msg = interactive({ responseType: 'quick_reply' });
-
-    if (!isInteractiveMessage(msg)) throw new Error('expected interactive');
-    expect(selectedStartTime(msg.content)).toBeNull();
+    for (const bad of [null, undefined, '', 'not a timestamp']) {
+      expect(parseAppleTimestamp(bad)).toBeNull();
+    }
   });
 });

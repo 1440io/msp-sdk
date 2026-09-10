@@ -1,4 +1,4 @@
-import type { ErrorResponse, RichReason } from '@1440io/msp-types';
+import type { ErrorResponse, RichReason, ValidationIssue } from '@1440io/msp-types';
 
 /** Base class for every error this SDK throws. */
 export class MspError extends Error {
@@ -37,8 +37,10 @@ export interface MspApiErrorInit {
   headers?: Record<string, string>;
   method: string;
   url: string;
-  /** Machine-readable rich-messaging reject reasons, on send/template routes. */
+  /** Machine-readable rich-messaging reject reasons, on template routes. */
   reasons?: RichReason[] | undefined;
+  /** Field-level problems, on a `validation_failed` send rejection. */
+  issues?: ValidationIssue[] | undefined;
 }
 
 /**
@@ -60,8 +62,13 @@ export class MspApiError extends MspError {
   readonly method: string;
   /** URL of the failed request, with the query string. */
   readonly url: string;
-  /** Rich-messaging reject reasons, present on rich sends and 409 conflicts. */
+  /** Rich-messaging reject reasons, present on template and asset conflicts. */
   readonly reasons: RichReason[] | undefined;
+  /**
+   * Field-level problems from a `validation_failed` send rejection. The send
+   * routes report validation this way rather than through `reasons`.
+   */
+  readonly issues: ValidationIssue[] | undefined;
 
   constructor(init: MspApiErrorInit) {
     super(`${init.method} ${init.url} failed with ${init.status}: ${init.message}`);
@@ -72,6 +79,7 @@ export class MspApiError extends MspError {
     this.method = init.method;
     this.url = init.url;
     this.reasons = init.reasons;
+    this.issues = init.issues;
   }
 
   /** True when retrying the identical request could plausibly succeed. */
@@ -161,17 +169,24 @@ export function isMspApiError(value: unknown): value is MspApiError {
 export function parseErrorBody(
   body: unknown,
   status: number,
-): { message: string; code?: string; reasons?: RichReason[] } {
+): { message: string; code?: string; reasons?: RichReason[]; issues?: ValidationIssue[] } {
   if (typeof body === 'string' && body.trim() !== '') {
     return { message: body.slice(0, 500) };
   }
   if (body && typeof body === 'object') {
-    const envelope = body as Partial<ErrorResponse> & { reasons?: RichReason[] };
-    const result: { message: string; code?: string; reasons?: RichReason[] } = {
-      message: typeof envelope.error === 'string' ? envelope.error : `HTTP ${status}`,
+    const envelope = body as Partial<ErrorResponse> & {
+      reasons?: RichReason[];
+      issues?: ValidationIssue[];
     };
+    const result: {
+      message: string;
+      code?: string;
+      reasons?: RichReason[];
+      issues?: ValidationIssue[];
+    } = { message: typeof envelope.error === 'string' ? envelope.error : `HTTP ${status}` };
     if (typeof envelope.code === 'string') result.code = envelope.code;
     if (Array.isArray(envelope.reasons)) result.reasons = envelope.reasons;
+    if (Array.isArray(envelope.issues)) result.issues = envelope.issues;
     return result;
   }
   return { message: `HTTP ${status}` };

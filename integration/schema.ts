@@ -56,15 +56,9 @@ function validatorFor(name: SchemaName): ValidateFunction {
  * without turning every run red.
  */
 const KNOWN_DRIFT: { schema: string; path: string; match: RegExp; note: string }[] = [
-  {
-    schema: 'WebhookContentInteractiveResponse',
-    path: '/selectedStartTime',
-    match: /format "date-time"/,
-    note:
-      'time-picker selectedStartTime arrives in Apple basic format ' +
-      '(2026-08-25T23:55+0000), not the RFC 3339 date-time the spec declares. ' +
-      'Use parseAppleTimestamp() from @1440io/msp-webhooks.',
-  },
+  // Empty as of the 0.2.0 spec. The previous entry — time-picker
+  // selectedStartTime declared `format: date-time` while sending Apple's basic
+  // format — is resolved: the schema now pins the real shape with a pattern.
 ];
 
 /** What a live response looked like against the spec. */

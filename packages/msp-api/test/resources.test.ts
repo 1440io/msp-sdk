@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_TIKTOK_UPLOAD_BYTES, MspClient, MspConfigError, uuidv7 } from '../src/index.js';
+import { MAX_UPLOAD_BYTES, MspClient, MspConfigError, uuidv7 } from '../src/index.js';
 import { stubFetch } from './helpers.js';
 
 function client(responses: Parameters<typeof stubFetch>[0]) {
@@ -60,15 +60,27 @@ describe('pagination', () => {
     expect(requests).toHaveLength(1);
   });
 
-  it('treats hasMore:false as the end of a before-paginated list', async () => {
+  it('stops when nextCursor is null on a before-paginated list', async () => {
     const { client: c, requests } = client([
-      { body: { templates: [{ id: 't1' }], hasMore: false, nextCursor: 't1' } },
+      { body: { templates: [{ id: 't1' }], nextCursor: null } },
     ]);
 
     const all = await c.templates.list().toArray();
 
     expect(all).toHaveLength(1);
     expect(requests).toHaveLength(1);
+  });
+
+  it('follows before-pagination while nextCursor is present', async () => {
+    const { client: c, requests } = client([
+      { body: { templates: [{ id: 't1' }], nextCursor: 't1' } },
+      { body: { templates: [{ id: 't2' }], nextCursor: null } },
+    ]);
+
+    const all = await c.templates.list().toArray();
+
+    expect(all.map((t) => t.id)).toEqual(['t1', 't2']);
+    expect(new URL(requests[1]!.url).searchParams.get('before')).toBe('t1');
   });
 });
 
@@ -81,13 +93,17 @@ describe('messaging', () => {
     await c.messaging.sendText({
       conversationId: 'conv-1',
       body: 'Hello',
+      subject: 'Order 12',
       attachmentIds: ['att-1'],
     });
 
     const body = JSON.parse(requests[0]!.body!) as Record<string, any>;
     expect(body.type).toBe('text');
     expect(body.conversationId).toBe('conv-1');
-    expect(body.message).toEqual({ body: 'Hello', attachmentIds: ['att-1'] });
+    // Flat in this spec revision — previously nested under `message`.
+    expect(body.body).toBe('Hello');
+    expect(body.subject).toBe('Order 12');
+    expect(body.attachmentIds).toEqual(['att-1']);
     expect(body.requestMessageId).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
     );
@@ -122,44 +138,79 @@ describe('messaging', () => {
 
     const body = JSON.parse(requests[0]!.body!) as Record<string, any>;
     expect(body.type).toBe('template');
-    expect(body.message).toEqual({ templateId: 'tpl-1', variables: { customerName: 'Ada' } });
+    expect(body.templateId).toBe('tpl-1');
+    expect(body.variables).toEqual({ customerName: 'Ada' });
   });
 
-  it('passes a channel-native payload through unchanged', async () => {
-    const { client: c, requests } = client([{ body: { messageId: 'm3' } }]);
+  it('passes channel-native content through unchanged', async () => {
+    const { client: c, requests } = client([{ body: { messageId: 'm3', duplicate: false } }]);
 
     await c.messaging.sendRaw({
       conversationId: 'conv-1',
-      channel: 'amb',
-      messageType: 'list_picker',
-      payload: { interactiveData: { bid: 'com.apple.messages.MSMessageExtensionBalloonPlugin' } },
+      content: {
+        kind: 'amb.quick_reply',
+        data: { 'quick-reply': { summaryText: 'Pick', items: [{ identifier: 'a', title: 'A' }] } },
+      } as never,
     });
 
     const body = JSON.parse(requests[0]!.body!) as Record<string, any>;
-    expect(body.messageType).toBe('list_picker');
-    expect(body.payload.interactiveData.bid).toContain('MSMessageExtensionBalloonPlugin');
+    expect(body.content.kind).toBe('amb.quick_reply');
+    expect(body.content.data['quick-reply'].items).toHaveLength(1);
+    expect(body.requestMessageId).toBeTruthy();
+  });
+
+  it('builds an authentication send carrying its state', async () => {
+    const { client: c, requests } = client([{ body: { messageId: 'm4', duplicate: false } }]);
+
+    await c.messaging.sendAuthentication({
+      conversationId: 'conv-1',
+      templateId: 'tpl-auth',
+      state: 'state-abc',
+    });
+
+    const body = JSON.parse(requests[0]!.body!) as Record<string, any>;
+    expect(body.type).toBe('authentication');
+    expect(body.templateId).toBe('tpl-auth');
+    expect(body.state).toBe('state-abc');
   });
 });
 
-describe('initiations', () => {
-  it('defaults purpose to connect and keeps the idempotency key', async () => {
-    const { client: c, requests } = client([{ body: { id: 'init-1', status: 'submitting' } }]);
+describe('messaging invitations', () => {
+  it('defaults channel and purpose, and keeps the idempotency key', async () => {
+    const { client: c, requests } = client([{ body: { id: 'inv-1', status: 'submitting' } }]);
 
-    await c.initiations.create({
-      channel: 'amb',
+    await c.invitations.create({
       phoneNumber: '+15551234567',
-      idempotencyKey: 'case-123-attempt-1',
+      requestMessageId: '018f1a2b-3c4d-7e8f-9012-3456789abcde',
       targetFirstName: 'Ada',
     });
 
     const body = JSON.parse(requests[0]!.body!) as Record<string, any>;
     expect(body).toEqual({
-      purpose: 'connect',
       channel: 'amb',
+      purpose: 'connect',
       phoneNumber: '+15551234567',
-      idempotencyKey: 'case-123-attempt-1',
+      requestMessageId: '018f1a2b-3c4d-7e8f-9012-3456789abcde',
       targetFirstName: 'Ada',
     });
+  });
+
+  it('mints a requestMessageId when none is supplied', async () => {
+    const { client: c, requests } = client([{ body: { id: 'inv-2', status: 'submitting' } }]);
+
+    await c.invitations.create({ phoneNumber: '+15551234567' });
+
+    expect(JSON.parse(requests[0]!.body!).requestMessageId).toMatch(/^[0-9a-f-]{36}$/i);
+  });
+
+  it('paginates over messagingInvitations', async () => {
+    const { client: c } = client([
+      { body: { messagingInvitations: [{ id: 'a' }, { id: 'b' }], nextCursor: null } },
+    ]);
+
+    const all = await c.invitations.list().toArray();
+
+    expect(all.map((i) => (i as { id: string }).id)).toEqual(['a', 'b']);
   });
 });
 
@@ -181,15 +232,14 @@ describe('media', () => {
     expect(headers['content-length']).toBe('4');
   });
 
-  it('rejects an oversized TikTok asset before uploading it', async () => {
+  it('rejects an oversized asset before uploading it', async () => {
     const { client: c, requests } = client([]);
 
     await expect(
       c.media.upload({
         body: new Uint8Array(4),
         filename: 'big.png',
-        targetChannel: 'tiktok',
-        contentLength: MAX_TIKTOK_UPLOAD_BYTES + 1,
+        contentLength: MAX_UPLOAD_BYTES + 1,
       }),
     ).rejects.toBeInstanceOf(MspConfigError);
     expect(requests).toHaveLength(0);
@@ -197,18 +247,12 @@ describe('media', () => {
 });
 
 describe('admin', () => {
-  it('replaces a permission set through PATCH', async () => {
-    const { client: c, requests } = client([{ body: { id: 'ps-1', name: 'Front desk' } }]);
+  it('reads business settings', async () => {
+    const { client: c, requests } = client([{ body: { id: 'b1', name: 'Acme', slug: 'acme' } }]);
 
-    await c.admin.permissions.updateSet('ps-1', {
-      name: 'Front desk',
-      permissions: ['ViewConversations', 'SendMessages'],
-    });
+    await c.admin.settings();
 
-    expect(requests[0]!.method).toBe('PATCH');
-    expect(new URL(requests[0]!.url).pathname).toBe(
-      '/api/admin/businesses/permission-sets/ps-1',
-    );
+    expect(new URL(requests[0]!.url).pathname).toBe('/api/admin/businesses/settings');
   });
 
   it('publishes a template', async () => {

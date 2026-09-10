@@ -17,10 +17,10 @@ describe('WebhookVerifier', () => {
 
     const { event, id } = await verifier.verify(delivery);
 
-    expect(id).toBe(messageReceivedEvent.id);
+    expect(id).toBe(messageReceivedEvent.eventId);
     expect(isMessageReceived(event)).toBe(true);
     if (isMessageReceived(event)) {
-      expect(event.data.message.content).toMatchObject({ body: expect.any(String) });
+      expect(event.message.content).toMatchObject({ kind: 'text', body: expect.any(String) });
     }
   });
 
@@ -113,7 +113,7 @@ describe('WebhookVerifier', () => {
       timestampSeconds: Math.floor(Date.now() / 1000) - 600,
     });
 
-    await expect(verifier.verify(delivery)).resolves.toMatchObject({ id: messageReceivedEvent.id });
+    await expect(verifier.verify(delivery)).resolves.toMatchObject({ id: messageReceivedEvent.eventId });
   });
 
   it('accepts either secret during a rotation', async () => {
@@ -131,7 +131,7 @@ describe('WebhookVerifier', () => {
     const verifier = new WebhookVerifier({ secret: SECRET });
     const delivery = await buildDelivery({ secret: SECRET });
     const stale = await signDelivery({
-      id: messageReceivedEvent.id,
+      id: messageReceivedEvent.eventId,
       timestamp: Number(delivery.headers['Webhook-Timestamp']),
       body: delivery.body,
       secret: makeSecret(9),
@@ -161,7 +161,7 @@ describe('WebhookVerifier', () => {
 
   it('rejects a correctly signed body that is not JSON', async () => {
     const verifier = new WebhookVerifier({ secret: SECRET });
-    const id = messageReceivedEvent.id;
+    const id = messageReceivedEvent.eventId;
     const timestamp = Math.floor(Date.now() / 1000);
     const body = 'not json';
     const signature = await signDelivery({ id, timestamp, body, secret: SECRET });

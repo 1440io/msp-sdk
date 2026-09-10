@@ -6,7 +6,6 @@ import { AdminResource } from './resources/admin.js';
 import { AuthResource } from './resources/auth.js';
 import { ChannelsResource } from './resources/channels.js';
 import { ConversationsResource } from './resources/conversations.js';
-import { InitiationsResource } from './resources/initiations.js';
 import { InvitationsResource } from './resources/invitations.js';
 import { MediaResource } from './resources/media.js';
 import { MessagingResource } from './resources/messaging.js';
@@ -75,16 +74,14 @@ export class MspClient {
   readonly conversations: ConversationsResource;
   /** Outbound messaging. */
   readonly messaging: MessagingResource;
-  /** Business-initiated conversations. */
-  readonly initiations: InitiationsResource;
+  /** Messaging invitations — reaching a customer first. */
+  readonly invitations: InvitationsResource;
   /** Published rich templates. */
   readonly templates: TemplatesResource;
   /** Media attachments. */
   readonly media: MediaResource;
   /** Active channels. */
   readonly channels: ChannelsResource;
-  /** Pending member invitations. */
-  readonly invitations: InvitationsResource;
   /** Business-admin routes. */
   readonly admin: AdminResource;
 
@@ -138,11 +135,10 @@ export class MspClient {
 
     this.conversations = new ConversationsResource(this.#http);
     this.messaging = new MessagingResource(this.#http);
-    this.initiations = new InitiationsResource(this.#http);
+    this.invitations = new InvitationsResource(this.#http);
     this.templates = new TemplatesResource(this.#http);
     this.media = new MediaResource(this.#http);
     this.channels = new ChannelsResource(this.#http);
-    this.invitations = new InvitationsResource(this.#http);
     this.admin = new AdminResource(this.#http);
   }
 

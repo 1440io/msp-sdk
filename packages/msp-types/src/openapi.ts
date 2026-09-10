@@ -13,19 +13,13 @@ export interface paths {
         };
         /**
          * List the business’s messaging channels
-         * @description List the messaging channels connected to the authenticated business. The business is resolved from the verified JWT actor (`oid` claim). Returns at most `count` channels (default 25, hard cap 100); no cursor yet.
+         * @description List the messaging channels connected to the authenticated business. Returns at most `count` channels (default 25, hard cap 100); no cursor yet.
          *
-         *     **Auth.** Requires a business JWT (`auth: "jwt"`), the `admin` membership tier, and the `ViewChannels` permission.
+         *     **Permission.** Requires admin tier and `ViewChannels`.
          */
         get: operations["listAdminBusinessChannels"];
         put?: never;
-        /**
-         * Connect a messaging channel to the business
-         * @description Connect a new messaging channel (AMB, TikTok, or WhatsApp) to the authenticated business. The business is resolved from the verified JWT actor (`oid` claim); `externalId` is the platform-native account identifier and is trimmed before persistence.
-         *
-         *     **Auth.** Requires a business JWT (`auth: "jwt"`), the `admin` membership tier, and the `ManageChannels` permission.
-         */
-        post: operations["createAdminBusinessChannel"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -41,265 +35,15 @@ export interface paths {
         };
         /**
          * Get TikTok channel status
-         * @description Read the TikTok channel connection and OAuth status for the authenticated business. The org is resolved from the caller's business JWT.
+         * @description Read the TikTok channel connection and OAuth status for the authenticated business.
          *
-         *     **Auth.** Business JWT (`auth: "jwt"`), `admin` tier, `ViewChannels` permission.
+         *     **Permission.** Requires admin tier and `ViewChannels`.
          *
          *     **Credentials.** No access or refresh tokens are returned — only their presence, expiry, and the granted scope.
          */
         get: operations["getAdminBusinessTikTokStatus"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/businesses/context": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get the authenticated business admin context
-         * @description Return the admin context for the authenticated business: core business identity plus the calling member’s own tier, access scope, and capabilities. The business and member are resolved from the verified JWT actor (the `oid`/`sub` claims); there is no path or query parameter.
-         *
-         *     **Auth.** Requires a business JWT (`auth: "jwt"`), the `admin` membership tier, and the `ViewBusiness` permission.
-         */
-        get: operations["getAdminBusinessContext"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/businesses/integrations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List integrations
-         * @description List all integrations for the caller’s business.
-         */
-        get: operations["listIntegrations"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/businesses/integrations/{integrationId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get an integration
-         * @description Fetch one integration by id (scoped to the caller’s business).
-         */
-        get: operations["getIntegration"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/businesses/integrations/{integrationId}/deliveries": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List delivery log
-         * @description Recent webhook delivery attempts for the integration (capped, newest-first).
-         */
-        get: operations["listIntegrationDeliveries"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/businesses/integrations/{integrationId}/keys": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List API keys
-         * @description List the integration’s API keys (metadata only — never the secret).
-         */
-        get: operations["listIntegrationApiKeys"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/businesses/members": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List the business’s members
-         * @description List the members of the authenticated business. The business is resolved from the verified JWT actor (`oid` claim). Returns at most `count` members (default 25, hard cap 100); no cursor yet.
-         *
-         *     **Auth.** Requires a business JWT (`auth: "jwt"`), the `admin` membership tier, and the `ViewMembers` permission.
-         */
-        get: operations["listAdminBusinessMembers"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/businesses/permission-sets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List permission sets
-         * @description List all permission sets defined for the caller's business (built-in and custom). The business is taken from the verified JWT `oid` claim.
-         *
-         *     **Auth.** Requires a business JWT with the `admin` membership tier and the `ViewPermissionSets` permission.
-         *
-         *     Returns at most `count` sets (default 25, hard cap 100); no cursor yet.
-         */
-        get: operations["listPermissionSets"];
-        put?: never;
-        /**
-         * Create a permission set
-         * @description Create a custom permission set for the caller's business. The requested permission keys are validated against the catalog, and the full resulting set must be a subset of the caller's own effective permissions (the ceiling rule).
-         *
-         *     **Auth.** Requires a business JWT with the `admin` membership tier and the `CreatePermissionSets` permission.
-         */
-        post: operations["createPermissionSet"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/businesses/permission-sets/{permissionSetId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete a permission set
-         * @description Delete a permission set belonging to the caller's business. An unknown or cross-org id returns a clean 404 (a defensive org-scoped existence check runs before deletion).
-         *
-         *     **Auth.** Requires a business JWT with the `admin` membership tier and the `DeletePermissionSets` permission.
-         */
-        delete: operations["deletePermissionSet"];
-        options?: never;
-        head?: never;
-        /**
-         * Update a permission set
-         * @description Update a permission set. The `permissions` array fully replaces the set's prior permissions; the resulting set is re-validated against the catalog and the caller's ceiling. The set must belong to the caller's business (enforced by the composite FK).
-         *
-         *     **Auth.** Requires a business JWT with the `admin` membership tier and the `CreatePermissionSets` permission.
-         */
-        patch: operations["updatePermissionSet"];
-        trace?: never;
-    };
-    "/api/admin/businesses/permissions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List the permission catalog
-         * @description Return the live (non-deprecated) permission catalog used to build permission sets — each entry's stable `key`, display `label`, and grouping `category`. Admin-gated like the rest of the permission-set surface (the catalog only matters when managing sets).
-         *
-         *     **Auth.** Requires a business JWT with the `admin` membership tier and the `ViewPermissionSets` permission.
-         */
-        get: operations["listPermissionCatalog"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/businesses/sandboxes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List sandbox organizations under the parent
-         * @description List the sandbox organizations under the authenticated **parent** organization, plus the current count and cap. The parent org is resolved from the verified JWT actor (`oid` claim); this is a pure read with no member-sync side effects.
-         *
-         *     **Auth.** Requires a business JWT (`auth: "jwt"`), the `admin` membership tier, and the `ViewSandboxes` permission.
-         */
-        get: operations["listAdminSandboxes"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/businesses/sandboxes/member-sync": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Resync sandbox memberships from the parent org
-         * @description Enforce the sandbox-membership invariant for every sandbox under the authenticated **parent** organization: every prod admin+ is a member of every sandbox at their prod tier, and nobody else is. The parent org is resolved from the verified JWT actor (`oid` claim).
-         *
-         *     **Idempotent.** Safe to re-run; the per-sandbox add/remove summary is the operator’s verification output. This is a deliberate exception to the mutations-on-session convention (it only ever tightens sandbox membership toward the prod-derived invariant), so it stays on the JWT path.
-         *
-         *     **Auth.** Requires a business JWT (`auth: "jwt"`), the `admin` membership tier, and the `ManageSandboxes` permission.
-         */
-        post: operations["syncAdminSandboxMembers"];
         delete?: never;
         options?: never;
         head?: never;
@@ -315,9 +59,9 @@ export interface paths {
         };
         /**
          * Get business settings
-         * @description Read the current settings for the authenticated business (name, slug, logo URL, active flag). The business id is taken from the verified JWT `oid` claim — never from the path.
+         * @description Read the authenticated business’s name, slug, logo URL, and active status.
          *
-         *     **Auth.** Requires a business JWT with the `admin` membership tier and the `ViewBusiness` permission.
+         *     **Permission.** Requires admin tier and `ViewBusiness`.
          */
         get: operations["getAdminBusinessSettings"];
         put?: never;
@@ -337,11 +81,11 @@ export interface paths {
         };
         /**
          * List rich templates
-         * @description List the organization’s rich templates across all lifecycle statuses (draft, published, archived), optionally filtered by `status`.
+         * @description List the organization’s rich templates across all lifecycle statuses (draft, published, archived), optionally filtered by `status` and authored `templateType`.
          *
          *     **Pagination.** Keyset-paginated newest first: supply `count` for the page size (default 25, max 100) and `before` (the `id` of the last row from the previous page, surfaced as `nextCursor`) to fetch the next page. `nextCursor` is `null` on the final page.
          *
-         *     **Auth.** Requires a business JWT with the `admin` membership tier and the `ManageTemplates` permission.
+         *     **Permission.** Requires admin tier and `ManageTemplates`.
          */
         get: operations["adminListRichTemplates"];
         put?: never;
@@ -349,7 +93,7 @@ export interface paths {
          * Create a rich template
          * @description Create a draft rich template: a unique name, one definition (a canonical block or one channel-native content object), and slot → library-asset bindings. The definition is publish-validity checked on create; failures return `reasons`.
          *
-         *     **Auth.** Requires a business JWT with the `admin` membership tier and the `ManageTemplates` permission.
+         *     **Permission.** Requires admin tier and `ManageTemplates`.
          */
         post: operations["adminCreateRichTemplate"];
         delete?: never;
@@ -369,22 +113,22 @@ export interface paths {
          * Get a rich template
          * @description Fetch one rich template with its definition, slot bindings, and per-channel readiness (including the deterministic resolved native type).
          *
-         *     **Auth.** Requires a business JWT with the `admin` membership tier and the `ManageTemplates` permission.
+         *     **Permission.** Requires admin tier and `ManageTemplates`.
          */
         get: operations["adminGetRichTemplate"];
         /**
          * Edit a rich template
          * @description Replace a template’s name, definition, and slot bindings. Edits apply to drafts and published templates alike — a published edit changes future sends immediately. Authoring mode and native channel are fixed at creation; archived templates cannot be edited.
          *
-         *     **Auth.** Requires a business JWT with the `admin` membership tier and the `ManageTemplates` permission.
+         *     **Permission.** Requires admin tier and `ManageTemplates`.
          */
         put: operations["adminEditRichTemplate"];
         post?: never;
         /**
          * Delete a rich template draft
-         * @description Delete a never-published draft. Published or archived templates cannot be deleted (message rows reference them); archive instead.
+         * @description Delete a never-published draft. Published or archived templates cannot be deleted; archive published templates instead.
          *
-         *     **Auth.** Requires a business JWT with the `admin` membership tier and the `ManageTemplates` permission.
+         *     **Permission.** Requires admin tier and `ManageTemplates`.
          */
         delete: operations["adminDeleteRichTemplate"];
         options?: never;
@@ -403,9 +147,9 @@ export interface paths {
         put?: never;
         /**
          * Archive a rich template
-         * @description Archive a published template: it stops being sendable but its send history keeps rendering from message snapshots. Drafts are deleted, not archived.
+         * @description Archive a published template. It stops being sendable, while historical messages remain renderable. Drafts are deleted, not archived.
          *
-         *     **Auth.** Requires a business JWT with the `admin` membership tier and the `ManageTemplates` permission.
+         *     **Permission.** Requires admin tier and `ManageTemplates`.
          */
         post: operations["adminArchiveRichTemplate"];
         delete?: never;
@@ -427,7 +171,7 @@ export interface paths {
          * Publish a rich template
          * @description Publish a draft. Requires publish-validity (structural) only — a published template may still be `blocked` on every channel; readiness gates sending, not publication. Publishing an already-published template is a no-op.
          *
-         *     **Auth.** Requires a business JWT with the `admin` membership tier and the `ManageTemplates` permission.
+         *     **Permission.** Requires admin tier and `ManageTemplates`.
          */
         post: operations["adminPublishRichTemplate"];
         delete?: never;
@@ -447,17 +191,17 @@ export interface paths {
          * List rich-message assets
          * @description List the organization’s rich-message asset library, optionally filtered by `channel` and `usage`.
          *
-         *     **Pagination.** Keyset-paginated newest first: supply `count` for the page size (default 25, max 100) and `before` (the `id` of the last row from the previous page, surfaced as `nextCursor`) to fetch the next page. `nextCursor` is `null` on the final page.
+         *     **Pagination.** Keyset-paginated newest first: supply `count` for the page size (default 25, max 100) and `before` (the `id` of the last row from the previous page, surfaced as `nextCursor`) to fetch the next page. `nextCursor` is `null` on the final page. Access URLs are cached on each immutable asset, signed for seven days, and refreshed when less than 24 hours remain.
          *
-         *     **Auth.** Requires a business JWT with the `admin` membership tier and the `ManageTemplates` permission.
+         *     **Permission.** Requires admin tier and `ManageTemplates`.
          */
         get: operations["adminListRichAssets"];
         put?: never;
         /**
          * Upload a rich-message asset
-         * @description Upload one immutable library asset as `multipart/form-data`: string fields `channel`, `usage`, `displayName` plus a single `file` part. Bytes are validated by magic-byte sniffing (AMB: PNG only), checked against the declared content type and the per-usage size cap, and stored unmodified. The request body is streamed with a hard 4 MB cap, so this operation has no JSON request body.
+         * @description Upload one immutable library asset as `multipart/form-data`: string fields `channel`, `usage`, `displayName` plus a single `file` part. Bytes are validated by magic-byte sniffing (AMB: PNG only), checked against the declared content type and the per-usage size cap. The request body has a hard 200 KiB cap. The created asset includes a publicly cacheable seven-day signed access URL.
          *
-         *     **Auth.** Requires a business JWT with the `admin` membership tier and the `ManageTemplates` permission.
+         *     **Permission.** Requires admin tier and `ManageTemplates`.
          */
         post: operations["adminUploadRichAsset"];
         delete?: never;
@@ -480,7 +224,7 @@ export interface paths {
          * Delete a rich-message asset
          * @description Delete an unreferenced library asset. Assets bound to any template (including archived ones) cannot be deleted — unbind them first.
          *
-         *     **Auth.** Requires a business JWT with the `admin` membership tier and the `ManageTemplates` permission.
+         *     **Permission.** Requires admin tier and `ManageTemplates`.
          */
         delete: operations["adminDeleteRichAsset"];
         options?: never;
@@ -501,9 +245,9 @@ export interface paths {
          * Exchange an integration API key for an access JWT
          * @description Exchange a long-lived integration API key for a short-lived business access JWT (`type: "api"`).
          *
-         *     **Auth posture.** Public / **self-authenticating** — present the API key as `Authorization: Bearer msp_…`. The key alone identifies the integration *and* its organization (matched by SHA-256 hash); no body is required. An unknown, revoked, expired, or disabled key — or an inactive owning organization — is rejected with an indistinguishable `401`.
+         *     Present the API key as `Authorization: Bearer msp_…`; no body is required. An unknown, revoked, expired, or disabled key — or an inactive owning organization — is rejected with an indistinguishable `401`.
          *
-         *     **Using the token.** Send the returned `token` as `Authorization: Bearer <token>` on subsequent `jwt` routes. The token is pure identity — it carries the integration and its organization only (no permission or tier claims; authorization is resolved per request server-side) — and is short-lived (~15 min): re-exchange the API key when `expiresAt` passes. Do not send the raw API key on other routes.
+         *     **Using the token.** Send the returned `token` as `Authorization: Bearer <token>` on authenticated routes. The token is short-lived (~15 min): re-exchange the API key when `expiresAt` passes. Do not send the raw API key on other routes.
          */
         post: operations["exchangeIntegrationToken"];
         delete?: never;
@@ -547,7 +291,7 @@ export interface paths {
          *
          *     **Pagination.** Cursor-paginated: supply `count` for the page size (default 25, max 100) and `cursor` (the `id` of the last row from the previous page, surfaced as `nextCursor`) to fetch the next page. `nextCursor` is `null` on the final page.
          *
-         *     **Filtering.** Optionally narrow by `status` and/or `platform`.
+         *     **Filtering.** Optionally narrow by `status`.
          *
          *     **Permission.** Requires the `ViewConversations` permission.
          */
@@ -583,33 +327,11 @@ export interface paths {
         head?: never;
         /**
          * Update a conversation’s customer name
-         * @description Set the customer first and last name on a conversation owned by the authenticated business. Both fields are required and replace the stored values; pass `null` to clear a name.
+         * @description Set the customer first and last name on a conversation owned by the authenticated business. Both fields are required and replace the current values; pass `null` to clear a name.
          *
          *     **Permission.** Requires the `ManageConversations` permission. A conversation that does not belong to the authenticated business is reported as `404` (it is not disclosed).
          */
         patch: operations["updateConversationName"];
-        trace?: never;
-    };
-    "/api/v0/invitations/by-token/{token}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Preview a pending invitation by token
-         * @description Public, pre-auth preview of a pending invitation, used by the `/invite/<token>` landing page. Returns the organization name, sandbox flag, tier, inviter name, and expiry — and deliberately **omits** the invited email and all permission internals.
-         *
-         *     **Auth posture.** Public. A not-found, expired, or already-used token returns an **identical generic 404** so the endpoint cannot be used to probe token validity.
-         */
-        get: operations["getInvitationByToken"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/api/v0/media/attachments/{attachmentId}/access-url": {
@@ -646,10 +368,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Upload a media asset (streaming binary)
-         * @description Upload a media asset by streaming its raw bytes as the request body. The upload metadata (filename, content-type, size, target channel) is supplied via headers — see the header parameters below — while the body is the raw `application/octet-stream` payload (it is NOT JSON and is not parsed by the request validator).
-         *
-         *     The bytes are streamed directly to storage with a running SHA-256 checksum and a size ceiling enforced as the stream is consumed (100 MiB default, 3 MiB for `x-target-channel: tiktok`). On success the asset is marked `ready` and its `mediaAssetId` is returned; on failure any partial storage object is cleaned up and the record is marked failed.
+         * Upload a media asset
+         * @description Upload a media asset as raw request-body bytes. The upload metadata (filename, content-type, size, target channel) is supplied via headers — see the header parameters below — while the body is the raw `application/octet-stream` payload, not JSON. The size limit is 100 MiB.
          *
          *     Reference the returned `mediaAssetId` as an attachment id when sending a message or when minting a read URL via `GET /api/v0/media/attachments/{attachmentId}/access-url`.
          *
@@ -662,33 +382,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v0/messaging/initiations": {
+    "/api/v0/messaging/invitations": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List conversation initiations */
-        get: operations["listConversationInitiations"];
+        /** List messaging invitations */
+        get: operations["listMessagingInvitations"];
         put?: never;
-        /** Initiate a conversation */
-        post: operations["createConversationInitiation"];
+        /** Create a messaging invitation */
+        post: operations["createMessagingInvitation"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v0/messaging/initiations/{initiationId}": {
+    "/api/v0/messaging/invitations/{messagingInvitationId}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get a conversation initiation */
-        get: operations["getConversationInitiation"];
+        /** Get a messaging invitation */
+        get: operations["getMessagingInvitation"];
         put?: never;
         post?: never;
         delete?: never;
@@ -707,12 +427,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Send a message to a conversation
-         * @description Send an outbound message into an existing conversation. Supports two message types (see the request body): a free-form `text` message (body and/or attachments) and a `template` message rendered from a published rich template with per-send variables.
-         *
-         *     **Synchronous delivery.** The channel send happens inside the request: a `200` response means the message was delivered to the channel, and `channelMessageId` carries the channel-assigned id. On a failure between the platform and the channel the call returns `502` and nothing is persisted — the caller may retry.
-         *
-         *     **Idempotency.** Provide a UUIDv7 `requestMessageId`; retrying with the same value and identical content returns the original result (`duplicate: true`) instead of delivering a duplicate. Reusing it with *different* content returns `409`. **Permission.** Requires the `SendMessages` permission.
+         * Send a message
+         * @description For the `text` variant, provide a non-whitespace `body`, at least one `attachmentIds` entry, or both.
          */
         post: operations["sendConversationMessage"];
         delete?: never;
@@ -730,16 +446,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Send a channel-native payload
-         * @description Sends an Apple Messages for Business payload to an existing AMB conversation. Requires both `SendMessages` and `SendRawChannelPayloads`. Supported `messageType` values are `text`, `quick_reply`, `list_picker`, `time_picker`, `form`, `imessage_app`, and `rich_link`; the declared type must agree exactly with the Apple outer type and subtype marker. Attachments, typing, Apple Pay, authentication, initiation payloads, `interactiveDataRef`, `richLinkDataRef`, and caller-owned envelope fields are rejected before conversation lookup.
-         *
-         *     Bodies are capped at 5 MiB from bytes actually read after authentication and before JSON parsing. This is the only size gate: media bytes, aggregate images, decoded assets, and the post-envelope body are not measured. Quick replies require 1–5 items. Apple-documented time-picker timestamps use `YYYY-MM-DDTHH:mm+0000`; forms require version `1.2` and template `messageForms`. The sole capture-backed pitfall guard rejects list-picker sections using `listPickerItem` instead of `items`. Validation is best-effort and does not guarantee rendering; PNG/MIME correctness is caller-owned.
-         *
-         *     The platform injects the provider envelope and derives `auto-reply` from conversation agent status (`false` for live, `true` for bot or closed). Built-in interactive payloads preserve or receive a request identifier; custom iMessage apps remain opaque, persist unknown fields verbatim within the request cap, and have no request-identifier correlation promise. Recognized media is stripped from history.
-         *
-         *     Idempotency hashes canonical `{ channel, payload }` after built-in identifier injection. Matching retries replay; changed payloads conflict. Provider HTTP failures return `provider_rejected` with status; timeout/network failures return `provider_unavailable` without status and may have delivered, so retries are at-least-once. Apple does not guarantee ordering; await each response before sending the next payload.
-         */
+        /** Send channel content */
         post: operations["sendRawChannelPayload"];
         delete?: never;
         options?: never;
@@ -756,7 +463,7 @@ export interface paths {
         };
         /**
          * List published rich templates
-         * @description List the organization’s published rich templates — the set available to send.
+         * @description List the organization’s published rich templates — the set available to send. Optionally filter by authored `templateType`.
          *
          *     **Pagination.** Keyset-paginated newest first: supply `count` for the page size (default 25, max 100) and `before` (the `id` of the last row from the previous page, surfaced as `nextCursor`) to fetch the next page. `nextCursor` is `null` on the final page.
          *
@@ -795,28 +502,6 @@ export interface paths {
     };
 }
 export interface webhooks {
-    "initiation.updated": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * A conversation initiation changed status
-         * @description Fired for each durable conversation-initiation status transition. The payload intentionally contains no phone-derived data.
-         *
-         *     We deliver this event as an HTTP POST (content-type: application/json) to your configured webhook URL. Success is any 2xx. A non-2xx response or a network timeout is retried with exponential backoff over several minutes, then abandoned; a 410 Gone response is terminal and disables outbound delivery for the integration; redirects are not followed.  Signature: every request carries Webhook-Id (the event id, equal to the envelope id), Webhook-Timestamp (unix seconds), and Webhook-Signature (v1,<base64(HMAC-SHA256)>). The signed string is Webhook-Id.Webhook-Timestamp.rawBody — verify the HMAC against the exact raw request body bytes; do not re-parse or re-serialize the JSON first, since key ordering or whitespace changes break the HMAC. The HMAC key is the base64-decode of your signing secret after the whsec_ prefix (the secret is shown once when the integration is created). Webhook-Signature may in future carry multiple space-delimited v1,... tokens (key rotation), so accept the delivery if any token matches. Reject deliveries whose Webhook-Timestamp is more than 5 minutes from now, and dedupe on Webhook-Id (retries reuse the same id). Header names are case-insensitive — normalize to lower-case before lookup, and treat any verification error as a rejection.  To reply, call the send-message API with this event’s conversationId using your integration API key (mint a JWT, then send). The signing secret is for verifying inbound deliveries only — it is never used to send.  Versioning: specVersion (envelope shape) and dataVersion (per-event payload, date-pinned; changes are additive — pin the version you understand) are independent of the v1 signature-scheme version.
-         */
-        post: operations["webhookInitiationUpdated"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "message.received": {
         parameters: {
             query?: never;
@@ -828,11 +513,33 @@ export interface webhooks {
         put?: never;
         /**
          * A customer message was received
-         * @description Fired when a customer sends an inbound message. `message.content` varies by `message.messageType` — see the variants below.
+         * @description Fired after the inbound message is persisted. `message.createdAt` is that persistence time. `intentId`, `groupId`, `locale`, and `capabilityList` are the post-update conversation values. When a channel omits a routing update, the event retains the post-update stored value. Nullable routing values remain `null` when unknown, and `capabilityList: []` means the stored capability set is empty. A manual replay creates a new event with the current routing values and capabilities while retaining the original `message.createdAt`. Sensitive content is delivered only when the integration currently has `ViewSensitiveResponses`; otherwise `message.content` is `null` and `message.redacted` is `true`. Attachment metadata and access URLs are unchanged.
          *
-         *     We deliver this event as an HTTP POST (content-type: application/json) to your configured webhook URL. Success is any 2xx. A non-2xx response or a network timeout is retried with exponential backoff over several minutes, then abandoned; a 410 Gone response is terminal and disables outbound delivery for the integration; redirects are not followed.  Signature: every request carries Webhook-Id (the event id, equal to the envelope id), Webhook-Timestamp (unix seconds), and Webhook-Signature (v1,<base64(HMAC-SHA256)>). The signed string is Webhook-Id.Webhook-Timestamp.rawBody — verify the HMAC against the exact raw request body bytes; do not re-parse or re-serialize the JSON first, since key ordering or whitespace changes break the HMAC. The HMAC key is the base64-decode of your signing secret after the whsec_ prefix (the secret is shown once when the integration is created). Webhook-Signature may in future carry multiple space-delimited v1,... tokens (key rotation), so accept the delivery if any token matches. Reject deliveries whose Webhook-Timestamp is more than 5 minutes from now, and dedupe on Webhook-Id (retries reuse the same id). Header names are case-insensitive — normalize to lower-case before lookup, and treat any verification error as a rejection.  To reply, call the send-message API with this event’s conversationId using your integration API key (mint a JWT, then send). The signing secret is for verifying inbound deliveries only — it is never used to send.  Versioning: specVersion (envelope shape) and dataVersion (per-event payload, date-pinned; changes are additive — pin the version you understand) are independent of the v1 signature-scheme version.
+         *     We deliver this event as an HTTP POST to the configured webhook URL. Success is any 2xx; network errors and non-2xx responses retry with exponential backoff, while 410 disables outbound delivery. Automatic retries reuse the event id and queued source snapshot. Every request carries Webhook-Id, Webhook-Timestamp, and Webhook-Signature. Verify v1,<base64(HMAC-SHA256)> over Webhook-Id.Webhook-Timestamp.rawBody using the exact bytes, never re-serialized JSON. Webhook-Id is the event id and is reused for retries.
          */
         post: operations["webhookMessageReceived"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "messaging_invitation.updated": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * A messaging invitation changed status
+         * @description Fired after a messaging invitation status update. `messagingInvitation` contains the post-update transition values; `conversationId` is null until a conversation exists.
+         *
+         *     Uses the signing and retry contract documented by `message.received`.
+         */
+        post: operations["webhookMessagingInvitationUpdated"];
         delete?: never;
         options?: never;
         head?: never;
@@ -842,1179 +549,1036 @@ export interface webhooks {
 }
 export interface components {
     schemas: {
-        /** @description Returned after an invitation is accepted and membership is created. */
-        AcceptInvitationResult: {
-            /**
-             * @description Identifier of the organization the invitee just joined.
-             * @example 018f1a2b-0000-7000-8000-000000000a01
-             */
-            organizationId: string;
-            /**
-             * @description Name of the organization the invitee just joined.
-             * @example Acme Dental
-             */
-            organizationName: string;
-        };
         /** @description The actor’s resolved authorization grant (tier + permission keys). Display only — the server remains the sole authority and re-gates every request. */
         ActorGrant: {
-            /**
-             * @description Granted fine-grained permission keys (decoded from the bitmask).
-             * @example [
-             *       "ViewConversations",
-             *       "ViewTemplates"
-             *     ]
-             */
+            /** @description Granted fine-grained permission keys. */
             permissionKeys: string[];
             /**
              * @description The actor’s coarse membership tier.
-             * @example admin
              * @enum {string}
              */
             tier: "member" | "admin" | "owner" | "1440_user";
         };
         /** @description A messaging channel connected to the business. */
         AdminBusinessChannel: {
-            /**
-             * @description Human-readable label for the channel.
-             * @example Acme Dental — AMB
-             */
+            /** @description Human-readable label for the channel. */
             displayName: string;
-            /**
-             * @description The platform-native account/page identifier this channel maps to.
-             * @example amb-acct-7f3c9a21
-             */
+            /** @description The platform-native account/page identifier this channel maps to. */
             externalId: string;
-            /**
-             * @description Channel identifier.
-             * @example 018f1a2b-0000-7000-8000-0000000000c1
-             */
+            /** @description Channel identifier. */
             id: string;
-            /**
-             * @description Whether the channel is currently active.
-             * @example true
-             */
+            /** @description Whether the channel is currently active. */
             isActive: boolean;
             /**
              * @description Messaging platform this channel connects to.
-             * @example amb
              * @enum {string}
              */
             platform: "amb" | "tiktok" | "whatsapp";
         };
         /** @description The business’s connected messaging channels (capped at 100 per page). */
         AdminBusinessChannelList: components["schemas"]["AdminBusinessChannel"][];
-        /** @description The authenticated member’s admin context for their business: business identity plus the member’s own tier, access scope, and capabilities. */
-        AdminBusinessContext: {
-            /** @description Core business identity. */
-            business: {
-                /**
-                 * @description Organization (business) identifier.
-                 * @example 018f1a2b-0000-7000-8000-000000000001
-                 */
-                id: string;
-                /**
-                 * @description Whether the business is currently active.
-                 * @example true
-                 */
-                isActive: boolean;
-                /**
-                 * @description Business logo URL, or `null` when none is set.
-                 * @example https://cdn.1440.io/logos/acme-dental.png
-                 */
-                logoUrl: string | null;
-                /**
-                 * @description Human-readable business name.
-                 * @example Acme Dental
-                 */
-                name: string;
-                /**
-                 * @description URL-safe unique slug for the business.
-                 * @example acme-dental
-                 */
-                slug: string;
-            };
-            /** @description The authenticated member’s standing in this business. */
-            membership: {
-                /**
-                 * @description The member’s conversation access scope.
-                 * @example all_conversations
-                 * @enum {string}
-                 */
-                accessRole: "all_conversations";
-                /**
-                 * @description The authenticated member’s coarse tier (axis 1) within this business.
-                 * @example admin
-                 * @enum {string}
-                 */
-                adminRole: "owner" | "1440_user" | "admin" | "member";
-                /**
-                 * @description Whether this member may manage business settings.
-                 * @example true
-                 */
-                canManageSettings: boolean;
-                /**
-                 * @description Whether the membership is active.
-                 * @example true
-                 */
-                isActive: boolean;
-            };
-        };
-        /** @description A member of the business: identity, tier, and assigned permission set. */
-        AdminBusinessMember: {
-            /**
-             * @description Member’s email address.
-             * @example jordan@acme-dental.com
-             */
-            email: string;
-            /**
-             * @description Whether the member’s email has been verified.
-             * @example true
-             */
-            emailVerified: boolean;
-            /**
-             * @description Member’s avatar URL, or `null` when unset.
-             * @example https://cdn.1440.io/avatars/jordan.png
-             */
-            image: string | null;
-            /**
-             * @description ISO-8601 timestamp the member joined, or `null` when unknown.
-             * @example 2026-05-01T14:30:00.000Z
-             */
-            joinedAt: string | null;
-            /**
-             * @description Member’s display name, or `null` when unset.
-             * @example Jordan Lee
-             */
-            name: string | null;
-            /**
-             * @description Assigned fine-grained permission set (axis 2). Always present; no access is represented by the organization’s `no_access` set.
-             * @example 018f1a2b-0000-7000-8000-0000000000b2
-             */
-            permissionSetId: string;
-            /**
-             * @description Member’s coarse tier (axis 1). Any unexpected stored value collapses to `member`.
-             * @example admin
-             * @enum {string}
-             */
-            role: "owner" | "1440_user" | "admin" | "member";
-            /**
-             * @description Identifier of the member’s user.
-             * @example 018f1a2b-0000-7000-8000-0000000000a1
-             */
-            userId: string;
-        };
-        /** @description The business’s members (capped at 100 per page). */
-        AdminBusinessMemberList: components["schemas"]["AdminBusinessMember"][];
         /**
-         * @description Connect a new messaging channel to the authenticated business.
-         * @example {
-         *       "platform": "amb",
-         *       "externalId": "amb-acct-7f3c9a21"
-         *     }
-         */
-        AdminCreateBusinessChannelBody: {
-            /**
-             * @description The platform-native account/page identifier this channel maps to (the external id on the upstream platform). Trimmed before persistence; must be 1–255 characters.
-             * @example amb-acct-7f3c9a21
-             */
-            externalId: string;
-            /**
-             * @description Messaging platform the channel connects to. One of the supported business channel platforms.
-             * @example amb
-             * @enum {string}
-             */
-            platform: "amb" | "tiktok" | "whatsapp";
-        };
-        /** @description The newly created sandbox organization. */
-        AdminCreatedSandbox: {
-            /**
-             * @description ISO-8601 timestamp the sandbox was created.
-             * @example 2026-06-01T09:00:00.000Z
-             */
-            createdAt: string;
-            /**
-             * @description Identifier of the user who created the sandbox.
-             * @example 018f1a2b-0000-7000-8000-0000000000a1
-             */
-            createdBy: string;
-            /**
-             * @description New sandbox organization identifier.
-             * @example 018f1a2b-0000-7000-8000-0000000000d3
-             */
-            id: string;
-            /**
-             * @description Sandbox organization name.
-             * @example Acme Dental — Staging
-             */
-            name: string;
-            /**
-             * @description The parent organization’s id (the acting organization).
-             * @example 018f1a2b-0000-7000-8000-000000000001
-             */
-            parentOrganizationId: string | null;
-            /**
-             * @description Sandbox organization slug (provided or auto-suggested).
-             * @example acme-dental-staging
-             */
-            slug: string;
-            /**
-             * @description Organization type — always `sandbox` for organizations created here.
-             * @example sandbox
-             * @enum {string}
-             */
-            type: "production" | "sandbox";
-        };
-        /**
-         * @description Create a sandbox organization under the authenticated parent organization.
-         * @example {
-         *       "name": "Acme Dental — Staging",
-         *       "slug": "acme-dental-staging"
-         *     }
-         */
-        AdminCreateSandboxBody: {
-            /**
-             * @description Human-readable name for the new sandbox organization (1–200 characters).
-             * @example Acme Dental — Staging
-             */
-            name: string;
-            /**
-             * @description Optional URL-safe slug. When omitted, a slug is suggested from the parent slug with a `-sandbox` suffix and auto-suffixed on collision. 1–100 characters; the character pattern is validated server-side.
-             * @example acme-dental-staging
-             */
-            slug?: string;
-        };
-        /** @description Wrapper returned by the sandbox-create endpoint. */
-        AdminCreateSandboxResult: {
-            sandbox: components["schemas"]["AdminCreatedSandbox"];
-        };
-        /** @description Returned when a sandbox organization has been deleted. */
-        AdminDeleteSandboxResult: {
-            /**
-             * @description Identifier of the deleted sandbox organization.
-             * @example 018f1a2b-0000-7000-8000-0000000000d3
-             */
-            id: string;
-        };
-        /** @description Returned when a member has been removed from the business. */
-        AdminRemoveMemberResult: {
-            /**
-             * @description Identifier of the removed member’s user.
-             * @example 018f1a2b-0000-7000-8000-0000000000a1
-             */
-            userId: string;
-        };
-        /** @description Sandbox organizations under the parent, plus the count/cap state. */
-        AdminSandboxList: {
-            /**
-             * @description Maximum number of sandboxes the parent may create.
-             * @example 5
-             */
-            cap: number;
-            /**
-             * @description Current number of sandboxes under the parent.
-             * @example 1
-             */
-            count: number;
-            /** @description The sandbox organizations under the parent. */
-            sandboxes: components["schemas"]["AdminSandboxListItem"][];
-        };
-        /** @description A sandbox organization under the parent, with its current member count. */
-        AdminSandboxListItem: {
-            /**
-             * @description ISO-8601 timestamp the sandbox was created.
-             * @example 2026-06-01T09:00:00.000Z
-             */
-            createdAt: string;
-            /**
-             * @description Identifier of the user who created the sandbox.
-             * @example 018f1a2b-0000-7000-8000-0000000000a1
-             */
-            createdBy: string;
-            /**
-             * @description Display name of the creating user, or `null` when unset.
-             * @example Jordan Lee
-             */
-            createdByName: string | null;
-            /**
-             * @description Sandbox organization identifier.
-             * @example 018f1a2b-0000-7000-8000-0000000000d3
-             */
-            id: string;
-            /**
-             * @description Number of members currently in the sandbox.
-             * @example 3
-             */
-            memberCount: number;
-            /**
-             * @description Sandbox organization name.
-             * @example Acme Dental — Staging
-             */
-            name: string;
-            /**
-             * @description Sandbox organization slug.
-             * @example acme-dental-staging
-             */
-            slug: string;
-        };
-        /** @description Result of enforcing the sandbox-membership invariant: per-sandbox add/remove counts plus any sandboxes that were skipped due to a missing built-in permission set. */
-        AdminSandboxMemberSyncResult: {
-            /**
-             * @description Sandboxes whose built-in all-permissions set is missing (a seeding hole — adds were skipped there). Empty when all sandboxes are correctly seeded.
-             * @example []
-             */
-            missingBuiltinSetSandboxIds: string[];
-            /** @description Per-sandbox add/remove summaries from the sync. */
-            sandboxes: {
-                /**
-                 * @description Number of members added to this sandbox by the sync.
-                 * @example 2
-                 */
-                added: number;
-                /**
-                 * @description Number of members removed from this sandbox by the sync.
-                 * @example 1
-                 */
-                removed: number;
-                /**
-                 * @description Sandbox organization that was synced.
-                 * @example 018f1a2b-0000-7000-8000-0000000000d3
-                 */
-                sandboxId: string;
-            }[];
-        };
-        /**
-         * @description Update a member’s tier and/or permission set. At least one of `role` or `permissionSetId` must be present.
-         * @example {
-         *       "role": "admin",
-         *       "permissionSetId": "018f1a2b-0000-7000-8000-0000000000b2"
-         *     }
-         */
-        AdminUpdateMemberBody: {
-            /**
-             * Format: uuid
-             * @description Fine-grained permission set (axis 2) to assign. Pass a permission-set id to assign it, or `null` to select the acting organization’s `no_access` set before persistence.
-             * @example 018f1a2b-0000-7000-8000-0000000000b2
-             */
-            permissionSetId?: string | null;
-            /**
-             * @description New coarse membership tier (axis 1). Only `admin` and `member` are assignable here — `owner` and `1440_user` cannot be granted or targeted through this surface.
-             * @example admin
-             * @enum {string}
-             */
-            role?: "admin" | "member";
-        };
-        /** @description Wrapper returned by the member-update endpoint. */
-        AdminUpdateMemberResult: {
-            member: components["schemas"]["AdminBusinessMember"] & unknown;
-        };
-        AmbInitiationConfiguration: {
-            brandName: string;
-            /** Format: uuid */
-            logoAssetId: string;
-            /** Format: uuid */
-            templateId: string;
-        } | null;
-        AmbInitiationConfigurationError: {
-            /** @enum {string} */
-            error: "organization_name_required" | "organization_logo_required";
-        };
-        AmbSetupDestinationsResponse: {
-            destinations: {
-                clientId: string;
-                clientName: string;
-                eligibleForAmbSandbox: boolean;
-                /** @enum {string} */
-                ineligibilityReason?: "missing_permissions" | "sandbox_limit_reached";
-                organizationId: string;
-                organizationName: string;
-                organizationSlug: string;
-                sandboxCount: number;
-                sandboxLimit: number;
-            }[];
-        };
-        /**
-         * @description The current business settings, returned by both the read and the update routes.
+         * @description The current settings for a business.
          * @example {
          *       "id": "018f1a2b-0000-7000-8000-000000000001",
          *       "name": "Acme Home Services",
          *       "slug": "acme-home-services",
-         *       "logoUrl": "https://storage.example.com/org-logos/...?X-Amz-Signature=...",
+         *       "logoUrl": "https://media.example.com/logos/acme.png?signature=example",
          *       "isActive": true
          *     }
          */
         BusinessSettings: {
-            /**
-             * @description The business (organization) id this settings record belongs to.
-             * @example 018f1a2b-0000-7000-8000-000000000001
-             */
+            /** @description The business identifier. */
             id: string;
-            /**
-             * @description Whether the business is currently active.
-             * @example true
-             */
+            /** @description Whether the business is currently active. */
             isActive: boolean;
-            /**
-             * @description Read-only presigned URL of the current original logo, or `null` if none is set. The signature is valid for seven days. The immutable, versioned image response is privately cacheable by the browser for seven days.
-             * @example https://storage.example.com/org-logos/...?X-Amz-Signature=...
-             */
+            /** @description Read-only short-lived signed URL of the current original logo, or `null` if none is set. The signature is valid for seven days. The immutable, versioned image response is privately cacheable by the browser for seven days. */
             logoUrl: string | null;
-            /**
-             * @description Current display name of the business.
-             * @example Acme Home Services
-             */
+            /** @description Current display name of the business. */
             name: string;
-            /**
-             * @description URL-safe slug for the business, derived from the name. Read-only — not editable via this endpoint.
-             * @example acme-home-services
-             */
+            /** @description URL-safe slug for the business, derived from the name. Read-only — not editable via this endpoint. */
             slug: string;
         };
-        /**
-         * @description Full replacement of the editable business-settings fields. All fields are required. The logo is NOT settable here — it is uploaded as PNG bytes through the dedicated logo routes.
-         * @example {
-         *       "name": "Acme Home Services",
-         *       "isActive": true
-         *     }
-         */
-        BusinessSettingsBody: {
-            /**
-             * @description Whether the business is active. Inactive businesses are retained but excluded from normal messaging flows.
-             * @example true
-             */
-            isActive: boolean;
-            /**
-             * @description Display name of the business. 2–120 characters; trimmed and surfaced in the workspace UI and on outbound branding.
-             * @example Acme Home Services
-             */
-            name: string;
-        };
-        /** @description Point-in-time snapshot of the in-process rich-asset cache. */
-        CacheMetricsResponse: {
-            /** @description The live rich-asset cache snapshot. */
-            caches: components["schemas"]["CacheSnapshot"][];
-        };
-        /** @description Live counters and configured ceilings for one in-process cache. */
-        CacheSnapshot: {
-            /**
-             * @description Current total cached Base64 characters (`LRUCache.calculatedSize`, one logical byte each).
-             * @example 612000
-             */
-            calculatedSize: number;
-            /**
-             * @description Configured Base64-byte ceiling; `calculatedSize` never exceeds it.
-             * @example 33554432
-             */
-            maxBytes: number;
-            /**
-             * @description Configured entry-count ceiling; `size` never exceeds it.
-             * @example 500
-             */
-            maxEntries: number;
-            /**
-             * @description Stable cache identifier.
-             * @example rich-asset
-             */
-            name: string;
-            /**
-             * @description Current number of cached entries (`LRUCache.size`).
-             * @example 3
-             */
-            size: number;
-        };
-        /** @description A single assignable permission from the live permission catalog. */
-        CatalogPermission: {
-            /**
-             * @description Grouping category the permission belongs to in the builder UI.
-             * @example Messaging
-             */
-            category: string;
-            /**
-             * @description Stable permission key used in permission-set `permissions` arrays.
-             * @example SendMessages
-             */
-            key: string;
-            /**
-             * @description Human-readable label for the permission, for display in the builder UI.
-             * @example Send messages
-             */
-            label: string;
-        };
-        /** @description The live (non-deprecated) permission catalog used to build permission sets. */
-        CatalogPermissionList: components["schemas"]["CatalogPermission"][];
         /** @description A single active channel configured for the authenticated org. */
         Channel: {
-            /**
-             * @description Provider-side external identifier for the channel.
-             * @example urn:mbid:AQAAY...
-             */
+            /** @description Provider-side external identifier for the channel. */
             externalId: string;
-            /**
-             * @description UUIDv7 identifier of the channel.
-             * @example 018f1a2b-0000-7000-8000-000000000001
-             */
+            /** @description UUIDv7 identifier of the channel. */
             id: string;
             /**
              * @description The channel platform slug (e.g. `amb`, `tiktok`).
-             * @example amb
              * @enum {string}
              */
             platform: "amb" | "tiktok" | "whatsapp" | "rcs" | "sms" | "instagram" | "facebook_messenger" | "telegram" | "line" | "wechat" | "email" | "custom";
-        };
-        ChannelInitiationEnablementBody: {
-            initiationsEnabled: boolean;
-        };
-        ChannelInitiationSettings: {
-            /** @enum {string} */
-            channel: "amb" | "tiktok";
-            channelActive: boolean;
-            clientApproved: boolean;
-            configuration: components["schemas"]["AmbInitiationConfiguration"];
-            initiationsEnabled: boolean;
-            logoPresent: boolean;
-            organizationActive: boolean;
-            organizationNamePresent: boolean;
         };
         /** @description The set of active channels configured for the authenticated org. */
         ChannelListResponse: {
             /** @description All active channels for the authenticated org. */
             channels: components["schemas"]["Channel"][];
         };
-        CompleteAmbNewBusinessSetup: {
-            /**
-             * @description Apple Messages for Business identifier supplied by Apple Business Register.
-             * @example 00000000-0000-0000-0000-000000000000
-             */
-            appleBusinessId: string;
-            /**
-             * @description Untrusted display-name hint supplied by Apple Business Register.
-             * @example Acme Coffee
-             */
-            appleBusinessName?: string;
-            business: components["schemas"]["CreateBusinessBody"];
+        /** @description A single conversation with its MessageRead window. */
+        ConversationDetailResponse: {
             /** @enum {string} */
-            type: "new_business";
-        };
-        CompleteAmbSandboxSetup: {
-            /**
-             * @description Apple Messages for Business identifier supplied by Apple Business Register.
-             * @example 00000000-0000-0000-0000-000000000000
-             */
-            appleBusinessId: string;
-            /**
-             * @description Untrusted display-name hint supplied by Apple Business Register.
-             * @example Acme Coffee
-             */
-            appleBusinessName?: string;
-            /**
-             * @description Display name for the new sandbox workspace.
-             * @example Acme Coffee — Apple Messages
-             */
-            name: string;
-            /**
-             * Format: uuid
-             * @description Production organization under which the AMB sandbox will be created.
-             * @example 018f1a2b-0000-7000-8000-000000000001
-             */
-            parentOrganizationId: string;
-            /**
-             * @description Optional URL-safe sandbox slug; generated from the parent when omitted.
-             * @example acme-coffee-amb
-             */
-            slug?: string;
-            /** @enum {string} */
-            type: "sandbox";
-        };
-        CompleteAmbSetupBody: components["schemas"]["CompleteAmbNewBusinessSetup"] | components["schemas"]["CompleteAmbSandboxSetup"];
-        CompleteAmbSetupResponse: {
-            channel: {
-                externalId: string;
-                id: string;
-                /** @enum {string} */
-                status: "active";
-            };
-            client: {
-                id: string;
-                name: string;
-            };
-            organization: {
-                id: string;
-                name: string;
-                slug: string;
-                /** @enum {string} */
-                type: "production" | "sandbox";
-            };
-            replayed: boolean;
-        };
-        /** @description A single conversation with its message window. Combines the conversation summary fields with an array of messages. */
-        ConversationDetailResponse: components["schemas"]["ConversationListItem"] & {
-            /** @description The window of messages for this conversation, ordered by recency and bounded by the `count`/`before` query parameters. */
-            messages: components["schemas"]["ConversationMessage"][];
-        };
-        ConversationInitiation: {
+            agentStatus: "bot" | "live" | "closed";
             /** Format: uuid */
-            actorId: string;
-            /** @enum {string} */
-            actorType: "user" | "integration";
-            callerReference: string | null;
-            /** @enum {string} */
-            channel: "amb" | "tiktok";
+            assignedUserId: string | null;
             /** Format: uuid */
-            conversationId: string | null;
+            businessId: string;
+            capabilityList: ("QUICK" | "LIST" | "TIME" | "AUTH" | "AUTH2" | "FORM")[] | null;
+            channelAddress: string;
+            /** @enum {string} */
+            channelPlatform: "amb";
             /** Format: date-time */
             createdAt: string;
-            effectiveReference: string;
+            email: string | null;
+            firstName: string | null;
+            groupId: string | null;
             /** Format: uuid */
             id: string;
+            intentId: string | null;
+            /** Format: date-time */
+            lastMessageAt: string;
+            lastName: string | null;
+            locale: string | null;
+            messages: ({
+                actor: {
+                    /** Format: uuid */
+                    id: string;
+                    /** @enum {string} */
+                    type: "user";
+                } | {
+                    /** Format: uuid */
+                    id: string;
+                    /** @enum {string} */
+                    type: "integration";
+                } | {
+                    /** @enum {string} */
+                    type: "system";
+                };
+                attachments: {
+                    /** Format: uri */
+                    accessUrl: string | null;
+                    /** Format: date-time */
+                    accessUrlExpiresAt: string | null;
+                    /** Format: uuid */
+                    id: string;
+                    mimeType: string | null;
+                    originalFileName: string | null;
+                    sizeBytes: number | null;
+                    sortOrder: number;
+                    /** @enum {string} */
+                    status: "pending" | "ready" | "failed";
+                }[];
+                /** @enum {string} */
+                channel: "amb";
+                content: ({
+                    body: string;
+                    /** @enum {string} */
+                    kind: "text";
+                    subject?: string;
+                } | {
+                    data: {
+                        "quick-reply": {
+                            items: {
+                                identifier: string;
+                                title: string;
+                            }[];
+                            summaryText: string;
+                        };
+                    };
+                    /** @enum {string} */
+                    kind: "amb.quick_reply";
+                } | {
+                    data: {
+                        images?: {
+                            description?: string | null;
+                            identifier: string;
+                            name: string | null;
+                        }[];
+                        listPicker: {
+                            sections: {
+                                items: {
+                                    identifier: string;
+                                    imageIdentifier?: string;
+                                    order?: number;
+                                    style?: string;
+                                    subtitle?: string;
+                                    title: string;
+                                }[];
+                                multipleSelection?: boolean;
+                                order?: number;
+                                title?: string;
+                            }[];
+                        };
+                    };
+                    /** @enum {string} */
+                    kind: "amb.list_picker";
+                    receivedMessage: {
+                        alternateTitle?: string;
+                        imageDescription?: string;
+                        imageIdentifier?: string;
+                        imageSubtitle?: string;
+                        imageTitle?: string;
+                        secondarySubtitle?: string;
+                        /** @enum {string} */
+                        style?: "icon" | "small" | "large";
+                        subtitle?: string;
+                        tertiarySubtitle?: string;
+                        title: string;
+                    };
+                    replyMessage: {
+                        alternateTitle?: string;
+                        imageDescription?: string;
+                        imageIdentifier?: string;
+                        imageSubtitle?: string;
+                        imageTitle?: string;
+                        secondarySubtitle?: string;
+                        /** @enum {string} */
+                        style?: "icon" | "small" | "large";
+                        subtitle?: string;
+                        tertiarySubtitle?: string;
+                        title: string;
+                    };
+                } | {
+                    data: {
+                        event: {
+                            identifier: string;
+                            imageIdentifier?: string;
+                            location?: {
+                                latitude?: number;
+                                longitude?: number;
+                                radius?: number;
+                                title?: string;
+                            };
+                            timeslots: {
+                                duration: number;
+                                identifier: string;
+                                startTime: string;
+                            }[];
+                            timezoneOffset?: number;
+                            title?: string;
+                        };
+                        images?: {
+                            description?: string | null;
+                            identifier: string;
+                            name: string | null;
+                        }[];
+                    };
+                    /** @enum {string} */
+                    kind: "amb.time_picker";
+                    receivedMessage: {
+                        alternateTitle?: string;
+                        imageDescription?: string;
+                        imageIdentifier?: string;
+                        imageSubtitle?: string;
+                        imageTitle?: string;
+                        secondarySubtitle?: string;
+                        /** @enum {string} */
+                        style?: "icon" | "small" | "large";
+                        subtitle?: string;
+                        tertiarySubtitle?: string;
+                        title: string;
+                    };
+                    replyMessage: {
+                        alternateTitle?: string;
+                        imageDescription?: string;
+                        imageIdentifier?: string;
+                        imageSubtitle?: string;
+                        imageTitle?: string;
+                        secondarySubtitle?: string;
+                        /** @enum {string} */
+                        style?: "icon" | "small" | "large";
+                        subtitle?: string;
+                        tertiarySubtitle?: string;
+                        title: string;
+                    };
+                } | {
+                    data: {
+                        dynamic: {
+                            data: {
+                                pages: ({
+                                    items: {
+                                        identifier: string;
+                                        imageIdentifier?: string;
+                                        nextPageIdentifier?: string;
+                                        title: string;
+                                        value: string;
+                                    }[];
+                                    multipleSelection?: boolean;
+                                    nextPageIdentifier?: string;
+                                    pageIdentifier: string;
+                                    submitForm?: boolean;
+                                    subtitle: string;
+                                    title?: string;
+                                    /** @enum {string} */
+                                    type: "select";
+                                } | {
+                                    items: {
+                                        identifier: string;
+                                        title: string;
+                                        value: string;
+                                    }[];
+                                    nextPageIdentifier?: string;
+                                    pageIdentifier: string;
+                                    pickerTitle?: string;
+                                    selectedItemIndex?: number;
+                                    submitForm?: boolean;
+                                    subtitle: string;
+                                    title?: string;
+                                    /** @enum {string} */
+                                    type: "picker";
+                                } | {
+                                    hintText?: string;
+                                    nextPageIdentifier?: string;
+                                    options?: {
+                                        dateFormat?: string;
+                                        labelText?: string;
+                                        maximumDate?: string;
+                                        minimumDate?: string;
+                                        startDate?: string;
+                                    };
+                                    pageIdentifier: string;
+                                    submitForm?: boolean;
+                                    subtitle: string;
+                                    title?: string;
+                                    /** @enum {string} */
+                                    type: "datePicker";
+                                } | {
+                                    hintText?: string;
+                                    nextPageIdentifier?: string;
+                                    options?: {
+                                        /** @enum {string} */
+                                        inputType?: "singleline" | "multiline";
+                                        /** @enum {string} */
+                                        keyboardType?: "default" | "asciiCapable" | "numbersAndPunctuation" | "URL" | "numberPad" | "phonePad" | "namePhonePad" | "emailAddress" | "decimalPad" | "webSearch";
+                                        labelText?: string;
+                                        maximumCharacterCount?: number;
+                                        placeholder?: string;
+                                        prefixText?: string;
+                                        regex?: string;
+                                        required?: boolean;
+                                        /** @enum {string} */
+                                        textContentType?: "name" | "namePrefix" | "givenName" | "middleName" | "familyName" | "nameSuffix" | "nickname" | "jobTitle" | "organizationName" | "location" | "fullStreetAddress" | "streetAddressLine1" | "streetAddressLine2" | "addressCity" | "addressState" | "addressCityAndState" | "sublocality" | "countryName" | "postalCode" | "telephoneNumber" | "emailAddress" | "URL" | "creditCardNumber" | "username" | "password" | "newPassword" | "oneTimeCode";
+                                    };
+                                    pageIdentifier: string;
+                                    submitForm?: boolean;
+                                    subtitle: string;
+                                    title?: string;
+                                    /** @enum {string} */
+                                    type: "input";
+                                })[];
+                                private?: boolean;
+                                showSummary?: boolean;
+                                splash?: {
+                                    buttonTitle: string;
+                                    header?: string;
+                                    imageIdentifier?: string;
+                                    splashtext?: string;
+                                };
+                                startPageIdentifier: string;
+                            };
+                            /** @enum {string} */
+                            template: "messageForms";
+                            /** @enum {string} */
+                            version: "1.2";
+                        };
+                        images?: {
+                            description?: string | null;
+                            identifier: string;
+                            name: string | null;
+                        }[];
+                    };
+                    /** @enum {string} */
+                    kind: "amb.form";
+                    receivedMessage: {
+                        alternateTitle?: string;
+                        imageDescription?: string;
+                        imageIdentifier?: string;
+                        imageSubtitle?: string;
+                        imageTitle?: string;
+                        secondarySubtitle?: string;
+                        /** @enum {string} */
+                        style?: "icon" | "small" | "large";
+                        subtitle?: string;
+                        tertiarySubtitle?: string;
+                        title: string;
+                    };
+                    replyMessage: {
+                        alternateTitle?: string;
+                        imageDescription?: string;
+                        imageIdentifier?: string;
+                        imageSubtitle?: string;
+                        imageTitle?: string;
+                        secondarySubtitle?: string;
+                        /** @enum {string} */
+                        style?: "icon" | "small" | "large";
+                        subtitle?: string;
+                        tertiarySubtitle?: string;
+                        title: string;
+                    };
+                } | {
+                    data: {
+                        authenticate: {
+                            oauth2: {
+                                /** Format: uri */
+                                redirectURI: string;
+                                /** @enum {string} */
+                                responseType: "code";
+                                scope: string[];
+                            };
+                        };
+                        images?: {
+                            description?: string | null;
+                            identifier: string;
+                            name: string | null;
+                        }[];
+                    };
+                    /** @enum {string} */
+                    kind: "amb.authentication";
+                    receivedMessage: {
+                        alternateTitle?: string;
+                        imageDescription?: string;
+                        imageIdentifier?: string;
+                        imageSubtitle?: string;
+                        imageTitle?: string;
+                        secondarySubtitle?: string;
+                        /** @enum {string} */
+                        style?: "icon" | "small" | "large";
+                        subtitle?: string;
+                        tertiarySubtitle?: string;
+                        title: string;
+                    };
+                    replyMessage: {
+                        alternateTitle?: string;
+                        imageDescription?: string;
+                        imageIdentifier?: string;
+                        imageSubtitle?: string;
+                        imageTitle?: string;
+                        secondarySubtitle?: string;
+                        /** @enum {string} */
+                        style?: "icon" | "small" | "large";
+                        subtitle?: string;
+                        tertiarySubtitle?: string;
+                        title: string;
+                    };
+                } | {
+                    /** @enum {string} */
+                    kind: "amb.rich_link";
+                    richLinkData?: {
+                        assets: {
+                            image: {
+                                data: {
+                                    name: string | null;
+                                };
+                                /** @enum {string} */
+                                mimeType: "image/png";
+                            };
+                            video?: {
+                                mimeType: string;
+                                /** Format: uri */
+                                url: string;
+                            };
+                        };
+                        title: string;
+                        /** Format: uri */
+                        url: string;
+                    };
+                    richLinkDataRef?: {
+                        title?: string;
+                        /** Format: uri */
+                        url: string;
+                    };
+                } | {
+                    appIcon?: {
+                        name: string | null;
+                    };
+                    appId: string;
+                    appName: string;
+                    bid: string;
+                    /** @enum {string} */
+                    kind: "amb.imessage_app";
+                    receivedMessage: {
+                        alternateTitle?: string;
+                        imageDescription?: string;
+                        imageIdentifier?: string;
+                        imageSubtitle?: string;
+                        imageTitle?: string;
+                        secondarySubtitle?: string;
+                        /** @enum {string} */
+                        style?: "icon" | "small" | "large";
+                        subtitle?: string;
+                        tertiarySubtitle?: string;
+                        title: string;
+                    };
+                    replyMessage?: {
+                        alternateTitle?: string;
+                        imageDescription?: string;
+                        imageIdentifier?: string;
+                        imageSubtitle?: string;
+                        imageTitle?: string;
+                        secondarySubtitle?: string;
+                        /** @enum {string} */
+                        style?: "icon" | "small" | "large";
+                        subtitle?: string;
+                        tertiarySubtitle?: string;
+                        title: string;
+                    };
+                    sessionIdentifier?: string;
+                    URL: string;
+                    useLiveLayout: boolean;
+                } | {
+                    data: {
+                        notification: {
+                            locale?: string;
+                            parameters: {
+                                brandLogo: {
+                                    name: string | null;
+                                };
+                                brandName: string;
+                            };
+                            referenceId: string;
+                            /** @enum {string} */
+                            templateId: "binaryChoice.engage.withImage";
+                        };
+                    };
+                    /** @enum {string} */
+                    kind: "amb.invitation";
+                    useLiveLayout: boolean;
+                }) & {
+                    source: {
+                        /** @enum {string} */
+                        type: "direct";
+                    } | {
+                        /** @enum {string} */
+                        type: "raw";
+                    } | {
+                        name: string;
+                        /** Format: uuid */
+                        templateId: string;
+                        /** @enum {string} */
+                        type: "template";
+                    };
+                };
+                /** Format: uuid */
+                conversationId: string;
+                /** Format: date-time */
+                createdAt: string;
+                /** @enum {string} */
+                direction: "outbound";
+                externalId: string;
+                /** Format: uuid */
+                id: string;
+                /** @enum {boolean} */
+                redacted: false;
+            } | {
+                actor: {
+                    /** @enum {string} */
+                    type: "customer";
+                };
+                attachments: {
+                    /** Format: uri */
+                    accessUrl: string | null;
+                    /** Format: date-time */
+                    accessUrlExpiresAt: string | null;
+                    /** Format: uuid */
+                    id: string;
+                    mimeType: string | null;
+                    originalFileName: string | null;
+                    sizeBytes: number | null;
+                    sortOrder: number;
+                    /** @enum {string} */
+                    status: "pending" | "ready" | "failed";
+                }[];
+                /** @enum {string} */
+                channel: "amb";
+                content: {
+                    body: string;
+                    /** @enum {string} */
+                    kind: "text";
+                    subject?: string;
+                } | {
+                    /** @enum {string} */
+                    kind: "opt_out";
+                } | {
+                    data: {
+                        images?: {
+                            description?: string | null;
+                            identifier: string;
+                            name: string | null;
+                        }[];
+                        "quick-reply": {
+                            items?: {
+                                identifier: string;
+                                title: string;
+                            }[];
+                            selectedIdentifier?: string;
+                            selectedIndex?: number;
+                        };
+                        receivedMessage?: {
+                            alternateTitle?: string;
+                            imageDescription?: string;
+                            imageIdentifier?: string;
+                            imageSubtitle?: string;
+                            imageTitle?: string;
+                            secondarySubtitle?: string;
+                            /** @enum {string} */
+                            style?: "icon" | "small" | "large";
+                            subtitle?: string;
+                            tertiarySubtitle?: string;
+                            title: string;
+                        };
+                        replyMessage?: {
+                            alternateTitle?: string;
+                            imageDescription?: string;
+                            imageIdentifier?: string;
+                            imageSubtitle?: string;
+                            imageTitle?: string;
+                            secondarySubtitle?: string;
+                            /** @enum {string} */
+                            style?: "icon" | "small" | "large";
+                            subtitle?: string;
+                            tertiarySubtitle?: string;
+                            title: string;
+                        };
+                        requestIdentifier?: string;
+                    };
+                    /** @enum {string} */
+                    kind: "amb.quick_reply_response";
+                    sessionIdentifier?: string;
+                } | {
+                    data: {
+                        images?: {
+                            description?: string | null;
+                            identifier: string;
+                            name: string | null;
+                        }[];
+                        listPicker: {
+                            sections: {
+                                items: {
+                                    identifier: string;
+                                    imageIdentifier?: string;
+                                    order?: number;
+                                    style?: string;
+                                    subtitle?: string;
+                                    title?: string;
+                                }[];
+                                title?: string;
+                            }[];
+                        };
+                        receivedMessage?: {
+                            alternateTitle?: string;
+                            imageDescription?: string;
+                            imageIdentifier?: string;
+                            imageSubtitle?: string;
+                            imageTitle?: string;
+                            secondarySubtitle?: string;
+                            /** @enum {string} */
+                            style?: "icon" | "small" | "large";
+                            subtitle?: string;
+                            tertiarySubtitle?: string;
+                            title: string;
+                        };
+                        replyMessage?: {
+                            alternateTitle?: string;
+                            imageDescription?: string;
+                            imageIdentifier?: string;
+                            imageSubtitle?: string;
+                            imageTitle?: string;
+                            secondarySubtitle?: string;
+                            /** @enum {string} */
+                            style?: "icon" | "small" | "large";
+                            subtitle?: string;
+                            tertiarySubtitle?: string;
+                            title: string;
+                        };
+                        requestIdentifier?: string;
+                    };
+                    /** @enum {string} */
+                    kind: "amb.list_picker_response";
+                    sessionIdentifier?: string;
+                } | {
+                    data: {
+                        event: {
+                            identifier: string;
+                            imageIdentifier?: string;
+                            location?: {
+                                latitude?: number;
+                                longitude?: number;
+                                radius?: number;
+                                title?: string;
+                            };
+                            timeslots: {
+                                duration: number;
+                                identifier: string;
+                                startTime: string;
+                            }[];
+                            timezoneOffset?: number;
+                            title?: string;
+                        };
+                        images?: {
+                            description?: string | null;
+                            identifier: string;
+                            name: string | null;
+                        }[];
+                        receivedMessage?: {
+                            alternateTitle?: string;
+                            imageDescription?: string;
+                            imageIdentifier?: string;
+                            imageSubtitle?: string;
+                            imageTitle?: string;
+                            secondarySubtitle?: string;
+                            /** @enum {string} */
+                            style?: "icon" | "small" | "large";
+                            subtitle?: string;
+                            tertiarySubtitle?: string;
+                            title: string;
+                        };
+                        replyMessage?: {
+                            alternateTitle?: string;
+                            imageDescription?: string;
+                            imageIdentifier?: string;
+                            imageSubtitle?: string;
+                            imageTitle?: string;
+                            secondarySubtitle?: string;
+                            /** @enum {string} */
+                            style?: "icon" | "small" | "large";
+                            subtitle?: string;
+                            tertiarySubtitle?: string;
+                            title: string;
+                        };
+                        requestIdentifier?: string;
+                    };
+                    /** @enum {string} */
+                    kind: "amb.time_picker_response";
+                    sessionIdentifier?: string;
+                } | {
+                    data: {
+                        dynamic: {
+                            private?: boolean;
+                            selections: {
+                                items: {
+                                    identifier: string;
+                                    title?: string;
+                                    /** @enum {string} */
+                                    type?: "select" | "picker" | "datePicker" | "input";
+                                    value?: string;
+                                }[];
+                                pageIdentifier: string;
+                                subtitle?: string;
+                                title?: string;
+                            }[];
+                            /** @enum {string} */
+                            template: "messageForms";
+                            /** @enum {string} */
+                            version: "1.2";
+                        };
+                        images?: {
+                            description?: string | null;
+                            identifier: string;
+                            name: string | null;
+                        }[];
+                        receivedMessage?: {
+                            alternateTitle?: string;
+                            imageDescription?: string;
+                            imageIdentifier?: string;
+                            imageSubtitle?: string;
+                            imageTitle?: string;
+                            secondarySubtitle?: string;
+                            /** @enum {string} */
+                            style?: "icon" | "small" | "large";
+                            subtitle?: string;
+                            tertiarySubtitle?: string;
+                            title: string;
+                        };
+                        replyMessage?: {
+                            alternateTitle?: string;
+                            imageDescription?: string;
+                            imageIdentifier?: string;
+                            imageSubtitle?: string;
+                            imageTitle?: string;
+                            secondarySubtitle?: string;
+                            /** @enum {string} */
+                            style?: "icon" | "small" | "large";
+                            subtitle?: string;
+                            tertiarySubtitle?: string;
+                            title: string;
+                        };
+                        requestIdentifier?: string;
+                    };
+                    /** @enum {string} */
+                    kind: "amb.form_response";
+                    sessionIdentifier?: string;
+                } | {
+                    data: {
+                        authenticate: {
+                            error_code?: string;
+                            /** @enum {string} */
+                            status: "success" | "failure" | "cancel" | "unknown";
+                        };
+                        images?: {
+                            description?: string | null;
+                            identifier: string;
+                            name: string | null;
+                        }[];
+                        receivedMessage?: {
+                            alternateTitle?: string;
+                            imageDescription?: string;
+                            imageIdentifier?: string;
+                            imageSubtitle?: string;
+                            imageTitle?: string;
+                            secondarySubtitle?: string;
+                            /** @enum {string} */
+                            style?: "icon" | "small" | "large";
+                            subtitle?: string;
+                            tertiarySubtitle?: string;
+                            title: string;
+                        };
+                        replyMessage?: {
+                            alternateTitle?: string;
+                            imageDescription?: string;
+                            imageIdentifier?: string;
+                            imageSubtitle?: string;
+                            imageTitle?: string;
+                            secondarySubtitle?: string;
+                            /** @enum {string} */
+                            style?: "icon" | "small" | "large";
+                            subtitle?: string;
+                            tertiarySubtitle?: string;
+                            title: string;
+                        };
+                        requestIdentifier?: string;
+                    };
+                    /** @enum {string} */
+                    kind: "amb.authentication_response";
+                    sessionIdentifier?: string;
+                } | {
+                    appIcon?: {
+                        name: string | null;
+                    };
+                    bid: string;
+                    /** @enum {string} */
+                    kind: "amb.imessage_app_response";
+                    receivedMessage?: {
+                        alternateTitle?: string;
+                        imageDescription?: string;
+                        imageIdentifier?: string;
+                        imageSubtitle?: string;
+                        imageTitle?: string;
+                        secondarySubtitle?: string;
+                        /** @enum {string} */
+                        style?: "icon" | "small" | "large";
+                        subtitle?: string;
+                        tertiarySubtitle?: string;
+                        title: string;
+                    };
+                    replyMessage?: {
+                        alternateTitle?: string;
+                        imageDescription?: string;
+                        imageIdentifier?: string;
+                        imageSubtitle?: string;
+                        imageTitle?: string;
+                        secondarySubtitle?: string;
+                        /** @enum {string} */
+                        style?: "icon" | "small" | "large";
+                        subtitle?: string;
+                        tertiarySubtitle?: string;
+                        title: string;
+                    };
+                    sessionIdentifier?: string;
+                    URL?: string;
+                } | {
+                    /** @enum {string} */
+                    kind: "amb.invitation_response";
+                    requestIdentifier: string;
+                    /** @enum {string} */
+                    result: "accepted";
+                    sessionIdentifier: string | null;
+                } | {
+                    bid: string | null;
+                    /** @enum {string} */
+                    kind: "amb.unrecognized_interactive_response";
+                    markers: string[];
+                    requestIdentifier: string | null;
+                    sessionIdentifier: string | null;
+                };
+                /** Format: uuid */
+                conversationId: string;
+                /** Format: date-time */
+                createdAt: string;
+                /** @enum {string} */
+                direction: "inbound";
+                externalId: string;
+                /** Format: uuid */
+                id: string;
+                /** @enum {boolean} */
+                redacted: false;
+            } | {
+                actor: {
+                    /** @enum {string} */
+                    type: "customer";
+                };
+                attachments: {
+                    /** Format: uri */
+                    accessUrl: string | null;
+                    /** Format: date-time */
+                    accessUrlExpiresAt: string | null;
+                    /** Format: uuid */
+                    id: string;
+                    mimeType: string | null;
+                    originalFileName: string | null;
+                    sizeBytes: number | null;
+                    sortOrder: number;
+                    /** @enum {string} */
+                    status: "pending" | "ready" | "failed";
+                }[];
+                /** @enum {string} */
+                channel: "amb";
+                content: null;
+                /** Format: uuid */
+                conversationId: string;
+                /** Format: date-time */
+                createdAt: string;
+                /** @enum {string} */
+                direction: "inbound";
+                externalId: string;
+                /** Format: uuid */
+                id: string;
+                /** @enum {boolean} */
+                redacted: true;
+            } | {
+                actor: {
+                    /** Format: uuid */
+                    id: string;
+                    /** @enum {string} */
+                    type: "user";
+                } | {
+                    /** Format: uuid */
+                    id: string;
+                    /** @enum {string} */
+                    type: "integration";
+                } | {
+                    /** @enum {string} */
+                    type: "system";
+                };
+                attachments: {
+                    /** Format: uri */
+                    accessUrl: string | null;
+                    /** Format: date-time */
+                    accessUrlExpiresAt: string | null;
+                    /** Format: uuid */
+                    id: string;
+                    mimeType: string | null;
+                    originalFileName: string | null;
+                    sizeBytes: number | null;
+                    sortOrder: number;
+                    /** @enum {string} */
+                    status: "pending" | "ready" | "failed";
+                }[];
+                /** @enum {string} */
+                channel: "amb";
+                content: null;
+                /** Format: uuid */
+                conversationId: string;
+                /** Format: date-time */
+                createdAt: string;
+                /** @enum {string} */
+                direction: "outbound";
+                externalId: string;
+                /** Format: uuid */
+                id: string;
+                /** @enum {boolean} */
+                redacted: true;
+            })[];
+            optedOut: boolean;
             /** @enum {string} */
-            purpose: "connect";
-            /** @enum {string|null} */
-            reasonCode: "recipient_unavailable" | "provider_rejected" | "provider_error" | "transport_error" | null;
-            /** @enum {string} */
-            status: "submitting" | "submitted" | "provider_rejected" | "error" | "accepted" | "declined";
-            /** @enum {string|null} */
-            targetAgentStatus: "bot" | "live" | null;
-            targetFirstName: string | null;
-            targetLastName: string | null;
+            status: "active" | "closed" | "opted_out";
             /** Format: date-time */
             updatedAt: string;
         };
-        ConversationInitiationError: {
-            /** @enum {string} */
-            error: "invalid_recipient" | "invalid_reference" | "invalid_target_name" | "idempotency_conflict" | "initiation_unavailable" | "not_found";
-        };
-        ConversationInitiationList: {
-            initiations: components["schemas"]["ConversationInitiation"][];
-            /** Format: uuid */
-            nextCursor: string | null;
-        };
-        /** @description A single conversation summary row as returned by the conversation list endpoint. */
+        /** @description A single conversation summary returned by the conversation list endpoint. */
         ConversationListItem: {
-            /**
-             * @description Who is currently handling the conversation: `bot` (automation), `live` (a human agent), or `closed`.
-             * @example live
-             * @enum {string}
-             */
+            /** @enum {string} */
             agentStatus: "bot" | "live" | "closed";
-            /**
-             * @description Identifier of the workspace user assigned to this conversation. Null if unassigned.
-             * @example 018f1a2b-0000-7000-8000-0000000000c2
-             */
+            /** Format: uuid */
             assignedUserId: string | null;
-            /**
-             * @description Identifier of the business that owns this conversation.
-             * @example 018f1a2b-0000-7000-8000-0000000000b1
-             */
+            /** Format: uuid */
             businessId: string;
-            /**
-             * @description Channel-reported capability list for this conversation (channel-specific JSON). Null when not reported.
-             * @example [
-             *       "QUICK"
-             *     ]
-             */
-            capabilityList?: unknown;
-            /**
-             * @description The channel-native address of the customer endpoint (opaque to callers).
-             * @example urn:mbid:AQAAY...
-             */
+            capabilityList: ("QUICK" | "LIST" | "TIME" | "AUTH" | "AUTH2" | "FORM")[] | null;
             channelAddress: string;
-            /**
-             * @description The channel platform this conversation is carried over.
-             * @example amb
-             * @enum {string}
-             */
-            channelPlatform: "amb" | "tiktok" | "whatsapp" | "rcs" | "sms" | "instagram" | "facebook_messenger" | "telegram" | "line" | "wechat" | "email" | "custom";
-            /**
-             * @description ISO-8601 timestamp when the conversation was created.
-             * @example 2026-06-01T09:00:00.000Z
-             */
+            /** @enum {string} */
+            channelPlatform: "amb";
+            /** Format: date-time */
             createdAt: string;
-            /**
-             * @description Customer email address, when known. Null if not captured.
-             * @example ada@example.com
-             */
             email: string | null;
-            /**
-             * @description Customer first name, when known. Null if not captured.
-             * @example Ada
-             */
             firstName: string | null;
-            /**
-             * @description Identifier of the group this conversation is bucketed into, when applicable.
-             * @example null
-             */
             groupId: string | null;
-            /**
-             * @description UUIDv7 identifier of the conversation.
-             * @example 018f1a2b-0000-7000-8000-000000000001
-             */
+            /** Format: uuid */
             id: string;
-            /**
-             * @description Identifier of the detected intent, when one has been classified. Null otherwise.
-             * @example null
-             */
             intentId: string | null;
-            /**
-             * @description ISO-8601 timestamp of the most recent message in this conversation.
-             * @example 2026-06-11T14:32:00.000Z
-             */
+            /** Format: date-time */
             lastMessageAt: string;
-            /**
-             * @description Customer last name, when known. Null if not captured.
-             * @example Lovelace
-             */
             lastName: string | null;
-            /**
-             * @description BCP-47 / channel locale of the conversation, when known.
-             * @example en_US
-             */
             locale: string | null;
-            /**
-             * @description Whether the customer has opted out of messaging on this conversation.
-             * @example false
-             */
             optedOut: boolean;
-            /**
-             * @description Lifecycle status of the conversation.
-             * @example active
-             * @enum {string}
-             */
+            /** @enum {string} */
             status: "active" | "closed" | "opted_out";
-            /**
-             * @description ISO-8601 timestamp when the conversation was last updated.
-             * @example 2026-06-11T14:32:00.000Z
-             */
+            /** Format: date-time */
             updatedAt: string;
         };
         /** @description A cursor-paginated page of conversation summaries. */
         ConversationListResponse: {
-            /** @description The page of conversation summaries, newest activity first. */
-            conversations: components["schemas"]["ConversationListItem"][];
-            /**
-             * @description Pass as `cursor` to fetch the next page. Null when this is the last page.
-             * @example 018f1a2b-0000-7000-8000-000000000099
-             */
+            conversations: {
+                /** @enum {string} */
+                agentStatus: "bot" | "live" | "closed";
+                /** Format: uuid */
+                assignedUserId: string | null;
+                /** Format: uuid */
+                businessId: string;
+                capabilityList: ("QUICK" | "LIST" | "TIME" | "AUTH" | "AUTH2" | "FORM")[] | null;
+                channelAddress: string;
+                /** @enum {string} */
+                channelPlatform: "amb";
+                /** Format: date-time */
+                createdAt: string;
+                email: string | null;
+                firstName: string | null;
+                groupId: string | null;
+                /** Format: uuid */
+                id: string;
+                intentId: string | null;
+                /** Format: date-time */
+                lastMessageAt: string;
+                lastName: string | null;
+                locale: string | null;
+                optedOut: boolean;
+                /** @enum {string} */
+                status: "active" | "closed" | "opted_out";
+                /** Format: date-time */
+                updatedAt: string;
+            }[];
             nextCursor: string | null;
         };
-        /** @description A single message within a conversation detail response. */
-        ConversationMessage: {
-            /**
-             * @description Id of the sending actor — a User id when `actorType` is `user`, an Integration id when `integration`. Null for inbound/system messages.
-             * @example 018f1a2b-0000-7000-8000-0000000000c2
-             */
-            actorId: string | null;
-            /**
-             * @description Kind of actor that sent the message: `user` (a workspace user) or `integration` (a machine API consumer). Null for inbound (customer) / system messages.
-             * @example user
-             * @enum {string|null}
-             */
-            actorType: "user" | "integration" | null;
-            /** @description Attachments embedded on this message. Empty when there are none. */
-            attachments: components["schemas"]["ConversationMessageAttachment"][];
-            /**
-             * @description The downstream channel’s native message id. Null until the channel assigns one.
-             * @example 018f1a2b-0000-7000-8000-0000000000fe
-             */
-            channelMessageId: string | null;
-            /**
-             * @description Structured, message-type-specific payload (channel-specific JSON). Null when the message has no structured content.
-             * @example null
-             */
-            content?: unknown;
-            /**
-             * @description Identifier of the conversation this message belongs to.
-             * @example 018f1a2b-0000-7000-8000-000000000001
-             */
-            conversationId: string;
-            /**
-             * @description ISO-8601 timestamp when the message was created.
-             * @example 2026-06-11T14:30:00.000Z
-             */
-            createdAt: string;
-            /**
-             * @description Whether the message carries one or more attachments.
-             * @example false
-             */
-            hasAttachments: boolean;
-            /**
-             * @description UUIDv7 identifier of the message.
-             * @example 018f1a2b-0000-7000-8000-0000000000ff
-             */
-            id: string;
-            /**
-             * @description Whether the message was produced through the standardized channel pipeline.
-             * @example true
-             */
-            isStandardized: boolean;
-            /**
-             * @description The kind of message.
-             * @example text
-             * @enum {string}
-             */
-            messageType: "text" | "interactive" | "tapback" | "opt_out" | "typing" | "rich_message" | "raw_channel" | "business_update" | "system";
-            /**
-             * @description Who originated the message.
-             * @example business
-             * @enum {string}
-             */
-            senderType: "customer" | "business" | "system";
-            /**
-             * @description Delivery status of the message.
-             * @example delivered
-             * @enum {string}
-             */
-            status: "queued" | "delivered" | "received";
-            /**
-             * @description The text body of the message, when present. Null for non-text messages.
-             * @example Hi! Your appointment is confirmed for 2pm tomorrow.
-             */
-            textBody: string | null;
-            /**
-             * @description ISO-8601 timestamp when the message was last updated.
-             * @example 2026-06-11T14:30:00.000Z
-             */
-            updatedAt: string;
-        };
-        /** @description Slimmed attachment projection embedded on a conversation message. */
-        ConversationMessageAttachment: {
-            /**
-             * @description Time-limited URL for downloading the attachment, when available. Null while the attachment is not yet ready or has no cached URL.
-             * @example https://media.example.com/018f1a2b...?sig=...
-             */
-            accessUrl: string | null;
-            /**
-             * @description ISO-8601 expiry of `accessUrl`. Null when no URL is present.
-             * @example 2026-06-11T15:00:00.000Z
-             */
-            accessUrlExpiresAt: string | null;
-            /**
-             * @description Identifier of the message attachment.
-             * @example 018f1a2b-0000-7000-8000-00000000aaaa
-             */
-            id: string;
-            /**
-             * @description MIME type of the attachment, when known. Null otherwise.
-             * @example application/pdf
-             */
-            mimeType: string | null;
-            /**
-             * @description Original file name of the uploaded attachment, or `null` when the provider omitted it.
-             * @example receipt.pdf
-             */
-            originalFileName: string | null;
-            /**
-             * @description Zero-based ordering of this attachment within the message.
-             * @example 0
-             */
-            sortOrder: number;
-            /**
-             * @description Processing status of the attachment.
-             * @example ready
-             * @enum {string}
-             */
-            status: "pending" | "ready" | "failed";
-        };
-        /** @description Self-serve business-creation request. `name` is required; all other fields are optional onboarding metadata. */
-        CreateBusinessBody: {
-            /**
-             * @description Industry/category the business operates in.
-             * @example ecommerce
-             * @enum {string}
-             */
-            businessType?: "ecommerce" | "retail" | "healthcare" | "financial_services" | "hospitality" | "travel" | "education" | "technology" | "media" | "nonprofit" | "government" | "professional_services" | "other";
-            /**
-             * @description Free-form company size descriptor (e.g. an employee-count band).
-             * @example 11-50
-             */
-            companySize?: string;
-            /**
-             * @description Country the business primarily operates in.
-             * @example United States
-             */
-            country?: string;
-            /**
-             * @description Registered legal entity name, if different from the display name.
-             * @example Acme Incorporated, LLC
-             */
-            legalName?: string;
-            /**
-             * @description Business/company display name. The only required field.
-             * @example Acme Inc.
-             */
-            name: string;
-            /** @description Primary point of contact for the business (onboarding metadata). */
-            primaryContact?: {
-                /**
-                 * Format: email
-                 * @description Primary contact email address.
-                 * @example jane.doe@acme.example.com
-                 */
-                email?: string;
-                /**
-                 * @description Primary contact first name.
-                 * @example Jane
-                 */
-                firstName?: string;
-                /**
-                 * @description Primary contact last name.
-                 * @example Doe
-                 */
-                lastName?: string;
-                /**
-                 * @description Primary contact phone number.
-                 * @example +1-202-555-0142
-                 */
-                phone?: string;
+        CreateMessagingInvitation: {
+            branding?: {
+                /** @description Canonical padded RFC 4648 Base64 only. The decoded value is also validated as a product-accepted PNG. */
+                brandLogoPngBase64: string;
+                /** @description Brand name is trimmed before validation and must contain 1–255 Unicode code points with no control characters. */
+                brandName: string;
             };
-            /**
-             * @description How the business heard about the platform.
-             * @example Referral from a partner
-             */
-            referralSource?: string;
-            /**
-             * @description URL-safe slug for the production organization (lowercase letters, digits, and hyphens). Optional — auto-generated from `name` when omitted. Must be unique; a collision returns 409.
-             * @example acme-inc
-             */
-            slug?: string;
-            /** @description Customer-facing support contact for the business. */
-            supportContact?: {
-                /**
-                 * Format: email
-                 * @description Support contact email address.
-                 * @example support@acme.example.com
-                 */
-                email?: string;
-                /**
-                 * @description Support contact phone number.
-                 * @example +1-202-555-0188
-                 */
-                phone?: string;
-            };
-            /**
-             * @description IANA timezone identifier for the business.
-             * @example America/New_York
-             */
-            timezone?: string;
-            /**
-             * @description Messaging use cases the business intends to use (up to 20).
-             * @example [
-             *       "customer_support",
-             *       "appointments"
-             *     ]
-             */
-            useCases?: ("customer_support" | "marketing_promotions" | "transactional_notifications" | "payments" | "appointments" | "other")[];
-            /**
-             * Format: uri
-             * @description Business website URL.
-             * @example https://acme.example.com
-             */
-            website?: string;
-        };
-        /** @description The newly created business with its production organization nested underneath. */
-        CreateBusinessResponse: {
-            /** @description The created business, shaped to mirror a `GET /api/v0/businesses` item so the frontend can drop it straight into the list. */
-            business: {
-                /**
-                 * @description Identifier of the newly created business (client).
-                 * @example 018f1a2b-0000-7000-8000-0000000000c1
-                 */
-                id: string;
-                /**
-                 * @description Always `null` here — see the organization `logo` field.
-                 * @example null
-                 */
-                logo: null;
-                /**
-                 * @description Business display name.
-                 * @example Acme Inc.
-                 */
-                name: string;
-                /**
-                 * @description Organizations under the new business. Contains exactly the one production org created by this request.
-                 * @example [
-                 *       {
-                 *         "id": "018f1a2b-0000-7000-8000-000000000001",
-                 *         "name": "Acme Inc.",
-                 *         "slug": "acme-inc",
-                 *         "logo": null,
-                 *         "type": "production",
-                 *         "role": "owner"
-                 *       }
-                 *     ]
-                 */
-                orgs: components["schemas"]["CreatedBusinessOrg"][];
-                /**
-                 * @description Lifecycle status of the business. A freshly created business is `active`.
-                 * @example active
-                 * @enum {string}
-                 */
-                status: "active" | "suspended" | "deprovisioning";
-            };
-        };
-        /**
-         * @example {
-         *       "channel": "amb",
-         *       "phoneNumber": "+15551234567",
-         *       "purpose": "connect",
-         *       "idempotencyKey": "case-123-attempt-1",
-         *       "targetFirstName": "Ada"
-         *     }
-         */
-        CreateConversationInitiation: {
             callerReference?: string | null;
             /** @enum {string} */
-            channel: "amb" | "tiktok";
-            idempotencyKey: string;
+            channel: "amb";
             phoneNumber: string;
             /** @enum {string} */
             purpose: "connect";
+            /** Format: uuid */
+            requestMessageId: string;
             /** @enum {string} */
             targetAgentStatus?: "bot" | "live";
             targetFirstName?: string;
             targetLastName?: string;
         };
-        /** @description The production organization created alongside the new business. */
-        CreatedBusinessOrg: {
-            /**
-             * @description Identifier of the newly created production organization.
-             * @example 018f1a2b-0000-7000-8000-000000000001
-             */
-            id: string;
-            /**
-             * @description Always `null` here. A logo is uploaded as PNG bytes through `PUT /api/admin/businesses/settings/logo` once the organization exists.
-             * @example null
-             */
-            logo: null;
-            /**
-             * @description Display name of the organization.
-             * @example Acme Inc.
-             */
-            name: string;
-            /**
-             * @description The creator's role on the new org. Always `owner`.
-             * @example owner
-             * @enum {string}
-             */
-            role: "owner" | "1440_user" | "admin" | "member";
-            /**
-             * @description URL-safe organization slug (supplied or auto-generated from `name`).
-             * @example acme-inc
-             */
-            slug: string;
-            /**
-             * @description Organization type. Always `production` for the org created here.
-             * @example production
-             * @enum {string}
-             */
-            type: "production" | "sandbox";
-        };
-        CreateIntegrationBody: {
-            /**
-             * @default both
-             * @enum {string}
-             */
-            aiMode: "ai_enabled" | "ai_disabled" | "both";
-            /**
-             * Format: uri
-             * @default null
-             */
-            endpointUrl: string | null;
-            /**
-             * @default generic
-             * @enum {string}
-             */
-            flavor: "generic" | "official";
-            name: string;
-            /** @default null */
-            officialKey: string | null;
-            /**
-             * Format: uuid
-             * @description Permission set to assign. `null` selects the organization’s `no_access` set before persistence.
-             * @default null
-             */
-            permissionSetId: string | null;
-            /** @default [] */
-            subscribedEvents: ("message.received" | "initiation.updated")[];
-            /**
-             * @default member
-             * @enum {string}
-             */
-            tier: "member" | "admin";
-        };
-        CreateIntegrationResult: {
-            integration: components["schemas"]["Integration"];
-            /**
-             * @description Display-once webhook signing secret, formatted `whsec_<base64>`. Store it now — it is never shown again. To verify a delivery, base64-decode the part after the `whsec_` prefix to get the HMAC-SHA256 key.
-             * @example whsec_Gk7pX2mQ9rT4vB8nL1zC6sJ0wD3yF5hA7eR2uK9oIc=
-             */
-            signingSecret: string;
-        };
-        /**
-         * @description Invite a person by email to join the organization with a tier and permission set.
-         * @example {
-         *       "email": "jordan@acme-dental.com",
-         *       "role": "member",
-         *       "permissionSetId": null
-         *     }
-         */
-        CreateInvitationBody: {
-            /**
-             * Format: email
-             * @description Email address of the person being invited. Normalized (trim + lowercase). The invitee must sign in/up with this exact email to accept.
-             * @example jordan@acme-dental.com
-             */
-            email: string;
-            /**
-             * Format: uuid
-             * @description Fine-grained permission set (axis 2) to grant on accept. Pass a permission-set id, or `null`/omit to select the acting organization’s `no_access` set before persistence. The stored invitation always references a permission set.
-             * @example 018f1a2b-0000-7000-8000-0000000000b2
-             */
-            permissionSetId?: string | null;
-            /**
-             * @description Coarse membership tier (axis 1) granted on accept. Only `admin` and `member` are invitable — `owner` and `1440_user` cannot be granted through this surface.
-             * @example member
-             * @enum {string}
-             */
-            role: "admin" | "member";
-        };
-        /** @description The created invitation summary plus the show-once raw token. */
-        CreateInvitationResult: {
-            invitation: components["schemas"]["InvitationSummary"];
-            /**
-             * @description The raw invitation token, returned EXACTLY ONCE. The admin composes the invite URL `<frontend-origin>/invite/<token>` and delivers it manually. Not recoverable — if lost, create a new invitation for the same email; it replaces the pending one.
-             * @example YmFzZTY0dXJsLXRva2VuLWV4YW1wbGUtMzJieXRlcw
-             */
-            token: string;
-        };
-        /**
-         * @description Request to mint a business-scoped access JWT for the given `businessId` from a signed-in session (the `/user` mint endpoint).
-         * @example {
-         *       "businessId": "018f1a2b-0000-7000-8000-000000000001"
-         *     }
-         */
-        CreateJwtBody: {
-            /**
-             * @description Identifier of the business (organization) the minted JWT will be scoped to. The caller must be a member of it (the session is re-resolved server-side). The token is scoped to this business; authorization is resolved per request from the caller’s membership in it (the token itself carries no permissions or tier).
-             * @example 018f1a2b-0000-7000-8000-000000000001
-             */
-            businessId: string;
-        };
-        /** @description Returned after an invitation is declined. */
-        DeclineInvitationResult: {
-            /**
-             * @description Identifier of the organization whose invitation was declined.
-             * @example 018f1a2b-0000-7000-8000-000000000a01
-             */
-            organizationId: string;
-        };
-        /** @description Returned when an invitation has been deleted. */
-        DeleteInvitationResult: {
-            /**
-             * @description Identifier of the deleted invitation.
-             * @example 018f1a2b-0000-7000-8000-0000000000c3
-             */
-            id: string;
-        };
-        /** @description Canonical error envelope. Every non-2xx response from the API uses this shape: an `error` string describing what went wrong, plus an optional machine-readable `code`. */
+        /** @description Common error envelope used where declared: an `error` string describing what went wrong, plus an optional machine-readable `code`. */
         ErrorResponse: {
             /**
              * @description Stable machine-readable reason code, present when the failure has one the client is expected to branch on (e.g. mapping it to a field-level message).
@@ -2026,95 +1590,6 @@ export interface components {
              * @example Conversation not found for this business
              */
             error: string;
-        };
-        /**
-         * @description Upsert a platform-admin grant for an existing user at the given role. Re-granting an existing admin updates their role in place.
-         * @example {
-         *       "userId": "018f1a2b-0000-7000-8000-000000000001",
-         *       "role": "Operator"
-         *     }
-         */
-        GrantPlatformAdminBody: {
-            role: components["schemas"]["PlatformRole"];
-            /**
-             * Format: uuid
-             * @description Identifier of the EXISTING user to grant (or re-grant) a platform-admin role to. The grant never creates an identity — an unknown user yields 404.
-             * @example 018f1a2b-0000-7000-8000-000000000001
-             */
-            userId: string;
-        };
-        /** @description Liveness payload returned by the health route, including the server timestamp. */
-        HealthStatus: {
-            /**
-             * @description Identifier of the service that answered the health check.
-             * @example api
-             * @enum {string}
-             */
-            service: "api";
-            /**
-             * @description Liveness signal. Always `ok` when the process is able to respond.
-             * @example ok
-             * @enum {string}
-             */
-            status: "ok";
-            /**
-             * @description ISO-8601 timestamp at which the health check was served.
-             * @example 2026-06-11T12:30:00.000Z
-             */
-            timestamp: string;
-        };
-        Integration: {
-            /** @enum {string} */
-            aiMode: "ai_enabled" | "ai_disabled" | "both";
-            autoDisabledAt: string | null;
-            createdAt: string;
-            endpointUrl: string | null;
-            /** @enum {string} */
-            flavor: "generic" | "official";
-            id: string;
-            name: string;
-            officialKey: string | null;
-            outboundEnabled: boolean;
-            permissionSetId: string;
-            signingKeyVersion: number;
-            /** @enum {string} */
-            status: "active" | "disabled" | "revoked";
-            subscribedEvents: string[];
-            tier: string;
-            updatedAt: string;
-        };
-        IntegrationApiKey: {
-            createdAt: string;
-            expiresAt: string | null;
-            id: string;
-            lastFour: string;
-            lastUsedAt: string | null;
-            prefix: string;
-            revokedAt: string | null;
-            /** @enum {string} */
-            status: "active" | "revoked";
-        };
-        IntegrationApiKeyList: components["schemas"]["IntegrationApiKey"][];
-        IntegrationDelivery: {
-            attemptCount: number;
-            completedAt: string | null;
-            conversationId: string | null;
-            createdAt: string;
-            eventId: string;
-            eventType: string;
-            failureCode: string | null;
-            failureMessage: string | null;
-            id: string;
-            lastHttpStatus: number | null;
-            messageId: string | null;
-            /** @enum {string} */
-            status: "pending" | "delivered" | "failed" | "dead";
-            updatedAt: string;
-        };
-        IntegrationDeliveryList: components["schemas"]["IntegrationDelivery"][];
-        IntegrationList: components["schemas"]["Integration"][];
-        IntegrationReplayResult: {
-            deliveryId: string;
         };
         /**
          * @description A freshly minted integration (`type: "api"`) access JWT plus its expiry and the integration’s display-only authorization grant (for capability discovery).
@@ -2132,827 +1607,93 @@ export interface components {
          *     }
          */
         IntegrationTokenResponse: {
-            /**
-             * @description ISO-8601 instant at which the token expires.
-             * @example 2026-06-15T12:15:00.000Z
-             */
+            /** @description ISO-8601 instant at which the token expires. */
             expiresAt: string;
             grant: components["schemas"]["ActorGrant"];
-            /**
-             * @description The signed business access JWT for the integration. Present it as the `bearerAuth` credential on every route whose auth posture is `jwt`. It is pure identity — it encodes the integration’s organization and actor id only (no permission or tier claims; authorization is resolved per request server-side) — and is short-lived: re-exchange the API key once `expiresAt` passes (the API key is the long-lived refresh credential).
-             * @example eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.<payload>.<sig>
-             */
+            /** @description The short-lived business access JWT. Send it as `Authorization: Bearer <token>` and re-exchange the API key after `expiresAt`. */
             token: string;
             /**
              * @description Token scheme. Always `Bearer` — send the token as `Authorization: Bearer <token>` on subsequent API calls.
-             * @example Bearer
              * @enum {string}
              */
             tokenType: "Bearer";
             /**
              * @description Always `api` — this token represents an integration (machine) actor.
-             * @example api
              * @enum {string}
              */
             type: "api";
         };
-        /** @description A conversation option for the internal admin message browser. */
-        InternalAdminConversation: {
-            /**
-             * @description The customer-side channel address for this conversation.
-             * @example +15555550123
-             */
-            channelAddress: string;
-            /**
-             * @description The channel platform the conversation runs on.
-             * @example amb
-             */
-            channelPlatform: string;
-            /**
-             * @description Conversation identifier.
-             * @example 018f1a2b-0000-7000-8000-0000000000c0
-             */
-            id: string;
-            /**
-             * @description ISO-8601 timestamp of the most recent message in the conversation.
-             * @example 2026-06-11T11:45:00.000Z
-             */
-            lastMessageAt: string;
-        };
-        /** @description Up to 100 conversations (the page cap) for the Organization, most-recently-active first. */
-        InternalAdminConversationList: components["schemas"]["InternalAdminConversation"][];
-        /** @description A message (with attachments and conversation context) for the internal admin surface. */
-        InternalAdminMessage: {
-            /**
-             * @description Sender actor id (User or Integration), or `null` for inbound/system.
-             * @example null
-             */
-            actorId: string | null;
-            /**
-             * @description Sender actor kind (`user`/`integration`), or `null` for inbound/system.
-             * @example null
-             * @enum {string|null}
-             */
-            actorType: "user" | "integration" | null;
-            /**
-             * @description Attachments on the message, ordered by sort order then creation time.
-             * @example []
-             */
-            attachments: components["schemas"]["InternalAdminMessageAttachment"][];
-            /**
-             * @description Owning Organization (business) identifier.
-             * @example 018f1a2b-0000-7000-8000-000000000001
-             */
-            businessId: string;
-            /**
-             * @description Owning Organization display name.
-             * @example Acme Dental
-             */
-            businessName: string;
-            /**
-             * @description Downstream channel native message id, or `null`.
-             * @example amb_018f1a2b
-             */
-            channelMessageId: string | null;
-            /**
-             * @description Structured channel-specific content payload (arbitrary JSON), or `null`.
-             * @example null
-             */
-            content?: unknown;
-            /**
-             * @description The conversation’s customer-side channel address.
-             * @example +15555550123
-             */
-            conversationChannelAddress: string;
-            /**
-             * @description The conversation’s channel platform.
-             * @example amb
-             */
-            conversationChannelPlatform: string;
-            /**
-             * @description Owning conversation identifier.
-             * @example 018f1a2b-0000-7000-8000-0000000000c0
-             */
-            conversationId: string;
-            /**
-             * @description ISO-8601 creation timestamp.
-             * @example 2026-06-11T11:45:00.000Z
-             */
-            createdAt: string;
-            /**
-             * @description Whether the message has any attachments.
-             * @example false
-             */
-            hasAttachments: boolean;
-            /**
-             * @description Message identifier.
-             * @example 018f1a2b-0000-7000-8000-0000000000m1
-             */
-            id: string;
-            /**
-             * @description Whether the message used the standardized channel pipeline.
-             * @example true
-             */
-            isStandardized: boolean;
-            /**
-             * @description The message type.
-             * @example text
-             */
-            messageType: string;
-            /**
-             * @description Who sent the message.
-             * @example customer
-             */
-            senderType: string;
-            /**
-             * @description Delivery status of the message.
-             * @example delivered
-             */
-            status: string;
-            /**
-             * @description Plain-text body, or `null` for non-text messages.
-             * @example Hello, I have a question about my appointment.
-             */
-            textBody: string | null;
-            /**
-             * @description ISO-8601 last-update timestamp.
-             * @example 2026-06-11T11:45:05.000Z
-             */
-            updatedAt: string;
-        };
-        /** @description An attachment on an internal-admin message, including storage and access metadata. */
-        InternalAdminMessageAttachment: {
-            /**
-             * @description Time-limited access URL, or `null` if not yet issued.
-             * @example https://cdn.1440.io/media/abc?sig=...
-             */
-            accessUrl: string | null;
-            /**
-             * @description ISO-8601 expiry of `accessUrl`, or `null`.
-             * @example 2026-06-11T13:00:00.000Z
-             */
-            accessUrlExpiresAt: string | null;
-            /**
-             * @description Owning Organization (business) identifier.
-             * @example 018f1a2b-0000-7000-8000-000000000001
-             */
-            businessId: string;
-            /**
-             * @description Channel platform the attachment was sent over.
-             * @example amb
-             */
-            channelPlatform: string;
-            /**
-             * @description SHA-256 checksum of the plaintext, or `null`.
-             * @example e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-             */
-            checksumSha256: string | null;
-            /**
-             * @description Owning conversation identifier.
-             * @example 018f1a2b-0000-7000-8000-0000000000c0
-             */
-            conversationId: string;
-            /**
-             * @description ISO-8601 creation timestamp.
-             * @example 2026-06-11T11:44:00.000Z
-             */
-            createdAt: string;
-            /**
-             * @description Processing error message, or `null` on success.
-             * @example null
-             */
-            errorMessage: string | null;
-            /**
-             * @description Attachment identifier.
-             * @example 018f1a2b-0000-7000-8000-0000000000a1
-             */
-            id: string;
-            /**
-             * @description Owning message identifier.
-             * @example 018f1a2b-0000-7000-8000-0000000000m1
-             */
-            messageId: string;
-            /**
-             * @description MIME type, or `null` if unknown.
-             * @example application/pdf
-             */
-            mimeType: string | null;
-            /**
-             * @description Original uploaded file name, or `null`.
-             * @example receipt.pdf
-             */
-            originalFileName: string | null;
-            /**
-             * @description Decrypted size in bytes, or `null`.
-             * @example 204800
-             */
-            sizeBytes: number | null;
-            /**
-             * @description Display order within the message.
-             * @example 0
-             */
-            sortOrder: number;
-            /**
-             * @description Attachment processing status.
-             * @example ready
-             */
-            status: string;
-            /**
-             * @description Storage bucket name, or `null`.
-             * @example msp-media-prod
-             */
-            storageBucket: string | null;
-            /**
-             * @description Object key within the bucket, or `null`.
-             * @example media/2026/06/abc.pdf.enc
-             */
-            storageObjectKey: string | null;
-            /**
-             * @description Storage backend identifier, or `null`.
-             * @example gcs
-             */
-            storageProvider: string | null;
-            /**
-             * @description ISO-8601 last-update timestamp.
-             * @example 2026-06-11T11:44:30.000Z
-             */
-            updatedAt: string;
-        };
-        /** @description Up to the 25 most recent messages in the conversation, newest first. */
-        InternalAdminMessageList: components["schemas"]["InternalAdminMessage"][];
-        /** @description Current TikTok webhook configuration as seen by the platform. */
-        InternalAdminTikTokWebhookStatus: {
-            /**
-             * @description The configured TikTok app id (empty string if `TIKTOK_APP_ID` is unset).
-             * @example 7000000000000000000
-             */
-            appId: string;
-            /**
-             * @description The webhook callback URL registered with TikTok, or `null` if none.
-             * @example https://api.1440.io/api/webhooks/tiktok
-             */
-            callbackUrl: string | null;
-            /**
-             * @description Whether the TikTok webhook is currently configured.
-             * @example true
-             */
-            configured: boolean;
-        };
-        /** @description Public, pre-auth preview of a pending invitation. */
-        InvitationPreview: {
-            /**
-             * @description ISO-8601 expiry timestamp.
-             * @example 2026-06-20T14:30:00.000Z
-             */
-            expiresAt: string;
-            /**
-             * @description Display name of the admin who created the invite, or `null` when unknown.
-             * @example Jordan Lee
-             */
-            inviterName: string | null;
-            /**
-             * @description Whether the target organization is a sandbox.
-             * @example false
-             */
-            isSandbox: boolean;
-            /**
-             * @description Name of the organization the invitee is being invited to join.
-             * @example Acme Dental
-             */
-            organizationName: string;
-            /**
-             * @description The tier the invitee will be granted on accept.
-             * @example member
-             * @enum {string}
-             */
-            tier: "admin" | "member";
-        };
-        /** @description An org-membership invitation. Never includes the token. */
-        InvitationSummary: {
-            /**
-             * @description ISO-8601 creation timestamp.
-             * @example 2026-06-16T14:30:00.000Z
-             */
-            createdAt: string;
-            /**
-             * @description Normalized invited email address.
-             * @example jordan@acme-dental.com
-             */
-            email: string;
-            /**
-             * @description ISO-8601 expiry timestamp; the invite is unusable once this passes.
-             * @example 2026-06-20T14:30:00.000Z
-             */
-            expiresAt: string;
-            /**
-             * @description Invitation identifier.
-             * @example 018f1a2b-0000-7000-8000-0000000000c3
-             */
-            id: string;
-            /**
-             * @description Referenced permission set granted on accept. Always present; no access is represented by the organization’s `no_access` set.
-             * @example 018f1a2b-0000-7000-8000-0000000000b2
-             */
-            permissionSetId: string;
-            /**
-             * @description Tier the invitee is granted on accept.
-             * @example member
-             * @enum {string}
-             */
-            role: "admin" | "member";
-            /**
-             * @description Lifecycle status. Expiry is computed live and never stored.
-             * @example pending
-             * @enum {string}
-             */
-            status: "pending" | "accepted" | "declined";
-        };
-        /** @description The invitation token to accept or decline. */
-        InvitationTokenBody: {
-            /**
-             * @description The opaque invitation token from the invite URL.
-             * @example YmFzZTY0dXJsLXRva2VuLWV4YW1wbGUtMzJieXRlcw
-             */
-            token: string;
-        };
-        /** @description A public JSON Web Key (RFC 7517). */
-        Jwk: {
-            alg?: string;
-            crv?: string;
-            e?: string;
-            key_ops?: string[];
-            kid?: string;
-            /**
-             * @description Key type (e.g. `EC`, `RSA`, `OKP`).
-             * @example EC
-             */
-            kty?: string;
-            n?: string;
-            use?: string;
-            x?: string;
-            y?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        /** @description JSON Web Key Set — the public keys that verify access JWTs. */
-        Jwks: {
-            keys: components["schemas"]["Jwk"][];
-        };
-        /**
-         * @description A freshly minted business access JWT plus the metadata needed to use and refresh it, and the actor’s display-only authorization grant.
-         * @example {
-         *       "type": "user",
-         *       "tokenType": "Bearer",
-         *       "token": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.<payload>.<sig>",
-         *       "expiresAt": "2026-06-11T12:30:00.000Z",
-         *       "grant": {
-         *         "tier": "admin",
-         *         "permissionKeys": [
-         *           "ViewConversations",
-         *           "ViewTemplates"
-         *         ]
-         *       }
-         *     }
-         */
-        JwtIssueResponse: {
-            /**
-             * @description ISO-8601 timestamp at which the token expires. After this instant calls authenticated with the token are rejected and a new token must be minted.
-             * @example 2026-06-11T12:30:00.000Z
-             */
-            expiresAt: string;
-            grant: components["schemas"]["ActorGrant"];
-            /**
-             * @description The signed business access JWT. Present it as the `bearerAuth` credential (`Authorization: Bearer <token>`) on every other route whose auth posture is `jwt`. The token is pure identity — it encodes the business id and actor only (no permission or tier claims); authorization is resolved per request server-side, so permission changes take effect mid-token. Re-mint a fresh token once it expires.
-             * @example eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMThmMWEyYi0wMDAwLTcwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJ0eXAiOiJ1c2VyIn0.S1gnatur3-pl4ceh0lder-n0t-a-real-t0ken
-             */
-            token: string;
-            /**
-             * @description Token scheme. Always `Bearer` — send the token as `Authorization: Bearer <token>` on subsequent API calls.
-             * @example Bearer
-             * @enum {string}
-             */
-            tokenType: "Bearer";
-            /**
-             * @description Origin of the token: `user` for the session-backed mint (`/user`).
-             * @example user
-             * @enum {string}
-             */
-            type: "user";
-        };
-        /** @description One keyset page returned by the invitation-list endpoint. */
-        ListInvitationsResult: {
-            /**
-             * @description Whether another page exists after this one.
-             * @example false
-             */
-            hasMore: boolean;
-            /** @description One keyset page of the organization’s invitations, newest first (page size defaults to 25, hard cap 100). */
-            invitations: components["schemas"]["InvitationSummary"][];
-            /**
-             * @description Pass as `before` to fetch the next page. Null when this is the last page.
-             * @example null
-             */
-            nextCursor: string | null;
-        };
-        /** @description One keyset page of businesses (Clients) and their organizations, for the platform business directory. */
-        ListPlatformBusinessesResponse: {
-            /**
-             * @description One keyset page of businesses, newest first, each with its organizations sorted by name (page size defaults to 25, hard cap 100).
-             * @example [
-             *       {
-             *         "id": "018f1a2b-0000-7000-8000-0000000000c1",
-             *         "name": "Acme Inc.",
-             *         "status": "active",
-             *         "logo": "https://cdn.1440.io/logos/acme.png",
-             *         "orgs": [
-             *           {
-             *             "id": "018f1a2b-0000-7000-8000-000000000001",
-             *             "name": "Acme Dental (Production)",
-             *             "slug": "acme-dental",
-             *             "logo": "https://cdn.1440.io/logos/acme-dental.png",
-             *             "isActive": true,
-             *             "type": "production",
-             *             "parentOrganizationId": null,
-             *             "parentOrganizationName": null,
-             *             "maxSandboxOrgs": null,
-             *             "_count": {
-             *               "users": 12
-             *             }
-             *           }
-             *         ]
-             *       }
-             *     ]
-             */
-            businesses: components["schemas"]["PlatformBusiness"][];
-            /**
-             * @description Whether another page exists after this one.
-             * @example false
-             */
-            hasMore: boolean;
-            /**
-             * @description Pass as `before` to fetch the next page. Null when this is the last page.
-             * @example null
-             */
-            nextCursor: string | null;
-        };
-        /** @description The businesses (and their organizations) the signed-in user belongs to, used to populate the business/org selector before an org context is chosen. */
-        ListUserBusinessesResponse: {
-            /**
-             * @description The businesses the user belongs to, sorted by name. Empty when the user has no active org memberships.
-             * @example [
-             *       {
-             *         "id": "018f1a2b-0000-7000-8000-0000000000c1",
-             *         "name": "Acme Inc.",
-             *         "status": "active",
-             *         "logo": "https://cdn.example.com/logos/acme.png",
-             *         "orgs": [
-             *           {
-             *             "id": "018f1a2b-0000-7000-8000-000000000001",
-             *             "name": "Acme Inc. (Production)",
-             *             "slug": "acme-inc",
-             *             "logo": "https://cdn.example.com/logos/acme.png",
-             *             "type": "production",
-             *             "role": "owner",
-             *             "parentOrganizationId": null,
-             *             "parentOrganizationName": null
-             *           }
-             *         ]
-             *       }
-             *     ]
-             */
-            businesses: components["schemas"]["UserBusiness"][];
-        };
         /** @description Returned when a signed read URL has been generated for a ready attachment (HTTP 200). */
         MediaAccessUrlSuccess: {
-            /**
-             * @description The attachment identifier the access URL was minted for (echoes the request).
-             * @example 018f1a2b-0000-7000-8000-00000000aaaa
-             */
+            /** @description The attachment identifier the access URL was minted for (echoes the request). */
             attachmentId: string;
-            /**
-             * @description ISO-8601 (UTC) timestamp at which the signed `url` stops being valid. Re-request this endpoint to obtain a fresh URL after expiry.
-             * @example 2026-06-11T18:30:00.000Z
-             */
+            /** @description ISO-8601 (UTC) timestamp at which the signed `url` stops being valid. Re-request this endpoint to obtain a fresh URL after expiry. */
             expiresAt: string;
             /**
              * Format: uri
-             * @description Short-lived, signed S3 read URL for the attachment bytes. The URL embeds the stored content-type and an `inline` content-disposition with the original filename, and expires at `expiresAt`. Treat it as a secret and do not cache beyond expiry.
-             * @example https://attachments.example-bucket.s3.amazonaws.com/media/018f1a2b-0000-7000-8000-000000000001/018f1a2b-0000-7000-8000-00000000aaaa?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Expires=900&X-Amz-Signature=abc123
+             * @description Short-lived signed URL for the attachment bytes. It expires at `expiresAt`; treat it as a secret and do not cache it beyond expiry.
              */
             url: string;
         };
-        /** @description Returned when the binary has been streamed to storage and the asset marked ready (HTTP 200). */
+        /** @description Returned when the media asset is ready to use. */
         MediaUploadSuccess: {
-            /**
-             * @description UUIDv7 identifier of the stored media asset. Reference it as an `attachmentId` when sending a message (`POST /api/v0/conversations/.../send`) or when minting a read URL (`GET /api/v0/media/attachments/{attachmentId}/access-url`).
-             * @example 018f1a2b-0000-7000-8000-00000000aaaa
-             */
+            /** @description Identifier of the uploaded media asset. Reference it as an `attachmentId` when sending a message (`POST /api/v0/messaging/send`) or when minting a read URL (`GET /api/v0/media/attachments/{attachmentId}/access-url`). */
             mediaAssetId: string;
         };
-        MintApiKeyBody: {
-            /**
-             * Format: date-time
-             * @default null
-             */
-            expiresAt: string | null;
-        };
-        MintApiKeyResult: {
-            apiKey: components["schemas"]["IntegrationApiKey"];
-            plaintext: string;
-        };
-        /**
-         * @description Create/update payload for a permission set. On update (PATCH) the `permissions` array fully replaces the set’s prior permissions.
-         * @example {
-         *       "name": "Front-desk Agent",
-         *       "description": "Can view conversations and send messages, but cannot manage billing.",
-         *       "permissions": [
-         *         "ViewConversations",
-         *         "SendMessages"
-         *       ]
-         *     }
-         */
-        PermissionSetBody: {
-            /**
-             * @description Optional free-text description of what the set is for. May be `null` or omitted.
-             * @example Can view conversations and send messages, but cannot manage billing.
-             */
-            description?: string | null;
-            /**
-             * @description Human-readable name for the permission set. 1–120 characters.
-             * @example Front-desk Agent
-             */
-            name: string;
-            /**
-             * @description The catalog permission keys granted by this set (see `GET /api/admin/businesses/permissions`). Unknown or deprecated keys are rejected, and the full resulting set must be a subset of the caller’s own effective permissions (the ceiling rule) — you cannot grant a permission you do not hold.
-             * @example [
-             *       "ViewConversations",
-             *       "SendMessages"
-             *     ]
-             */
-            permissions: string[];
-        };
-        /** @description Confirmation that the permission set was deleted, echoing its id. */
-        PermissionSetDeleteResult: {
-            /**
-             * @description Id of the permission set that was deleted.
-             * @example 018f1a2b-0000-7000-8000-0000000000aa
-             */
-            id: string;
-        };
-        /** @description Permission sets defined for the caller’s business (capped at 100 per page). */
-        PermissionSetList: components["schemas"]["PermissionSetView"][];
-        /** @description A single permission set with its granted catalog permission keys. */
-        PermissionSetView: {
-            /**
-             * @description Stable key identifying the built-in set, or `null` for custom sets.
-             * @example null
-             */
-            builtInKey: string | null;
-            /**
-             * @description ISO-8601 timestamp of when the set was created.
-             * @example 2026-06-01T12:00:00.000Z
-             */
+        MessagingInvitation: {
+            /** Format: uuid */
+            actorId: string;
+            /** @enum {string} */
+            actorType: "user" | "integration";
+            callerReference: string | null;
+            /** @enum {string} */
+            channel: "amb";
+            /** Format: uuid */
+            conversationId: string | null;
+            /** Format: date-time */
             createdAt: string;
-            /**
-             * @description Description of the set, or `null` if none was provided.
-             * @example Can view conversations and send messages, but cannot manage billing.
-             */
-            description: string | null;
-            /**
-             * @description Unique id of the permission set.
-             * @example 018f1a2b-0000-7000-8000-0000000000aa
-             */
+            /** @description callerReference when supplied, otherwise the messaging invitation ID. */
+            effectiveReference: string;
+            /** Format: uuid */
             id: string;
-            /**
-             * @description Whether this is a system-provided built-in set (built-ins are seeded per business).
-             * @example false
-             */
-            isBuiltIn: boolean;
-            /**
-             * @description Display name of the permission set.
-             * @example Front-desk Agent
-             */
-            name: string;
-            /**
-             * @description Catalog permission keys granted by this set. Any stored id no longer in the catalog is omitted.
-             * @example [
-             *       "ViewConversations",
-             *       "SendMessages"
-             *     ]
-             */
-            permissions: string[];
-            /**
-             * @description ISO-8601 timestamp of when the set was last updated.
-             * @example 2026-06-05T09:30:00.000Z
-             */
+            /** @enum {string} */
+            purpose: "connect";
+            /** @enum {string|null} */
+            reasonCode: "recipient_unavailable" | "provider_rejected" | "provider_error" | "transport_error" | null;
+            /** @enum {string} */
+            status: "submitting" | "submitted" | "provider_rejected" | "error" | "accepted" | "declined";
+            /** @enum {string|null} */
+            targetAgentStatus: "bot" | "live" | null;
+            targetFirstName: string | null;
+            targetLastName: string | null;
+            /** Format: date-time */
             updatedAt: string;
         };
-        /** @description Identity summary of the user the grant applies to. */
-        PlatformAdminGrantUser: {
-            /**
-             * @description The user’s email address, or `null` if unset.
-             * @example admin@1440.io
-             */
-            email: string | null;
-            /**
-             * @description The user’s identifier (matches `userId`).
-             * @example 018f1a2b-0000-7000-8000-000000000001
-             */
-            id: string;
-            /**
-             * @description The user’s display name, or `null` if unset.
-             * @example Platform Admin
-             */
-            name: string | null;
+        MessagingInvitationBodyCapError: {
+            error: string;
         };
-        /** @description The signed-in caller’s own in-force platform-admin role. Returned only to callers holding an in-force grant; non-admins receive 404 (the platform surface is hidden). */
-        PlatformAdminMe: {
-            role: components["schemas"]["PlatformRole"];
-            /**
-             * @description Identifier of the signed-in caller (their own user id).
-             * @example 018f1a2b-0000-7000-8000-000000000001
-             */
-            userId: string;
+        MessagingInvitationError: {
+            /** @enum {string} */
+            error: "invalid_recipient" | "invalid_reference" | "invalid_target_name" | "request_mismatch" | "request_in_progress" | "messaging_invitation_unavailable" | "custom_branding_not_approved" | "invalid_brand_logo" | "not_found";
         };
-        /** @description A single platform-admin grant with its derived in-force predicate and the target user’s identity summary. Returned by the create/update/revoke operations and as the array elements of the list operation. */
-        PlatformAdminView: {
-            /**
-             * @description Whether the grant is active (a suspended grant has `active: false`).
-             * @example true
-             */
-            active: boolean;
-            /**
-             * @description ISO-8601 timestamp the grant was created/last upserted.
-             * @example 2026-06-11T12:00:00.000Z
-             */
-            grantedAt: string;
-            /**
-             * @description Identifier of the admin who created/last upserted the grant, or `null` for system-seeded grants.
-             * @example 018f1a2b-0000-7000-8000-0000000000aa
-             */
-            grantedByUserId: string | null;
-            /**
-             * @description Convenience predicate: `active && revokedAt === null` — true only when the grant currently confers platform-admin access.
-             * @example true
-             */
-            inForce: boolean;
-            /**
-             * @description ISO-8601 timestamp the grant was permanently revoked, or `null` if it has not been revoked.
-             * @example null
-             */
-            revokedAt: string | null;
-            role: components["schemas"]["PlatformRole"];
-            user: components["schemas"]["PlatformAdminGrantUser"];
-            /**
-             * @description Identifier of the user the grant applies to.
-             * @example 018f1a2b-0000-7000-8000-000000000001
-             */
-            userId: string;
-        };
-        /** @description Platform-admin grants (active, suspended, and revoked), one entry per user, capped at 100 per page. */
-        PlatformAdminViewList: components["schemas"]["PlatformAdminView"][];
-        /** @description A business (client) with the organizations nested underneath, for the platform (internal-admin) business directory. */
-        PlatformBusiness: {
-            /**
-             * @description Business (client) identifier.
-             * @example 018f1a2b-0000-7000-8000-0000000000c1
-             */
-            id: string;
-            /**
-             * @description Business logo URL, or `null` when none is set.
-             * @example https://cdn.1440.io/logos/acme.png
-             */
-            logo: string | null;
-            /**
-             * @description Business display name.
-             * @example Acme Inc.
-             */
-            name: string;
-            /**
-             * @description Organizations under this business, sorted by name.
-             * @example [
-             *       {
-             *         "id": "018f1a2b-0000-7000-8000-000000000001",
-             *         "name": "Acme Dental (Production)",
-             *         "slug": "acme-dental",
-             *         "logo": "https://cdn.1440.io/logos/acme-dental.png",
-             *         "isActive": true,
-             *         "type": "production",
-             *         "parentOrganizationId": null,
-             *         "parentOrganizationName": null,
-             *         "maxSandboxOrgs": null,
-             *         "_count": {
-             *           "users": 12
-             *         }
-             *       }
-             *     ]
-             */
-            orgs: components["schemas"]["PlatformBusinessOrg"][];
-            /**
-             * @description Lifecycle status of the business.
-             * @example active
-             * @enum {string}
-             */
-            status: "active" | "suspended" | "deprovisioning";
-        };
-        /** @description An organization under a Client, as seen by the platform business directory. */
-        PlatformBusinessOrg: {
-            _count: components["schemas"]["PlatformBusinessOrgCounts"];
-            /**
-             * @description Organization identifier.
-             * @example 018f1a2b-0000-7000-8000-000000000001
-             */
-            id: string;
-            /**
-             * @description Whether the organization is active.
-             * @example true
-             */
-            isActive: boolean;
-            /**
-             * @description Organization logo URL, or `null` when none is set.
-             * @example https://cdn.1440.io/logos/acme-dental.png
-             */
-            logo: string | null;
-            /**
-             * @description The per-organization sandbox cap (the maximum number of sandbox orgs this org may create), returned raw: `null` means the org inherits the platform default rather than an explicit cap.
-             * @example null
-             */
-            maxSandboxOrgs: number | null;
-            /**
-             * @description Display name of the organization.
-             * @example Acme Dental (Production)
-             */
-            name: string;
-            /**
-             * @description Identifier of the parent organization. `null` for production orgs; set for sandboxes.
-             * @example null
-             */
-            parentOrganizationId: string | null;
-            /**
-             * @description Display name of the parent organization, for the "managed by [Parent]" labelling. `null` for production orgs.
-             * @example null
-             */
-            parentOrganizationName: string | null;
-            /**
-             * @description URL-safe organization slug, unique across all organizations.
-             * @example acme-dental
-             */
-            slug: string;
-            /**
-             * @description Organization type. `production` is the live org; `sandbox` orgs are managed under a parent and used for testing.
-             * @example production
-             * @enum {string}
-             */
-            type: "production" | "sandbox";
-        };
-        /** @description Aggregate counts for the organization. */
-        PlatformBusinessOrgCounts: {
-            /**
-             * @description Number of members (users) in the organization.
-             * @example 12
-             */
-            users: number;
-        };
-        PlatformInitiationApproval: {
-            approved: boolean;
-            /** Format: date-time */
-            approvedAt: string | null;
+        MessagingInvitationList: {
+            messagingInvitations: components["schemas"]["MessagingInvitation"][];
             /** Format: uuid */
-            clientId: string;
+            nextCursor: string | null;
         };
-        PlatformInitiationApprovalBody: {
-            approved: boolean;
+        MessagingInvitationRequestError: {
+            /** @enum {string} */
+            error: "validation_failed";
+            issues: {
+                message: string;
+                path: string;
+            }[];
         };
-        /**
-         * @description Platform-admin axis role (NOT the org membership tier). Ranked highest→lowest: `SuperAdmin` > `Operator` > `Support` > `ReadOnly`. An admin may never grant or assign a role above their own tier.
-         * @example Operator
-         * @enum {string}
-         */
-        PlatformRole: "SuperAdmin" | "Operator" | "Support" | "ReadOnly";
-        /** @description New sandbox-organization cap for a production Organization. */
-        PlatformSandboxCapBody: {
-            /**
-             * @description Maximum number of sandbox organizations this production org may create, as an integer between 0 and 1000. Set `null` to revert to the platform default. This is the platform-admin-only write of `Organization.maxSandboxOrgs`; org-side routes only ever read the cap.
-             * @example 25
-             */
-            maxSandboxOrgs: number | null;
-        };
-        /** @description The updated Organization sandbox cap. */
-        PlatformSandboxCapResult: {
-            /**
-             * @description Identifier of the Organization whose sandbox cap was updated.
-             * @example 018f1a2b-0000-7000-8000-000000000001
-             */
-            id: string;
-            /**
-             * @description The persisted sandbox-organization cap, or `null` if reverted to the platform default.
-             * @example 25
-             */
-            maxSandboxOrgs: number | null;
-        };
-        RevokeApiKeyResult: {
-            keyId: string;
-            success: boolean;
+        MessagingInvitationSendFailure: {
+            /** Format: uuid */
+            messageId: string;
+            /** @enum {string} */
+            reasonCode: "recipient_unavailable" | "provider_rejected" | "provider_error" | "transport_error";
         };
         RichAssetDeleteResult: {
             /** @enum {boolean} */
@@ -2960,8 +1701,18 @@ export interface components {
         };
         /** @description One immutable channel+usage-scoped library asset. */
         RichAssetItem: {
+            /**
+             * Format: uri
+             * @description Publicly cacheable signed URL for the immutable asset bytes. Reused until its refresh window.
+             */
+            accessUrl: string;
+            /**
+             * Format: date-time
+             * @description ISO-8601 timestamp when the signed access URL expires.
+             */
+            accessUrlExpiresAt: string;
             /** @enum {string} */
-            channel: "amb" | "tiktok";
+            channel: "amb";
             createdAt: string;
             displayName: string;
             height: number | null;
@@ -2969,32 +1720,24 @@ export interface components {
             mimeType: string;
             sizeBytes: number;
             /** @enum {string} */
-            usage: "interactive_image" | "rich_link_image" | "imessage_app_icon" | "app_clip_image";
+            usage: "rich_image_200" | "rich_icon_15";
             width: number | null;
         };
         /** @description One keyset page of library assets, newest first. */
         RichAssetList: {
             assets: components["schemas"]["RichAssetItem"][];
-            /**
-             * @description Whether another page exists after this one.
-             * @example false
-             */
-            hasMore: boolean;
-            /**
-             * @description Pass as `before` to fetch the next page. Null when this is the last page.
-             * @example null
-             */
+            /** @description Pass as `before` to fetch the next page. Null when this is the last page. */
             nextCursor: string | null;
         };
         RichChannelReadiness: {
             /** @enum {string} */
-            channel: "amb" | "tiktok";
+            channel: "amb";
             reasons: components["schemas"]["RichReason"][];
             /**
              * @description What this template renders as on the channel (deterministic, pre-send).
              * @enum {string|null}
              */
-            resolvedNativeType: "text" | "quick_reply" | "list_picker" | "rich_link" | "time_picker" | "form" | "imessage_app" | "app_clip_rich_link" | null;
+            resolvedNativeType: "text" | "quick_reply" | "list_picker" | "rich_link" | "time_picker" | "form" | "imessage_app" | "app_clip_rich_link" | "authentication" | null;
             /** @enum {string} */
             status: "ready" | "blocked";
         };
@@ -3002,14 +1745,13 @@ export interface components {
         RichReason: {
             /**
              * @description Stable machine-readable reason code.
-             * @example invalid_template_definition
              * @enum {string}
              */
-            code: "duplicate_template_name" | "template_not_found" | "template_not_published" | "template_archived" | "template_delete_forbidden" | "invalid_template_definition" | "undeclared_variable_reference" | "unsatisfiable_variable_type" | "block_type_unsupported" | "block_field_unsupported" | "missing_asset" | "payload_limit_exceeded" | "conversation_not_eligible" | "capability_not_supported" | "missing_variable_value" | "invalid_variable_value" | "asset_load_failed" | "construct_payload_failed" | "wire_constraint_violated" | "channel_gateway_failed" | "duplicate_request_conflict" | "asset_format_unsupported" | "asset_format_mismatch" | "asset_too_large" | "asset_invalid_dimensions" | "asset_in_use";
+            code: "duplicate_template_name" | "template_not_found" | "template_not_published" | "template_archived" | "template_delete_forbidden" | "invalid_template_definition" | "undeclared_variable_reference" | "unsatisfiable_variable_type" | "block_type_unsupported" | "block_field_unsupported" | "missing_asset" | "payload_limit_exceeded" | "template_type_mismatch" | "conversation_not_eligible" | "capability_not_supported" | "missing_variable_value" | "invalid_variable_value" | "asset_load_failed" | "construct_payload_failed" | "wire_constraint_violated" | "channel_gateway_failed" | "duplicate_request_conflict" | "asset_format_unsupported" | "asset_format_mismatch" | "asset_too_large" | "asset_invalid_dimensions" | "asset_in_use";
             constraint?: string;
             message: string;
             /** @enum {string} */
-            nativeType?: "text" | "quick_reply" | "list_picker" | "rich_link" | "time_picker" | "form" | "imessage_app" | "app_clip_rich_link";
+            nativeType?: "text" | "quick_reply" | "list_picker" | "rich_link" | "time_picker" | "form" | "imessage_app" | "app_clip_rich_link" | "authentication";
             slotName?: string;
             variableName?: string;
         };
@@ -3046,7 +1788,7 @@ export interface components {
             }[];
         } | {
             /** @enum {string} */
-            channel: "amb" | "tiktok";
+            channel: "amb";
             content: {
                 /** @enum {string} */
                 kind: "list_picker";
@@ -3237,6 +1979,25 @@ export interface components {
                 storeRegion: string | null;
                 title: string;
                 url: string;
+            } | {
+                /** @enum {string} */
+                kind: "authentication";
+                receivedBubble: {
+                    imageSlot: string | null;
+                    /** @enum {string} */
+                    style: "icon" | "small" | "large";
+                    subtitle: string | null;
+                    title: string;
+                };
+                redirectURI: string;
+                replyBubble: {
+                    imageSlot: string | null;
+                    /** @enum {string} */
+                    style: "icon" | "small" | "large";
+                    subtitle: string | null;
+                    title: string;
+                };
+                scope: string[];
             };
             /** @enum {string} */
             mode: "native";
@@ -3259,23 +2020,15 @@ export interface components {
             slotBindings: {
                 assetId: string;
                 /** @enum {string} */
-                channel: "amb" | "tiktok";
+                channel: "amb";
                 slotName: string;
                 /** @enum {string} */
-                usage: "interactive_image" | "rich_link_image" | "imessage_app_icon" | "app_clip_image";
+                usage: "rich_image_200" | "rich_icon_15";
             }[];
         };
         /** @description One keyset page of template summaries, newest first. */
         RichTemplateList: {
-            /**
-             * @description Whether another page exists after this one.
-             * @example false
-             */
-            hasMore: boolean;
-            /**
-             * @description Pass as `before` to fetch the next page. Null when this is the last page.
-             * @example null
-             */
+            /** @description Pass as `before` to fetch the next page. Null when this is the last page. */
             nextCursor: string | null;
             templates: components["schemas"]["RichTemplateSummary"][];
         };
@@ -3286,9 +2039,13 @@ export interface components {
             mode: "canonical" | "native";
             name: string;
             /** @enum {string|null} */
-            nativeChannel: "amb" | "tiktok" | null;
+            nativeChannel: "amb" | null;
+            /** @enum {string|null} */
+            nativeType: "list_picker" | "rich_link" | "time_picker" | "form" | "imessage_app" | "app_clip_rich_link" | "authentication" | null;
             /** @enum {string} */
             status: "draft" | "published" | "archived";
+            /** @enum {string} */
+            templateType: "text" | "quick_reply" | "list_picker" | "rich_link" | "time_picker" | "form" | "imessage_app" | "app_clip_rich_link" | "authentication";
             updatedAt: string;
         };
         RichTemplateWriteBody: {
@@ -3307,309 +2064,451 @@ export interface components {
                 slotName: string;
             }[];
         };
-        /** @description Basic service identity/readiness payload returned by the root route. */
-        RootStatus: {
+        /** @description Send an AMB Authentication Message from a published authentication template. */
+        SendAuthenticationMessageBody: {
+            /** Format: uuid */
+            conversationId: string;
+            /** Format: uuid */
+            requestMessageId: string;
+            state: string;
+            /** Format: uuid */
+            templateId: string;
             /**
-             * @description Identifier of the service that answered the request.
-             * @example api
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            service: "api";
-            /**
-             * @description Coarse readiness signal. `ready` once the service has booted and is serving.
-             * @example ready
-             * @enum {string}
-             */
-            status: "ready";
-            /**
-             * @description Major version of the service contract.
-             * @example 1
-             */
-            version: number;
+            type: "authentication";
         };
-        /** @description Outbound message request. The `type` field discriminates between a free-form `text` message (body and/or attachments) and a `template` message sent from a published template. */
-        SendMessageBody: components["schemas"]["SendTextMessageBody"] | components["schemas"]["SendTemplateMessageBody"];
-        /** @description Error envelope for the send route. `reasons` carries the stable rich-messaging reason codes when the reject originates from the rich send pipeline. */
+        /** @description Outbound message request. The `type` field discriminates between a free-form `text` message (body and/or attachments), a `template` message, and an `authentication` message sent from a published authentication template. Unknown fields are rejected. */
+        SendMessageBody: components["schemas"]["SendTextMessageBody"] | components["schemas"]["SendTemplateMessageBody"] | components["schemas"]["SendAuthenticationMessageBody"];
+        /** @description Error envelope for the messaging send routes: a public `error` string, or `validation_failed` with field-level `issues`. */
         SendMessageError: {
-            /**
-             * @description Human-readable explanation of why the send was rejected.
-             * @example capability_not_supported: The recipient’s device has not advertised support for form messages.
-             */
             error: string;
-            /** @description Machine-readable reject reasons. Present on rich-send rejects and on `409` idempotency conflicts; absent on plain-text failures. */
-            reasons?: components["schemas"]["RichReason"][];
+        } | {
+            /** @enum {string} */
+            error: "validation_failed";
+            issues: {
+                message: string;
+                path: string;
+            }[];
         };
         /** @description Returned when a send has been delivered synchronously (HTTP 200). */
         SendMessageSuccess: {
-            /**
-             * @description The downstream channel’s native message id, captured synchronously from the channel send result (the send is complete when this response is returned).
-             * @example 0987654321.0001
-             */
-            channelMessageId: string | null;
-            /**
-             * @description `true` only when this call was an idempotent replay of a `requestMessageId` already delivered with identical content — no new message was sent. `false` on a fresh send.
-             * @example false
-             */
             duplicate: boolean;
-            /**
-             * @description The platform identifier assigned to the delivered message. Use this to correlate the message with the realtime message-created (`m.c`) event.
-             * @example 018f1a2b-0000-7000-8000-0000000000ff
-             */
+            /** Format: uuid */
             messageId: string;
         };
-        SendRawChannelPayloadBody: {
-            /** @enum {string} */
-            channel: "amb";
-            conversationId: string;
-            /** @enum {string} */
-            messageType: "text" | "quick_reply" | "list_picker" | "time_picker" | "form" | "imessage_app" | "rich_link";
-            /** @description Apple MSP payload without server-owned sourceId, destinationId, id, or v. The platform validates only documented hard constraints and the listed pitfall guard. */
-            payload: {
-                [key: string]: unknown;
-            };
-            requestMessageId: string;
-        };
-        /**
-         * @description Send a message from a published template.
-         * @example {
-         *       "requestMessageId": "018f1a2b-3c4d-7e8f-9012-3456789abcde",
-         *       "conversationId": "018f1a2b-0000-7000-8000-000000000001",
-         *       "type": "template",
-         *       "message": {
-         *         "templateId": "018f1a2b-0000-7000-8000-00000000bbbb",
-         *         "variables": {
-         *           "customerName": "Ada"
-         *         }
-         *       }
-         *     }
-         */
-        SendTemplateMessageBody: {
-            /**
-             * @description Identifier of the conversation to send into, as returned by `GET /api/v0/conversations` (the `id` field). Must belong to the authenticated business.
-             * @example 018f1a2b-0000-7000-8000-000000000001
-             */
-            conversationId: string;
-            /** @description The template-message payload (template + variables). */
-            message: {
-                /**
-                 * @description Identifier of a published rich template, as returned by `GET /api/v0/templates`. The template must be ready on the conversation’s channel.
-                 * @example 018f1a2b-0000-7000-8000-00000000bbbb
-                 */
-                templateId: string;
-                /** @description Per-send values for the template’s declared variables. Every required variable must be supplied; values must match the declared types. */
-                variables?: {
-                    [key: string]: string | {
-                        id: string;
-                        subtitle: string | null;
-                        title: string;
-                    }[] | {
-                        durationSeconds: number;
-                        id: string;
-                        startTime: string;
+        /** @description Raw channel payload send. `content` is the typed channel-native body; unknown fields are rejected. */
+        SendRawMessageBody: {
+            content: {
+                body: string;
+                /** @enum {string} */
+                kind: "text";
+                subject?: string;
+            } | {
+                data: {
+                    "quick-reply": {
+                        items: {
+                            identifier: string;
+                            title: string;
+                        }[];
+                        summaryText: string;
+                    };
+                };
+                /** @enum {string} */
+                kind: "amb.quick_reply";
+            } | {
+                data: {
+                    images?: {
+                        data: string;
+                        description?: string | null;
+                        identifier: string;
+                    }[];
+                    listPicker: {
+                        sections: {
+                            items: {
+                                identifier: string;
+                                imageIdentifier?: string;
+                                order?: number;
+                                style?: string;
+                                subtitle?: string;
+                                title: string;
+                            }[];
+                            multipleSelection?: boolean;
+                            order?: number;
+                            title?: string;
+                        }[];
+                    };
+                };
+                /** @enum {string} */
+                kind: "amb.list_picker";
+                receivedMessage: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title: string;
+                };
+                replyMessage: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title: string;
+                };
+            } | {
+                data: {
+                    event: {
+                        identifier: string;
+                        imageIdentifier?: string;
+                        location?: {
+                            latitude?: number;
+                            longitude?: number;
+                            radius?: number;
+                            title?: string;
+                        };
+                        timeslots: {
+                            duration: number;
+                            identifier: string;
+                            startTime: string;
+                        }[];
+                        timezoneOffset?: number;
+                        title?: string;
+                    };
+                    images?: {
+                        data: string;
+                        description?: string | null;
+                        identifier: string;
                     }[];
                 };
+                /** @enum {string} */
+                kind: "amb.time_picker";
+                receivedMessage: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title: string;
+                };
+                replyMessage: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title: string;
+                };
+            } | {
+                data: {
+                    dynamic: {
+                        data: {
+                            pages: ({
+                                items: {
+                                    identifier: string;
+                                    imageIdentifier?: string;
+                                    nextPageIdentifier?: string;
+                                    title: string;
+                                    value: string;
+                                }[];
+                                multipleSelection?: boolean;
+                                nextPageIdentifier?: string;
+                                pageIdentifier: string;
+                                submitForm?: boolean;
+                                subtitle: string;
+                                title?: string;
+                                /** @enum {string} */
+                                type: "select";
+                            } | {
+                                items: {
+                                    identifier: string;
+                                    title: string;
+                                    value: string;
+                                }[];
+                                nextPageIdentifier?: string;
+                                pageIdentifier: string;
+                                pickerTitle?: string;
+                                selectedItemIndex?: number;
+                                submitForm?: boolean;
+                                subtitle: string;
+                                title?: string;
+                                /** @enum {string} */
+                                type: "picker";
+                            } | {
+                                hintText?: string;
+                                nextPageIdentifier?: string;
+                                options?: {
+                                    dateFormat?: string;
+                                    labelText?: string;
+                                    maximumDate?: string;
+                                    minimumDate?: string;
+                                    startDate?: string;
+                                };
+                                pageIdentifier: string;
+                                submitForm?: boolean;
+                                subtitle: string;
+                                title?: string;
+                                /** @enum {string} */
+                                type: "datePicker";
+                            } | {
+                                hintText?: string;
+                                nextPageIdentifier?: string;
+                                options?: {
+                                    /** @enum {string} */
+                                    inputType?: "singleline" | "multiline";
+                                    /** @enum {string} */
+                                    keyboardType?: "default" | "asciiCapable" | "numbersAndPunctuation" | "URL" | "numberPad" | "phonePad" | "namePhonePad" | "emailAddress" | "decimalPad" | "webSearch";
+                                    labelText?: string;
+                                    maximumCharacterCount?: number;
+                                    placeholder?: string;
+                                    prefixText?: string;
+                                    regex?: string;
+                                    required?: boolean;
+                                    /** @enum {string} */
+                                    textContentType?: "name" | "namePrefix" | "givenName" | "middleName" | "familyName" | "nameSuffix" | "nickname" | "jobTitle" | "organizationName" | "location" | "fullStreetAddress" | "streetAddressLine1" | "streetAddressLine2" | "addressCity" | "addressState" | "addressCityAndState" | "sublocality" | "countryName" | "postalCode" | "telephoneNumber" | "emailAddress" | "URL" | "creditCardNumber" | "username" | "password" | "newPassword" | "oneTimeCode";
+                                };
+                                pageIdentifier: string;
+                                submitForm?: boolean;
+                                subtitle: string;
+                                title?: string;
+                                /** @enum {string} */
+                                type: "input";
+                            })[];
+                            private?: boolean;
+                            showSummary?: boolean;
+                            splash?: {
+                                buttonTitle: string;
+                                header?: string;
+                                imageIdentifier?: string;
+                                splashtext?: string;
+                            };
+                            startPageIdentifier: string;
+                        };
+                        /** @enum {string} */
+                        template: "messageForms";
+                        /** @enum {string} */
+                        version: "1.2";
+                    };
+                    images?: {
+                        data: string;
+                        description?: string | null;
+                        identifier: string;
+                    }[];
+                };
+                /** @enum {string} */
+                kind: "amb.form";
+                receivedMessage: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title: string;
+                };
+                replyMessage: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title: string;
+                };
+            } | {
+                data: {
+                    authenticate: {
+                        oauth2: {
+                            additionalParameters?: string;
+                            /** Format: uri */
+                            redirectURI: string;
+                            /** @enum {string} */
+                            responseType: "code";
+                            scope: string[];
+                            state: string;
+                        };
+                    };
+                    images?: {
+                        data: string;
+                        description?: string | null;
+                        identifier: string;
+                    }[];
+                };
+                /** @enum {string} */
+                kind: "amb.authentication";
+                receivedMessage: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title: string;
+                };
+                replyMessage: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title: string;
+                };
+            } | {
+                /** @enum {string} */
+                kind: "amb.rich_link";
+                richLinkData?: {
+                    assets: {
+                        image: {
+                            data: string;
+                            /** @enum {string} */
+                            mimeType: "image/png";
+                        };
+                        video?: {
+                            mimeType: string;
+                            /** Format: uri */
+                            url: string;
+                        };
+                    };
+                    title: string;
+                    /** Format: uri */
+                    url: string;
+                };
+                richLinkDataRef?: {
+                    bid?: string;
+                    dataRefSig?: string;
+                    key: string;
+                    owner: string;
+                    "signature-base64": string;
+                    size: number;
+                    title?: string;
+                    /** Format: uri */
+                    url: string;
+                };
+            } | {
+                appIcon?: string;
+                appId: string;
+                appName: string;
+                bid: string;
+                /** @enum {string} */
+                kind: "amb.imessage_app";
+                receivedMessage: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title: string;
+                };
+                replyMessage?: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title: string;
+                };
+                sessionIdentifier?: string;
+                URL: string;
+                useLiveLayout: boolean;
             };
-            /**
-             * @description Caller-generated UUIDv7 used as the **idempotency key** for this send. Reusing a `requestMessageId` you have already sent returns the original result instead of delivering a duplicate, so it is safe to retry on network failure. Generate a fresh UUIDv7 per distinct message.
-             * @example 018f1a2b-3c4d-7e8f-9012-3456789abcde
-             */
+            /** Format: uuid */
+            conversationId: string;
+            /** Format: uuid */
             requestMessageId: string;
+        };
+        /** @description Send a message from a published template. */
+        SendTemplateMessageBody: {
+            /** Format: uuid */
+            conversationId: string;
+            /** Format: uuid */
+            requestMessageId: string;
+            /** Format: uuid */
+            templateId: string;
             /**
-             * @description Discriminator selecting a template message, sent from a published template by id.
-             * @example template
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "template";
-        };
-        /**
-         * @description Send a free-form text message, attachments, or both.
-         * @example {
-         *       "requestMessageId": "018f1a2b-3c4d-7e8f-9012-3456789abcde",
-         *       "conversationId": "018f1a2b-0000-7000-8000-000000000001",
-         *       "type": "text",
-         *       "message": {
-         *         "body": "Hi! Your appointment is confirmed for 2pm tomorrow."
-         *       }
-         *     }
-         */
-        SendTextMessageBody: {
-            /**
-             * @description Identifier of the conversation to send into, as returned by `GET /api/v0/conversations` (the `id` field). Must belong to the authenticated business.
-             * @example 018f1a2b-0000-7000-8000-000000000001
-             */
-            conversationId: string;
-            /** @description The text-message payload (body and/or attachments). */
-            message: {
-                /**
-                 * @description Attachment identifiers previously returned by the media upload endpoint (`POST /api/v0/media`). Optional; see `body` for the non-empty constraint. At most 10 attachments per message.
-                 * @example [
-                 *       "018f1a2b-0000-7000-8000-00000000aaaa"
-                 *     ]
-                 */
-                attachmentIds?: string[];
-                /**
-                 * @description The text body of the message. Optional, but at least one of `body` or `attachmentIds` must be present and non-empty — a request with neither is rejected with 400. Leading/trailing whitespace is trimmed.
-                 * @example Hi! Your appointment is confirmed for 2pm tomorrow.
-                 */
-                body?: string;
+            variables?: {
+                [key: string]: unknown;
             };
-            /**
-             * @description Caller-generated UUIDv7 used as the **idempotency key** for this send. Reusing a `requestMessageId` you have already sent returns the original result instead of delivering a duplicate, so it is safe to retry on network failure. Generate a fresh UUIDv7 per distinct message.
-             * @example 018f1a2b-3c4d-7e8f-9012-3456789abcde
-             */
+        };
+        /** @description Send a free-form text message, attachments, or both. */
+        SendTextMessageBody: {
+            attachmentIds?: string[];
+            body: string;
+            /** Format: uuid */
+            conversationId: string;
+            /** Format: uuid */
             requestMessageId: string;
+            subject?: string;
             /**
-             * @description Discriminator selecting a free-form text/attachment message.
-             * @example text
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "text";
         };
-        /** @description Result of an on-request resource probe: the effective window/interval, the GC mode, when sampling began, and the ordered array of resource snapshots (memory, CPU, event-loop delay, and active-resource counts). */
-        SystemResourceResponse: {
-            /**
-             * @description Whether a full GC actually ran before each snapshot (requires `forceGc=true` AND a process started with `--expose-gc`). When true, memory byte counts reflect LIVE retained memory; when false they include not-yet-collected garbage and are GC-timing dependent (and `eventLoopDelayMs` is a clean loop-lag signal, not inflated by GC pauses).
-             * @example false
-             */
-            gcForced: boolean;
-            /**
-             * @description The effective sampling interval in milliseconds that was used.
-             * @example 250
-             */
-            intervalMs: number;
-            /**
-             * @description Ordered resource snapshots across the window — the first is the idle baseline and the last is taken at the window end. Render directly, or compute peak/delta/slope from it (memory growth, CPU-per-op via cumulative-counter diffs, event-loop lag, handle growth).
-             * @example [
-             *       {
-             *         "atMs": 0,
-             *         "rss": 134217728,
-             *         "heapTotal": 67108864,
-             *         "heapUsed": 41943040,
-             *         "external": 2097152,
-             *         "arrayBuffers": 524288,
-             *         "cpuUser": 1250000,
-             *         "cpuSystem": 310000,
-             *         "eventLoopDelayMs": 0,
-             *         "activeResources": {
-             *           "TTYWrap": 2,
-             *           "Timeout": 3,
-             *           "TCPSocketWrap": 12
-             *         }
-             *       },
-             *       {
-             *         "atMs": 250,
-             *         "rss": 135266304,
-             *         "heapTotal": 67108864,
-             *         "heapUsed": 43515904,
-             *         "external": 2097152,
-             *         "arrayBuffers": 524288,
-             *         "cpuUser": 1280000,
-             *         "cpuSystem": 318000,
-             *         "eventLoopDelayMs": 1,
-             *         "activeResources": {
-             *           "TTYWrap": 2,
-             *           "Timeout": 3,
-             *           "TCPSocketWrap": 12
-             *         }
-             *       }
-             *     ]
-             */
-            samples: components["schemas"]["SystemResourceSample"][];
-            /**
-             * @description ISO-8601 timestamp at which sampling began.
-             * @example 2026-06-11T12:00:00.000Z
-             */
-            startedAt: string;
-            /**
-             * @description The effective sampling window in milliseconds that was used.
-             * @example 5000
-             */
-            windowMs: number;
-        };
-        /** @description A single resource snapshot stamped with the elapsed time since sampling began: memory (`process.memoryUsage()` byte counts), CPU (`process.cpuUsage()` cumulative microseconds), an event-loop-delay proxy for the preceding interval, and active-resource counts by type. */
-        SystemResourceSample: {
-            /**
-             * @description Count of active libuv/handle resources by type (`process.getActiveResourcesInfo()` bucketed by type name). Growth in a type across probe calls signals a resource/handle leak (e.g. sockets or timers never closed) that may barely move the heap.
-             * @example {
-             *       "TTYWrap": 2,
-             *       "Timeout": 3,
-             *       "TCPSocketWrap": 12
-             *     }
-             */
-            activeResources: {
-                [key: string]: number;
-            };
-            /**
-             * @description Memory in bytes allocated for ArrayBuffers and SharedArrayBuffers.
-             * @example 524288
-             */
-            arrayBuffers: number;
-            /**
-             * @description Milliseconds elapsed since sampling began when this snapshot was taken.
-             * @example 0
-             */
-            atMs: number;
-            /**
-             * @description Cumulative system-mode CPU time in microseconds (`process.cpuUsage().system`) at this sample. Cumulative since process start — diff across samples to get CPU over an interval.
-             * @example 310000
-             */
-            cpuSystem: number;
-            /**
-             * @description Cumulative user-mode CPU time in microseconds (`process.cpuUsage().user`) at this sample. Cumulative since process start — diff across samples (or around a workload) to get CPU consumed over an interval.
-             * @example 1250000
-             */
-            cpuUser: number;
-            /**
-             * @description Event-loop scheduling overshoot in milliseconds for the interval preceding this sample (measured wakeup delay minus the requested sleep, clamped ≥ 0). A proxy for event-loop lag: large values mean the loop was blocked. Meaningful only when `gcForced` is false — with forced GC it also includes GC pause time. `0` for the first sample (no preceding interval).
-             * @example 1
-             */
-            eventLoopDelayMs: number;
-            /**
-             * @description Memory in bytes used by C++ objects bound to JavaScript objects.
-             * @example 2097152
-             */
-            external: number;
-            /**
-             * @description Total V8 heap size in bytes.
-             * @example 67108864
-             */
-            heapTotal: number;
-            /**
-             * @description Used V8 heap size in bytes.
-             * @example 41943040
-             */
-            heapUsed: number;
-            /**
-             * @description Resident set size in bytes (total memory held by the process).
-             * @example 134217728
-             */
-            rss: number;
-        };
         /** @description The connected TikTok channel, or `null` if none is connected. */
         TikTokChannel: {
-            /**
-             * @description Human-readable display name of the connected TikTok account.
-             * @example Acme Co. TikTok
-             */
+            /** @description Human-readable display name of the connected TikTok account. */
             displayName: string;
-            /**
-             * @description The platform's external identifier for the connected account.
-             * @example tiktok-open-id-abc123
-             */
+            /** @description The platform's external identifier for the connected account. */
             externalId: string;
-            /**
-             * @description Identifier of the connected business channel record.
-             * @example 018f1a2b-0000-7000-8000-0000000000c1
-             */
+            /** @description Identifier of the connected business channel. */
             id: string;
-            /**
-             * @description Whether the channel is currently active.
-             * @example true
-             */
+            /** @description Whether the channel is currently active. */
             isActive: boolean;
             /**
              * @description Channel platform. Always `tiktok` for this route.
-             * @example tiktok
              * @enum {string}
              */
             platform: "amb" | "tiktok" | "whatsapp";
@@ -3618,52 +2517,20 @@ export interface components {
         TikTokChannelStatus: {
             /**
              * @description Current OAuth authentication status, or `null` if the channel has never been set up. `pending_oauth` means a connect URL was issued but the callback has not completed.
-             * @example connected
              * @enum {string|null}
              */
             authStatus: "pending_oauth" | "connected" | "expired" | "disconnected" | null;
-            /**
-             * @description Identifier of the business this TikTok channel status belongs to.
-             * @example 018f1a2b-0000-7000-8000-000000000001
-             */
-            businessId: string;
             channel: components["schemas"]["TikTokChannel"];
-            /**
-             * @description Whether an OAuth state token is currently pending (a connect URL was issued and the callback has not yet been received).
-             * @example false
-             */
+            /** @description Whether an OAuth state token is currently pending (a connect URL was issued and the callback has not yet been received). */
             oauthStatePending: boolean;
-            /**
-             * @description TikTok `open_id` of the connected account, or `null` if not connected.
-             * @example tiktok-open-id-abc123
-             */
-            openId: string | null;
-            /**
-             * @description ISO-8601 expiry of the refresh token, or `null`.
-             * @example 2027-06-10T17:04:21.000Z
-             */
+            /** @description ISO-8601 expiry of the refresh token, or `null`. */
             refreshTokenExpiresAt: string | null;
-            /**
-             * @description Space- or comma-delimited OAuth scopes granted, or `null`.
-             * @example user.info.basic,video.list
-             */
+            /** @description Space- or comma-delimited OAuth scopes granted, or `null`. */
             scope: string | null;
-            /**
-             * @description ISO-8601 expiry of the current access token, or `null`.
-             * @example 2026-06-11T01:04:21.000Z
-             */
+            /** @description ISO-8601 expiry of the current access token, or `null`. */
             tokenExpiresAt: string | null;
         };
-        /** @description The TikTok OAuth authorization URL the admin should be redirected to. */
-        TikTokConnectUrl: {
-            /**
-             * Format: uri
-             * @description The TikTok OAuth authorization URL to redirect the admin to. Includes a freshly generated `state` parameter bound to this business.
-             * @example https://www.tiktok.com/v2/auth/authorize?client_key=awxxxx&state=018f1a2b-0000-7000-8000-00000000abcd&redirect_uri=https%3A%2F%2Fapi.1440.io%2Fapi%2Fchannels%2Ftiktok%2Fauth%2Fcallback
-             */
-            authorizationUrl: string;
-        };
-        /** @description The customer name to set on the conversation. Both fields are required and replace the stored values. */
+        /** @description The customer name to set on the conversation. Both fields are required and replace the current values. */
         UpdateConversationNameBody: {
             /**
              * @description New customer first name. Pass null (or an empty string) to clear it.
@@ -3676,375 +2543,436 @@ export interface components {
              */
             lastName: string | null;
         };
-        UpdateIntegrationBody: {
-            /** @enum {string} */
-            aiMode?: "ai_enabled" | "ai_disabled" | "both";
-            /** Format: uri */
-            endpointUrl?: string | null;
-            name?: string;
-            outboundEnabled?: boolean;
-            /**
-             * Format: uuid
-             * @description Permission set to assign. `null` selects the organization’s `no_access` set; persisted and returned integrations always reference a set.
-             */
-            permissionSetId?: string | null;
-            subscribedEvents?: ("message.received" | "initiation.updated")[];
-            /** @enum {string} */
-            tier?: "member" | "admin";
-        };
-        /**
-         * @description Change a platform-admin grant’s role and/or active flag. At least one field is required.
-         * @example {
-         *       "active": false
-         *     }
-         */
-        UpdatePlatformAdminBody: {
-            /**
-             * @description Whether the grant is active. Set `false` to suspend an admin (a reversible disable, unlike permanent revoke). Optional; see `role` for the at-least-one constraint. Suspending the last in-force SuperAdmin is rejected with 409.
-             * @example false
-             */
-            active?: boolean;
-            role?: components["schemas"]["PlatformRole"] & unknown;
-        };
-        /** @description A business (client) the user belongs to, with the organizations they are a member of nested underneath. */
-        UserBusiness: {
-            /**
-             * @description Business (client) identifier.
-             * @example 018f1a2b-0000-7000-8000-0000000000c1
-             */
-            id: string;
-            /**
-             * @description Business logo URL, or `null` when none is set.
-             * @example https://cdn.example.com/logos/acme.png
-             */
-            logo: string | null;
-            /**
-             * @description Business display name.
-             * @example Acme Inc.
-             */
-            name: string;
-            /**
-             * @description Organizations under this business that the user is a member of, sorted by name. A user may belong to multiple orgs under one business.
-             * @example [
-             *       {
-             *         "id": "018f1a2b-0000-7000-8000-000000000001",
-             *         "name": "Acme Inc. (Production)",
-             *         "slug": "acme-inc",
-             *         "logo": "https://cdn.example.com/logos/acme.png",
-             *         "type": "production",
-             *         "role": "owner",
-             *         "parentOrganizationId": null,
-             *         "parentOrganizationName": null
-             *       }
-             *     ]
-             */
-            orgs: components["schemas"]["UserBusinessOrg"][];
-            /**
-             * @description Lifecycle status of the business.
-             * @example active
-             * @enum {string}
-             */
-            status: "active" | "suspended" | "deprovisioning";
-        };
-        /** @description An organization the user belongs to, scoped to what an org-selection UI needs. */
-        UserBusinessOrg: {
-            /**
-             * @description Organization identifier. Becomes the active org context once selected.
-             * @example 018f1a2b-0000-7000-8000-000000000001
-             */
-            id: string;
-            /**
-             * @description Organization logo URL, or `null` when none is set.
-             * @example https://cdn.example.com/logos/acme.png
-             */
-            logo: string | null;
-            /**
-             * @description Display name of the organization.
-             * @example Acme Inc. (Production)
-             */
-            name: string;
-            /**
-             * @description Identifier of the parent organization. `null` for production orgs; set for sandboxes.
-             * @example null
-             */
-            parentOrganizationId: string | null;
-            /**
-             * @description Display name of the parent organization, used for the "managed by [Parent]" banner. `null` for production orgs.
-             * @example null
-             */
-            parentOrganizationName: string | null;
-            /**
-             * @description The signed-in user's membership role on THIS organization.
-             * @example owner
-             * @enum {string}
-             */
-            role: "owner" | "1440_user" | "admin" | "member";
-            /**
-             * @description URL-safe organization slug, unique across all organizations.
-             * @example acme-inc
-             */
-            slug: string;
-            /**
-             * @description Organization type. `production` is the live org; `sandbox` orgs are managed under a parent and used for testing.
-             * @example production
-             * @enum {string}
-             */
-            type: "production" | "sandbox";
-        };
-        WebhookAttachment: {
-            /** @description Original file name, when known. */
-            fileName: string | null;
-            /**
-             * Format: uuid
-             * @description Attachment id.
-             */
-            id: string;
-            /** @description Attachment MIME type, when known. */
-            mimeType: string | null;
-            /** @description File size in bytes (plaintext), when known. */
-            sizeBytes: number | null;
-            /**
-             * Format: uri
-             * @description Presigned download URL, minted fresh at delivery time. Null when the attachment is not yet available.
-             */
-            url: string | null;
-            /**
-             * Format: date-time
-             * @description When the presigned URL expires (ISO 8601). Null when no URL is present.
-             */
-            urlExpiresAt: string | null;
-        };
-        /** interactiveFormPageValue */
-        WebhookContentInteractiveFormPageValue: {
-            /** @description Id of the form page. */
-            pageId: string;
-            /** @description Submitted value(s) for the page. */
-            values: string[];
-        };
-        /**
-         * interactive
-         * @description The customer's reply to a rich message (quick reply, list picker, time picker, or form).
-         */
-        WebhookContentInteractiveResponse: {
-            /** @description form only: one entry per submitted page. */
-            formValues: components["schemas"]["WebhookContentInteractiveFormPageValue"][];
-            /** @description True for responses to private (sensitive) forms; such content is access-restricted on read surfaces. */
-            private: boolean;
-            /** @description Echo of the originating rich message send, when recognized. Also carried on the message row. */
-            requestIdentifier: string | null;
-            /**
-             * @description Which interactive prompt the customer answered.
-             * @enum {string}
-             */
-            responseType: "quick_reply" | "list_picker" | "time_picker" | "form" | "invitation_accept" | "other";
-            /**
-             * Format: date-time
-             * @description time_picker only: start time of the chosen slot (ISO 8601).
-             */
-            selectedStartTime: string | null;
-            /** @description quick_reply: one item; list_picker: one or more; time_picker: the chosen slot; form: empty. */
-            selections: components["schemas"]["WebhookContentInteractiveSelectedItem"][];
-            /** @description Channel session identifier, when the type uses one. */
-            sessionIdentifier: string | null;
-        };
-        /** interactiveSelectedItem */
-        WebhookContentInteractiveSelectedItem: {
-            /** @description Echoed item id — a fixed template option id or the sender-supplied id of a dynamic item. */
-            id: string;
-            /** @description Display title of the chosen item, when available. */
-            title: string | null;
-        };
-        /**
-         * opt_out
-         * @description The customer opted out of messaging.
-         */
-        WebhookContentOptOut: {
-            /** @description Opt-out reason, when provided. */
-            reason: string | null;
-        };
-        /**
-         * tapback
-         * @description A reaction to a previously-sent message.
-         */
-        WebhookContentTapback: {
-            /** @description The reaction kind. */
-            kind: string;
-            /** @description Id of the message reacted to. */
-            targetMessageId: string;
-        };
-        /**
-         * text
-         * @description A plain text message.
-         */
-        WebhookContentText: {
-            /** @description The message text. */
-            body: string;
-        };
-        /**
-         * typing
-         * @description A typing indicator. Reserved: this type is part of the contract but is NOT currently emitted — typing indicators are not forwarded today.
-         */
-        WebhookContentTyping: {
-            /**
-             * @description Whether typing started or ended.
-             * @enum {string}
-             */
-            kind: "start" | "end";
-        };
-        WebhookInitiationUpdatedData: {
-            /** @description Caller-supplied reference, when provided. */
-            callerReference: string | null;
-            /**
-             * @description Channel adapter used for the initiation.
-             * @enum {string}
-             */
-            channel: "amb" | "tiktok";
-            /**
-             * Format: uuid
-             * @description Conversation linked by this transition.
-             */
-            conversationId: string | null;
-            /** @description Caller reference when present; otherwise the initiation id. */
-            effectiveReference: string;
-            /**
-             * Format: uuid
-             * @description Conversation initiation id.
-             */
-            initiationId: string;
-            /**
-             * Format: date-time
-             * @description Transition timestamp.
-             */
-            occurredAt: string;
-            /** @enum {string} */
-            purpose: "connect";
-            /**
-             * @description Machine-readable terminal reason, when applicable.
-             * @enum {string|null}
-             */
-            reasonCode: "recipient_unavailable" | "provider_rejected" | "provider_error" | "transport_error" | null;
-            /** @enum {string} */
-            status: "submitting" | "submitted" | "provider_rejected" | "error" | "accepted" | "declined";
-            transition: {
-                /**
-                 * Format: uuid
-                 * @description Immutable transition id.
-                 */
-                id: string;
-                /** @enum {string} */
-                type: "status_changed";
-            };
-        };
-        WebhookInitiationUpdatedEvent: {
-            /** @description The client id the conversation belongs to. */
-            clientId: string;
-            /** @description The conversation id the event belongs to. */
-            conversationId: string | null;
-            data: components["schemas"]["WebhookInitiationUpdatedData"];
-            /**
-             * @description Per-type data version (date-pinned).
-             * @example 2026-07-31
-             */
-            dataVersion: string;
-            /**
-             * Format: uuid
-             * @description Event id (uuidv7). Also sent as the `Webhook-Id` header.
-             */
-            id: string;
-            /**
-             * Format: date-time
-             * @description When the event occurred (ISO 8601).
-             */
-            occurredAt: string;
-            /** @description Your organization id. */
-            organizationId: string;
-            /**
-             * @description Envelope spec version.
-             * @enum {integer}
-             */
-            specVersion: 1;
-            /**
-             * @example initiation.updated
-             * @enum {string}
-             */
-            type: "initiation.updated";
-        };
-        WebhookMessageReceivedData: {
-            message: components["schemas"]["WebhookMessageSummary"];
-        };
         WebhookMessageReceivedEvent: {
-            /** @description The client id the conversation belongs to. */
-            clientId: string;
-            /**
-             * Format: uuid
-             * @description The conversation id the received message belongs to.
-             */
+            /** @description Post-update conversation capabilities: null when unknown, [] when stored empty. */
+            capabilityList: ("QUICK" | "LIST" | "TIME" | "AUTH" | "AUTH2" | "FORM")[] | null;
+            /** @description Customer channel-specific address stored on the conversation; not a message ID or necessarily a phone number. */
+            channelAddress: string;
+            /** Format: uuid */
             conversationId: string;
-            data: components["schemas"]["WebhookMessageReceivedData"];
-            /**
-             * @description Per-type data version (date-pinned).
-             * @example 2026-07-20
-             */
-            dataVersion: string;
-            /**
-             * Format: uuid
-             * @description Event id (uuidv7). Also sent as the `Webhook-Id` header.
-             */
-            id: string;
-            /**
-             * Format: date-time
-             * @description When the event occurred (ISO 8601).
-             */
-            occurredAt: string;
-            /** @description Your organization id. */
-            organizationId: string;
-            /**
-             * @description Envelope spec version.
-             * @enum {integer}
-             */
-            specVersion: 1;
-            /**
-             * @example message.received
-             * @enum {string}
-             */
-            type: "message.received";
-        };
-        /** @description The inbound message that was received. */
-        WebhookMessageSummary: {
-            /** @description Attachments on the message. */
-            attachments: components["schemas"]["WebhookAttachment"][];
-            /** @description Channel platform, e.g. 'amb', 'tiktok'. */
-            channelPlatform: string;
-            /** @description Type-specific payload, identical to the stored message content. Which variant applies is given by the sibling `messageType` field; plain text lives at `content.body`. */
-            content: components["schemas"]["WebhookContentText"] | components["schemas"]["WebhookContentInteractiveResponse"] | components["schemas"]["WebhookContentTapback"] | components["schemas"]["WebhookContentOptOut"] | components["schemas"]["WebhookContentTyping"];
-            /**
-             * Format: uuid
-             * @description Id of the conversation the message belongs to.
-             */
-            conversationId: string;
-            /** @description Group id the message belongs to, when known. */
+            /** Format: uuid */
+            eventId: string;
+            /** @description Post-update conversation group; null when unknown. */
             groupId: string | null;
-            /**
-             * Format: uuid
-             * @description Message id.
-             */
-            id: string;
-            /** @description Intent id associated with the message, when known. */
+            /** @description Post-update conversation intent; null when unknown. */
             intentId: string | null;
-            /** @description Message locale, when known. */
+            /** @description Post-update conversation locale; null when unknown. */
             locale: string | null;
-            /**
-             * @description The persisted message type (same vocabulary as the Messages read APIs). Determines the shape of `content`. `typing` is reserved and not currently emitted.
-             * @enum {string}
-             */
-            messageType: "text" | "interactive" | "tapback" | "opt_out" | "typing";
-            /** @description Echoed rich-messaging request identifier linking an interactive response to the originating rich message send. */
-            richRequestIdentifier: string | null;
-            /**
-             * Format: date-time
-             * @description When the message was received (ISO 8601).
-             */
-            timestamp: string;
+            message: {
+                actor: {
+                    /** @enum {string} */
+                    type: "customer";
+                };
+                attachments: {
+                    /** Format: uri */
+                    accessUrl: string | null;
+                    /** Format: date-time */
+                    accessUrlExpiresAt: string | null;
+                    /** Format: uuid */
+                    id: string;
+                    mimeType: string | null;
+                    originalFileName: string | null;
+                    sizeBytes: number | null;
+                    sortOrder: number;
+                    /** @enum {string} */
+                    status: "pending" | "ready" | "failed";
+                }[];
+                /** @enum {string} */
+                channel: "amb";
+                content: {
+                    body: string;
+                    /** @enum {string} */
+                    kind: "text";
+                    subject?: string;
+                } | {
+                    /** @enum {string} */
+                    kind: "opt_out";
+                } | {
+                    data: {
+                        images?: {
+                            description?: string | null;
+                            identifier: string;
+                            name: string | null;
+                        }[];
+                        "quick-reply": {
+                            items?: {
+                                identifier: string;
+                                title: string;
+                            }[];
+                            selectedIdentifier?: string;
+                            selectedIndex?: number;
+                        };
+                        receivedMessage?: {
+                            alternateTitle?: string;
+                            imageDescription?: string;
+                            imageIdentifier?: string;
+                            imageSubtitle?: string;
+                            imageTitle?: string;
+                            secondarySubtitle?: string;
+                            /** @enum {string} */
+                            style?: "icon" | "small" | "large";
+                            subtitle?: string;
+                            tertiarySubtitle?: string;
+                            title: string;
+                        };
+                        replyMessage?: {
+                            alternateTitle?: string;
+                            imageDescription?: string;
+                            imageIdentifier?: string;
+                            imageSubtitle?: string;
+                            imageTitle?: string;
+                            secondarySubtitle?: string;
+                            /** @enum {string} */
+                            style?: "icon" | "small" | "large";
+                            subtitle?: string;
+                            tertiarySubtitle?: string;
+                            title: string;
+                        };
+                        requestIdentifier?: string;
+                    };
+                    /** @enum {string} */
+                    kind: "amb.quick_reply_response";
+                    sessionIdentifier?: string;
+                } | {
+                    data: {
+                        images?: {
+                            description?: string | null;
+                            identifier: string;
+                            name: string | null;
+                        }[];
+                        listPicker: {
+                            sections: {
+                                items: {
+                                    identifier: string;
+                                    imageIdentifier?: string;
+                                    order?: number;
+                                    style?: string;
+                                    subtitle?: string;
+                                    title?: string;
+                                }[];
+                                title?: string;
+                            }[];
+                        };
+                        receivedMessage?: {
+                            alternateTitle?: string;
+                            imageDescription?: string;
+                            imageIdentifier?: string;
+                            imageSubtitle?: string;
+                            imageTitle?: string;
+                            secondarySubtitle?: string;
+                            /** @enum {string} */
+                            style?: "icon" | "small" | "large";
+                            subtitle?: string;
+                            tertiarySubtitle?: string;
+                            title: string;
+                        };
+                        replyMessage?: {
+                            alternateTitle?: string;
+                            imageDescription?: string;
+                            imageIdentifier?: string;
+                            imageSubtitle?: string;
+                            imageTitle?: string;
+                            secondarySubtitle?: string;
+                            /** @enum {string} */
+                            style?: "icon" | "small" | "large";
+                            subtitle?: string;
+                            tertiarySubtitle?: string;
+                            title: string;
+                        };
+                        requestIdentifier?: string;
+                    };
+                    /** @enum {string} */
+                    kind: "amb.list_picker_response";
+                    sessionIdentifier?: string;
+                } | {
+                    data: {
+                        event: {
+                            identifier: string;
+                            imageIdentifier?: string;
+                            location?: {
+                                latitude?: number;
+                                longitude?: number;
+                                radius?: number;
+                                title?: string;
+                            };
+                            timeslots: {
+                                duration: number;
+                                identifier: string;
+                                startTime: string;
+                            }[];
+                            timezoneOffset?: number;
+                            title?: string;
+                        };
+                        images?: {
+                            description?: string | null;
+                            identifier: string;
+                            name: string | null;
+                        }[];
+                        receivedMessage?: {
+                            alternateTitle?: string;
+                            imageDescription?: string;
+                            imageIdentifier?: string;
+                            imageSubtitle?: string;
+                            imageTitle?: string;
+                            secondarySubtitle?: string;
+                            /** @enum {string} */
+                            style?: "icon" | "small" | "large";
+                            subtitle?: string;
+                            tertiarySubtitle?: string;
+                            title: string;
+                        };
+                        replyMessage?: {
+                            alternateTitle?: string;
+                            imageDescription?: string;
+                            imageIdentifier?: string;
+                            imageSubtitle?: string;
+                            imageTitle?: string;
+                            secondarySubtitle?: string;
+                            /** @enum {string} */
+                            style?: "icon" | "small" | "large";
+                            subtitle?: string;
+                            tertiarySubtitle?: string;
+                            title: string;
+                        };
+                        requestIdentifier?: string;
+                    };
+                    /** @enum {string} */
+                    kind: "amb.time_picker_response";
+                    sessionIdentifier?: string;
+                } | {
+                    data: {
+                        dynamic: {
+                            private?: boolean;
+                            selections: {
+                                items: {
+                                    identifier: string;
+                                    title?: string;
+                                    /** @enum {string} */
+                                    type?: "select" | "picker" | "datePicker" | "input";
+                                    value?: string;
+                                }[];
+                                pageIdentifier: string;
+                                subtitle?: string;
+                                title?: string;
+                            }[];
+                            /** @enum {string} */
+                            template: "messageForms";
+                            /** @enum {string} */
+                            version: "1.2";
+                        };
+                        images?: {
+                            description?: string | null;
+                            identifier: string;
+                            name: string | null;
+                        }[];
+                        receivedMessage?: {
+                            alternateTitle?: string;
+                            imageDescription?: string;
+                            imageIdentifier?: string;
+                            imageSubtitle?: string;
+                            imageTitle?: string;
+                            secondarySubtitle?: string;
+                            /** @enum {string} */
+                            style?: "icon" | "small" | "large";
+                            subtitle?: string;
+                            tertiarySubtitle?: string;
+                            title: string;
+                        };
+                        replyMessage?: {
+                            alternateTitle?: string;
+                            imageDescription?: string;
+                            imageIdentifier?: string;
+                            imageSubtitle?: string;
+                            imageTitle?: string;
+                            secondarySubtitle?: string;
+                            /** @enum {string} */
+                            style?: "icon" | "small" | "large";
+                            subtitle?: string;
+                            tertiarySubtitle?: string;
+                            title: string;
+                        };
+                        requestIdentifier?: string;
+                    };
+                    /** @enum {string} */
+                    kind: "amb.form_response";
+                    sessionIdentifier?: string;
+                } | {
+                    data: {
+                        authenticate: {
+                            error_code?: string;
+                            /** @enum {string} */
+                            status: "success" | "failure" | "cancel" | "unknown";
+                        };
+                        images?: {
+                            description?: string | null;
+                            identifier: string;
+                            name: string | null;
+                        }[];
+                        receivedMessage?: {
+                            alternateTitle?: string;
+                            imageDescription?: string;
+                            imageIdentifier?: string;
+                            imageSubtitle?: string;
+                            imageTitle?: string;
+                            secondarySubtitle?: string;
+                            /** @enum {string} */
+                            style?: "icon" | "small" | "large";
+                            subtitle?: string;
+                            tertiarySubtitle?: string;
+                            title: string;
+                        };
+                        replyMessage?: {
+                            alternateTitle?: string;
+                            imageDescription?: string;
+                            imageIdentifier?: string;
+                            imageSubtitle?: string;
+                            imageTitle?: string;
+                            secondarySubtitle?: string;
+                            /** @enum {string} */
+                            style?: "icon" | "small" | "large";
+                            subtitle?: string;
+                            tertiarySubtitle?: string;
+                            title: string;
+                        };
+                        requestIdentifier?: string;
+                    };
+                    /** @enum {string} */
+                    kind: "amb.authentication_response";
+                    sessionIdentifier?: string;
+                } | {
+                    appIcon?: {
+                        name: string | null;
+                    };
+                    bid: string;
+                    /** @enum {string} */
+                    kind: "amb.imessage_app_response";
+                    receivedMessage?: {
+                        alternateTitle?: string;
+                        imageDescription?: string;
+                        imageIdentifier?: string;
+                        imageSubtitle?: string;
+                        imageTitle?: string;
+                        secondarySubtitle?: string;
+                        /** @enum {string} */
+                        style?: "icon" | "small" | "large";
+                        subtitle?: string;
+                        tertiarySubtitle?: string;
+                        title: string;
+                    };
+                    replyMessage?: {
+                        alternateTitle?: string;
+                        imageDescription?: string;
+                        imageIdentifier?: string;
+                        imageSubtitle?: string;
+                        imageTitle?: string;
+                        secondarySubtitle?: string;
+                        /** @enum {string} */
+                        style?: "icon" | "small" | "large";
+                        subtitle?: string;
+                        tertiarySubtitle?: string;
+                        title: string;
+                    };
+                    sessionIdentifier?: string;
+                    URL?: string;
+                } | {
+                    /** @enum {string} */
+                    kind: "amb.invitation_response";
+                    requestIdentifier: string;
+                    /** @enum {string} */
+                    result: "accepted";
+                    sessionIdentifier: string | null;
+                } | {
+                    bid: string | null;
+                    /** @enum {string} */
+                    kind: "amb.unrecognized_interactive_response";
+                    markers: string[];
+                    requestIdentifier: string | null;
+                    sessionIdentifier: string | null;
+                };
+                /**
+                 * Format: date-time
+                 * @description Time the system persisted this inbound message.
+                 */
+                createdAt: string;
+                externalId: string;
+                /** Format: uuid */
+                id: string;
+                /** @enum {boolean} */
+                redacted: false;
+            } | {
+                actor: {
+                    /** @enum {string} */
+                    type: "customer";
+                };
+                attachments: {
+                    /** Format: uri */
+                    accessUrl: string | null;
+                    /** Format: date-time */
+                    accessUrlExpiresAt: string | null;
+                    /** Format: uuid */
+                    id: string;
+                    mimeType: string | null;
+                    originalFileName: string | null;
+                    sizeBytes: number | null;
+                    sortOrder: number;
+                    /** @enum {string} */
+                    status: "pending" | "ready" | "failed";
+                }[];
+                /** @enum {string} */
+                channel: "amb";
+                content: null;
+                /**
+                 * Format: date-time
+                 * @description Time the system persisted this inbound message.
+                 */
+                createdAt: string;
+                externalId: string;
+                /** Format: uuid */
+                id: string;
+                /** @enum {boolean} */
+                redacted: true;
+            };
+            /** Format: uuid */
+            organizationId: string;
+            /** @enum {string} */
+            type: "message.received";
+            /** @enum {number} */
+            v: 0;
+        };
+        WebhookMessagingInvitationUpdatedEvent: {
+            /** Format: uuid */
+            conversationId: string | null;
+            /** Format: uuid */
+            eventId: string;
+            messagingInvitation: {
+                callerReference: string | null;
+                /** @enum {string} */
+                channel: "amb" | "tiktok" | "whatsapp" | "rcs" | "sms" | "instagram" | "facebook_messenger" | "telegram" | "line" | "wechat" | "email" | "custom";
+                /** @description callerReference when supplied, otherwise the messaging invitation ID. */
+                effectiveReference: string;
+                /** Format: uuid */
+                messagingInvitationId: string;
+                /** Format: date-time */
+                occurredAt: string;
+                /** @enum {string} */
+                purpose: "connect";
+                /** @enum {string|null} */
+                reasonCode: "recipient_unavailable" | "provider_rejected" | "provider_error" | "transport_error" | null;
+                /** @enum {string} */
+                status: "submitting" | "submitted" | "provider_rejected" | "error" | "accepted" | "declined";
+                transition: {
+                    /** Format: uuid */
+                    id: string;
+                    /** @enum {string} */
+                    type: "status_changed";
+                };
+            };
+            /** Format: uuid */
+            organizationId: string;
+            /** @enum {string} */
+            type: "messaging_invitation.updated";
+            /** @enum {number} */
+            v: 0;
         };
     };
     responses: never;
@@ -4053,107 +2981,26 @@ export interface components {
     headers: never;
     pathItems: never;
 }
-export type SchemaAcceptInvitationResult = components['schemas']['AcceptInvitationResult'];
 export type SchemaActorGrant = components['schemas']['ActorGrant'];
 export type SchemaAdminBusinessChannel = components['schemas']['AdminBusinessChannel'];
 export type SchemaAdminBusinessChannelList = components['schemas']['AdminBusinessChannelList'];
-export type SchemaAdminBusinessContext = components['schemas']['AdminBusinessContext'];
-export type SchemaAdminBusinessMember = components['schemas']['AdminBusinessMember'];
-export type SchemaAdminBusinessMemberList = components['schemas']['AdminBusinessMemberList'];
-export type SchemaAdminCreateBusinessChannelBody = components['schemas']['AdminCreateBusinessChannelBody'];
-export type SchemaAdminCreatedSandbox = components['schemas']['AdminCreatedSandbox'];
-export type SchemaAdminCreateSandboxBody = components['schemas']['AdminCreateSandboxBody'];
-export type SchemaAdminCreateSandboxResult = components['schemas']['AdminCreateSandboxResult'];
-export type SchemaAdminDeleteSandboxResult = components['schemas']['AdminDeleteSandboxResult'];
-export type SchemaAdminRemoveMemberResult = components['schemas']['AdminRemoveMemberResult'];
-export type SchemaAdminSandboxList = components['schemas']['AdminSandboxList'];
-export type SchemaAdminSandboxListItem = components['schemas']['AdminSandboxListItem'];
-export type SchemaAdminSandboxMemberSyncResult = components['schemas']['AdminSandboxMemberSyncResult'];
-export type SchemaAdminUpdateMemberBody = components['schemas']['AdminUpdateMemberBody'];
-export type SchemaAdminUpdateMemberResult = components['schemas']['AdminUpdateMemberResult'];
-export type SchemaAmbInitiationConfiguration = components['schemas']['AmbInitiationConfiguration'];
-export type SchemaAmbInitiationConfigurationError = components['schemas']['AmbInitiationConfigurationError'];
-export type SchemaAmbSetupDestinationsResponse = components['schemas']['AmbSetupDestinationsResponse'];
 export type SchemaBusinessSettings = components['schemas']['BusinessSettings'];
-export type SchemaBusinessSettingsBody = components['schemas']['BusinessSettingsBody'];
-export type SchemaCacheMetricsResponse = components['schemas']['CacheMetricsResponse'];
-export type SchemaCacheSnapshot = components['schemas']['CacheSnapshot'];
-export type SchemaCatalogPermission = components['schemas']['CatalogPermission'];
-export type SchemaCatalogPermissionList = components['schemas']['CatalogPermissionList'];
 export type SchemaChannel = components['schemas']['Channel'];
-export type SchemaChannelInitiationEnablementBody = components['schemas']['ChannelInitiationEnablementBody'];
-export type SchemaChannelInitiationSettings = components['schemas']['ChannelInitiationSettings'];
 export type SchemaChannelListResponse = components['schemas']['ChannelListResponse'];
-export type SchemaCompleteAmbNewBusinessSetup = components['schemas']['CompleteAmbNewBusinessSetup'];
-export type SchemaCompleteAmbSandboxSetup = components['schemas']['CompleteAmbSandboxSetup'];
-export type SchemaCompleteAmbSetupBody = components['schemas']['CompleteAmbSetupBody'];
-export type SchemaCompleteAmbSetupResponse = components['schemas']['CompleteAmbSetupResponse'];
 export type SchemaConversationDetailResponse = components['schemas']['ConversationDetailResponse'];
-export type SchemaConversationInitiation = components['schemas']['ConversationInitiation'];
-export type SchemaConversationInitiationError = components['schemas']['ConversationInitiationError'];
-export type SchemaConversationInitiationList = components['schemas']['ConversationInitiationList'];
 export type SchemaConversationListItem = components['schemas']['ConversationListItem'];
 export type SchemaConversationListResponse = components['schemas']['ConversationListResponse'];
-export type SchemaConversationMessage = components['schemas']['ConversationMessage'];
-export type SchemaConversationMessageAttachment = components['schemas']['ConversationMessageAttachment'];
-export type SchemaCreateBusinessBody = components['schemas']['CreateBusinessBody'];
-export type SchemaCreateBusinessResponse = components['schemas']['CreateBusinessResponse'];
-export type SchemaCreateConversationInitiation = components['schemas']['CreateConversationInitiation'];
-export type SchemaCreatedBusinessOrg = components['schemas']['CreatedBusinessOrg'];
-export type SchemaCreateIntegrationBody = components['schemas']['CreateIntegrationBody'];
-export type SchemaCreateIntegrationResult = components['schemas']['CreateIntegrationResult'];
-export type SchemaCreateInvitationBody = components['schemas']['CreateInvitationBody'];
-export type SchemaCreateInvitationResult = components['schemas']['CreateInvitationResult'];
-export type SchemaCreateJwtBody = components['schemas']['CreateJwtBody'];
-export type SchemaDeclineInvitationResult = components['schemas']['DeclineInvitationResult'];
-export type SchemaDeleteInvitationResult = components['schemas']['DeleteInvitationResult'];
+export type SchemaCreateMessagingInvitation = components['schemas']['CreateMessagingInvitation'];
 export type SchemaErrorResponse = components['schemas']['ErrorResponse'];
-export type SchemaGrantPlatformAdminBody = components['schemas']['GrantPlatformAdminBody'];
-export type SchemaHealthStatus = components['schemas']['HealthStatus'];
-export type SchemaIntegration = components['schemas']['Integration'];
-export type SchemaIntegrationApiKey = components['schemas']['IntegrationApiKey'];
-export type SchemaIntegrationApiKeyList = components['schemas']['IntegrationApiKeyList'];
-export type SchemaIntegrationDelivery = components['schemas']['IntegrationDelivery'];
-export type SchemaIntegrationDeliveryList = components['schemas']['IntegrationDeliveryList'];
-export type SchemaIntegrationList = components['schemas']['IntegrationList'];
-export type SchemaIntegrationReplayResult = components['schemas']['IntegrationReplayResult'];
 export type SchemaIntegrationTokenResponse = components['schemas']['IntegrationTokenResponse'];
-export type SchemaInternalAdminConversation = components['schemas']['InternalAdminConversation'];
-export type SchemaInternalAdminConversationList = components['schemas']['InternalAdminConversationList'];
-export type SchemaInternalAdminMessage = components['schemas']['InternalAdminMessage'];
-export type SchemaInternalAdminMessageAttachment = components['schemas']['InternalAdminMessageAttachment'];
-export type SchemaInternalAdminMessageList = components['schemas']['InternalAdminMessageList'];
-export type SchemaInternalAdminTikTokWebhookStatus = components['schemas']['InternalAdminTikTokWebhookStatus'];
-export type SchemaInvitationPreview = components['schemas']['InvitationPreview'];
-export type SchemaInvitationSummary = components['schemas']['InvitationSummary'];
-export type SchemaInvitationTokenBody = components['schemas']['InvitationTokenBody'];
-export type SchemaJwk = components['schemas']['Jwk'];
-export type SchemaJwks = components['schemas']['Jwks'];
-export type SchemaJwtIssueResponse = components['schemas']['JwtIssueResponse'];
-export type SchemaListInvitationsResult = components['schemas']['ListInvitationsResult'];
-export type SchemaListPlatformBusinessesResponse = components['schemas']['ListPlatformBusinessesResponse'];
-export type SchemaListUserBusinessesResponse = components['schemas']['ListUserBusinessesResponse'];
 export type SchemaMediaAccessUrlSuccess = components['schemas']['MediaAccessUrlSuccess'];
 export type SchemaMediaUploadSuccess = components['schemas']['MediaUploadSuccess'];
-export type SchemaMintApiKeyBody = components['schemas']['MintApiKeyBody'];
-export type SchemaMintApiKeyResult = components['schemas']['MintApiKeyResult'];
-export type SchemaPermissionSetBody = components['schemas']['PermissionSetBody'];
-export type SchemaPermissionSetDeleteResult = components['schemas']['PermissionSetDeleteResult'];
-export type SchemaPermissionSetList = components['schemas']['PermissionSetList'];
-export type SchemaPermissionSetView = components['schemas']['PermissionSetView'];
-export type SchemaPlatformAdminGrantUser = components['schemas']['PlatformAdminGrantUser'];
-export type SchemaPlatformAdminMe = components['schemas']['PlatformAdminMe'];
-export type SchemaPlatformAdminView = components['schemas']['PlatformAdminView'];
-export type SchemaPlatformAdminViewList = components['schemas']['PlatformAdminViewList'];
-export type SchemaPlatformBusiness = components['schemas']['PlatformBusiness'];
-export type SchemaPlatformBusinessOrg = components['schemas']['PlatformBusinessOrg'];
-export type SchemaPlatformBusinessOrgCounts = components['schemas']['PlatformBusinessOrgCounts'];
-export type SchemaPlatformInitiationApproval = components['schemas']['PlatformInitiationApproval'];
-export type SchemaPlatformInitiationApprovalBody = components['schemas']['PlatformInitiationApprovalBody'];
-export type SchemaPlatformRole = components['schemas']['PlatformRole'];
-export type SchemaPlatformSandboxCapBody = components['schemas']['PlatformSandboxCapBody'];
-export type SchemaPlatformSandboxCapResult = components['schemas']['PlatformSandboxCapResult'];
-export type SchemaRevokeApiKeyResult = components['schemas']['RevokeApiKeyResult'];
+export type SchemaMessagingInvitation = components['schemas']['MessagingInvitation'];
+export type SchemaMessagingInvitationBodyCapError = components['schemas']['MessagingInvitationBodyCapError'];
+export type SchemaMessagingInvitationError = components['schemas']['MessagingInvitationError'];
+export type SchemaMessagingInvitationList = components['schemas']['MessagingInvitationList'];
+export type SchemaMessagingInvitationRequestError = components['schemas']['MessagingInvitationRequestError'];
+export type SchemaMessagingInvitationSendFailure = components['schemas']['MessagingInvitationSendFailure'];
 export type SchemaRichAssetDeleteResult = components['schemas']['RichAssetDeleteResult'];
 export type SchemaRichAssetItem = components['schemas']['RichAssetItem'];
 export type SchemaRichAssetList = components['schemas']['RichAssetList'];
@@ -4166,36 +3013,18 @@ export type SchemaRichTemplateDetail = components['schemas']['RichTemplateDetail
 export type SchemaRichTemplateList = components['schemas']['RichTemplateList'];
 export type SchemaRichTemplateSummary = components['schemas']['RichTemplateSummary'];
 export type SchemaRichTemplateWriteBody = components['schemas']['RichTemplateWriteBody'];
-export type SchemaRootStatus = components['schemas']['RootStatus'];
+export type SchemaSendAuthenticationMessageBody = components['schemas']['SendAuthenticationMessageBody'];
 export type SchemaSendMessageBody = components['schemas']['SendMessageBody'];
 export type SchemaSendMessageError = components['schemas']['SendMessageError'];
 export type SchemaSendMessageSuccess = components['schemas']['SendMessageSuccess'];
-export type SchemaSendRawChannelPayloadBody = components['schemas']['SendRawChannelPayloadBody'];
+export type SchemaSendRawMessageBody = components['schemas']['SendRawMessageBody'];
 export type SchemaSendTemplateMessageBody = components['schemas']['SendTemplateMessageBody'];
 export type SchemaSendTextMessageBody = components['schemas']['SendTextMessageBody'];
-export type SchemaSystemResourceResponse = components['schemas']['SystemResourceResponse'];
-export type SchemaSystemResourceSample = components['schemas']['SystemResourceSample'];
 export type SchemaTikTokChannel = components['schemas']['TikTokChannel'];
 export type SchemaTikTokChannelStatus = components['schemas']['TikTokChannelStatus'];
-export type SchemaTikTokConnectUrl = components['schemas']['TikTokConnectUrl'];
 export type SchemaUpdateConversationNameBody = components['schemas']['UpdateConversationNameBody'];
-export type SchemaUpdateIntegrationBody = components['schemas']['UpdateIntegrationBody'];
-export type SchemaUpdatePlatformAdminBody = components['schemas']['UpdatePlatformAdminBody'];
-export type SchemaUserBusiness = components['schemas']['UserBusiness'];
-export type SchemaUserBusinessOrg = components['schemas']['UserBusinessOrg'];
-export type SchemaWebhookAttachment = components['schemas']['WebhookAttachment'];
-export type SchemaWebhookContentInteractiveFormPageValue = components['schemas']['WebhookContentInteractiveFormPageValue'];
-export type SchemaWebhookContentInteractiveResponse = components['schemas']['WebhookContentInteractiveResponse'];
-export type SchemaWebhookContentInteractiveSelectedItem = components['schemas']['WebhookContentInteractiveSelectedItem'];
-export type SchemaWebhookContentOptOut = components['schemas']['WebhookContentOptOut'];
-export type SchemaWebhookContentTapback = components['schemas']['WebhookContentTapback'];
-export type SchemaWebhookContentText = components['schemas']['WebhookContentText'];
-export type SchemaWebhookContentTyping = components['schemas']['WebhookContentTyping'];
-export type SchemaWebhookInitiationUpdatedData = components['schemas']['WebhookInitiationUpdatedData'];
-export type SchemaWebhookInitiationUpdatedEvent = components['schemas']['WebhookInitiationUpdatedEvent'];
-export type SchemaWebhookMessageReceivedData = components['schemas']['WebhookMessageReceivedData'];
 export type SchemaWebhookMessageReceivedEvent = components['schemas']['WebhookMessageReceivedEvent'];
-export type SchemaWebhookMessageSummary = components['schemas']['WebhookMessageSummary'];
+export type SchemaWebhookMessagingInvitationUpdatedEvent = components['schemas']['WebhookMessagingInvitationUpdatedEvent'];
 export type $defs = Record<string, never>;
 export interface operations {
     listAdminBusinessChannels: {
@@ -4236,25 +3065,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Invalid query"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Missing or invalid business JWT. */
+            /** @description Missing or invalid access token. */
             401: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Unauthorized"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4264,101 +3083,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Permission denied: ViewChannels"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    createAdminBusinessChannel: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description The channel to connect: target platform and its external account id. */
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AdminCreateBusinessChannelBody"];
-            };
-        };
-        responses: {
-            /** @description The newly connected channel. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "id": "018f1a2b-0000-7000-8000-0000000000c1",
-                     *       "platform": "amb",
-                     *       "displayName": "Acme Dental — AMB",
-                     *       "externalId": "amb-acct-7f3c9a21",
-                     *       "isActive": true
-                     *     }
-                     */
-                    "application/json": components["schemas"]["AdminBusinessChannel"];
-                };
-            };
-            /** @description Bad request — invalid body (unknown platform, or externalId outside the 1–255 length bound). */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "externalId must be between 1 and 255 characters"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Missing or invalid business JWT. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Unauthorized"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated, but the member lacks the required tier or the `ManageChannels` permission. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Permission denied: ManageChannels"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Conflict — a channel with this platform/externalId already exists for the business. */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Channel already exists for this business"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4381,7 +3105,6 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "businessId": "018f1a2b-0000-7000-8000-000000000001",
                      *       "channel": {
                      *         "id": "018f1a2b-0000-7000-8000-0000000000c1",
                      *         "platform": "tiktok",
@@ -4390,7 +3113,6 @@ export interface operations {
                      *         "isActive": true
                      *       },
                      *       "authStatus": "connected",
-                     *       "openId": "tiktok-open-id-abc123",
                      *       "tokenExpiresAt": "2026-06-11T01:04:21.000Z",
                      *       "refreshTokenExpiresAt": "2027-06-10T17:04:21.000Z",
                      *       "scope": "user.info.basic,video.list",
@@ -4400,17 +3122,12 @@ export interface operations {
                     "application/json": components["schemas"]["TikTokChannelStatus"];
                 };
             };
-            /** @description Missing or invalid business JWT. */
+            /** @description Missing or invalid access token. */
             401: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Unauthorized"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4420,809 +3137,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Permission denied: ViewChannels"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    getAdminBusinessContext: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The authenticated member’s business admin context. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "business": {
-                     *         "id": "018f1a2b-0000-7000-8000-000000000001",
-                     *         "name": "Acme Dental",
-                     *         "slug": "acme-dental",
-                     *         "logoUrl": "https://cdn.1440.io/logos/acme-dental.png",
-                     *         "isActive": true
-                     *       },
-                     *       "membership": {
-                     *         "adminRole": "admin",
-                     *         "accessRole": "all_conversations",
-                     *         "isActive": true,
-                     *         "canManageSettings": true
-                     *       }
-                     *     }
-                     */
-                    "application/json": components["schemas"]["AdminBusinessContext"];
-                };
-            };
-            /** @description Missing or invalid business JWT. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Unauthorized"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated, but the member lacks the required tier or the `ViewBusiness` permission. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Permission denied: ViewBusiness"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    listIntegrations: {
-        parameters: {
-            query?: {
-                /** @description Maximum number of items to return (1–100). Defaults to 25 when omitted; values above 100 are rejected with 400. */
-                count?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Integrations. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IntegrationList"];
-                };
-            };
-            /** @description count out of range (1-100). */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Invalid query"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Lacks ViewIntegrations. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Permission denied: ViewIntegrations"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    getIntegration: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                integrationId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The integration. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Integration"];
-                };
-            };
-            /** @description Not found in this business. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Integration not found"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    listIntegrationDeliveries: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                integrationId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Delivery log. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IntegrationDeliveryList"];
-                };
-            };
-            /** @description Not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Integration not found"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    listIntegrationApiKeys: {
-        parameters: {
-            query?: {
-                /** @description Maximum number of items to return (1–100). Defaults to 25 when omitted; values above 100 are rejected with 400. */
-                count?: number;
-            };
-            header?: never;
-            path: {
-                integrationId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description API keys. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IntegrationApiKeyList"];
-                };
-            };
-            /** @description count out of range (1-100). */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Invalid query"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Integration not found"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    listAdminBusinessMembers: {
-        parameters: {
-            query?: {
-                /** @description Maximum number of items to return (1–100). Defaults to 25 when omitted; values above 100 are rejected with 400. */
-                count?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The business’s members. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example [
-                     *       {
-                     *         "userId": "018f1a2b-0000-7000-8000-0000000000a1",
-                     *         "email": "jordan@acme-dental.com",
-                     *         "name": "Jordan Lee",
-                     *         "image": "https://cdn.1440.io/avatars/jordan.png",
-                     *         "emailVerified": true,
-                     *         "role": "admin",
-                     *         "permissionSetId": "018f1a2b-0000-7000-8000-0000000000b2",
-                     *         "joinedAt": "2026-05-01T14:30:00.000Z"
-                     *       }
-                     *     ]
-                     */
-                    "application/json": components["schemas"]["AdminBusinessMemberList"];
-                };
-            };
-            /** @description Query parameter out of range (count must be 1–100). */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Invalid query"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Missing or invalid business JWT. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Unauthorized"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated, but the member lacks the required tier or the `ViewMembers` permission. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Permission denied: ViewMembers"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    listPermissionSets: {
-        parameters: {
-            query?: {
-                /** @description Maximum number of items to return (1–100). Defaults to 25 when omitted; values above 100 are rejected with 400. */
-                count?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description All permission sets for the business. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example [
-                     *       {
-                     *         "id": "018f1a2b-0000-7000-8000-0000000000aa",
-                     *         "name": "Front-desk Agent",
-                     *         "description": "Can view conversations and send messages, but cannot manage billing.",
-                     *         "isBuiltIn": false,
-                     *         "builtInKey": null,
-                     *         "permissions": [
-                     *           "ViewConversations",
-                     *           "SendMessages"
-                     *         ],
-                     *         "createdAt": "2026-06-01T12:00:00.000Z",
-                     *         "updatedAt": "2026-06-05T09:30:00.000Z"
-                     *       }
-                     *     ]
-                     */
-                    "application/json": components["schemas"]["PermissionSetList"];
-                };
-            };
-            /** @description count out of range (1-100). */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Invalid query"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Forbidden — the actor lacks the `admin` tier or the `ViewPermissionSets` permission. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Insufficient membership tier for this resource"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    createPermissionSet: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description The permission set to create (name, optional description, permission keys). */
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PermissionSetBody"];
-            };
-        };
-        responses: {
-            /** @description The created permission set. */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "id": "018f1a2b-0000-7000-8000-0000000000aa",
-                     *       "name": "Front-desk Agent",
-                     *       "description": "Can view conversations and send messages, but cannot manage billing.",
-                     *       "isBuiltIn": false,
-                     *       "builtInKey": null,
-                     *       "permissions": [
-                     *         "ViewConversations",
-                     *         "SendMessages"
-                     *       ],
-                     *       "createdAt": "2026-06-01T12:00:00.000Z",
-                     *       "updatedAt": "2026-06-05T09:30:00.000Z"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["PermissionSetView"];
-                };
-            };
-            /** @description Bad request — invalid body, an unknown/deprecated permission key, or a permission that exceeds the caller's ceiling. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "You cannot grant a permission you do not hold: ManageBilling"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Forbidden — the actor lacks the `admin` tier or the `CreatePermissionSets` permission. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Insufficient membership tier for this resource"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    deletePermissionSet: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Id of the permission set to act on. Must belong to the caller’s business. */
-                permissionSetId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The permission set was deleted; its id is echoed back. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "id": "018f1a2b-0000-7000-8000-0000000000aa"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["PermissionSetDeleteResult"];
-                };
-            };
-            /** @description Forbidden — the actor lacks the `admin` tier or the `DeletePermissionSets` permission. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Insufficient membership tier for this resource"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Permission set not found for this business. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Permission set not found"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    updatePermissionSet: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Id of the permission set to act on. Must belong to the caller’s business. */
-                permissionSetId: string;
-            };
-            cookie?: never;
-        };
-        /** @description The replacement permission set fields (name, optional description, permission keys). */
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PermissionSetBody"];
-            };
-        };
-        responses: {
-            /** @description The updated permission set. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "id": "018f1a2b-0000-7000-8000-0000000000aa",
-                     *       "name": "Front-desk Agent",
-                     *       "description": "Can view conversations and send messages, but cannot manage billing.",
-                     *       "isBuiltIn": false,
-                     *       "builtInKey": null,
-                     *       "permissions": [
-                     *         "ViewConversations",
-                     *         "SendMessages"
-                     *       ],
-                     *       "createdAt": "2026-06-01T12:00:00.000Z",
-                     *       "updatedAt": "2026-06-05T09:30:00.000Z"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["PermissionSetView"];
-                };
-            };
-            /** @description Bad request — invalid body, an unknown/deprecated permission key, or a permission that exceeds the caller's ceiling. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "You cannot grant a permission you do not hold: ManageBilling"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Forbidden — the actor lacks the `admin` tier or the `CreatePermissionSets` permission. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Insufficient membership tier for this resource"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Permission set not found for this business. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Permission set not found"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Conflict — the permission set was modified by a concurrent request; re-read and retry. */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Conflicting concurrent update, please retry"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    listPermissionCatalog: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The live permission catalog. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example [
-                     *       {
-                     *         "key": "ViewConversations",
-                     *         "label": "View conversations",
-                     *         "category": "Messaging"
-                     *       },
-                     *       {
-                     *         "key": "SendMessages",
-                     *         "label": "Send messages",
-                     *         "category": "Messaging"
-                     *       }
-                     *     ]
-                     */
-                    "application/json": components["schemas"]["CatalogPermissionList"];
-                };
-            };
-            /** @description Forbidden — the actor lacks the `admin` tier or the `ViewPermissionSets` permission. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Insufficient membership tier for this resource"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    listAdminSandboxes: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Sandbox organizations under the parent, with count/cap state. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "sandboxes": [
-                     *         {
-                     *           "id": "018f1a2b-0000-7000-8000-0000000000d3",
-                     *           "name": "Acme Dental — Staging",
-                     *           "slug": "acme-dental-staging",
-                     *           "createdAt": "2026-06-01T09:00:00.000Z",
-                     *           "createdBy": "018f1a2b-0000-7000-8000-0000000000a1",
-                     *           "createdByName": "Jordan Lee",
-                     *           "memberCount": 3
-                     *         }
-                     *       ],
-                     *       "count": 1,
-                     *       "cap": 5
-                     *     }
-                     */
-                    "application/json": components["schemas"]["AdminSandboxList"];
-                };
-            };
-            /** @description Missing or invalid business JWT. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Unauthorized"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated, but the member lacks the required tier or the `ViewSandboxes` permission. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Permission denied: ViewSandboxes"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    syncAdminSandboxMembers: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Sandbox memberships were synced from the parent org. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "sandboxes": [
-                     *         {
-                     *           "sandboxId": "018f1a2b-0000-7000-8000-0000000000d3",
-                     *           "added": 2,
-                     *           "removed": 1
-                     *         }
-                     *       ],
-                     *       "missingBuiltinSetSandboxIds": []
-                     *     }
-                     */
-                    "application/json": components["schemas"]["AdminSandboxMemberSyncResult"];
-                };
-            };
-            /** @description Missing or invalid business JWT. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Unauthorized"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Authenticated, but the member lacks the required tier or the `ManageSandboxes` permission. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Permission denied: ManageSandboxes"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description The parent organization was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Organization not found"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5243,15 +3157,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "id": "018f1a2b-0000-7000-8000-000000000001",
-                     *       "name": "Acme Home Services",
-                     *       "slug": "acme-home-services",
-                     *       "logoUrl": "https://storage.example.com/org-logos/...?X-Amz-Signature=...",
-                     *       "isActive": true
-                     *     }
-                     */
                     "application/json": components["schemas"]["BusinessSettings"];
                 };
             };
@@ -5261,11 +3166,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Insufficient membership tier for this resource"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5275,11 +3175,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Business not found"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5294,6 +3189,8 @@ export interface operations {
                 count?: number;
                 /** @description Filter by lifecycle status. */
                 status?: "draft" | "published" | "archived";
+                /** @description Filter by authored template type. */
+                templateType?: "text" | "quick_reply" | "list_picker" | "rich_link" | "time_picker" | "form" | "imessage_app" | "app_clip_rich_link" | "authentication";
             };
             header?: never;
             path?: never;
@@ -5316,11 +3213,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Insufficient membership tier for this resource"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5355,11 +3247,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "invalid_template_definition: A rich link requires a non-empty https URL."
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5369,11 +3256,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Insufficient membership tier for this resource"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5414,11 +3296,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Insufficient membership tier for this resource"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5428,11 +3305,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "template_not_found: Template not found for this organization."
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5469,11 +3341,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "invalid_template_definition: A rich link requires a non-empty https URL."
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5483,11 +3350,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Insufficient membership tier for this resource"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5497,11 +3359,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "template_not_found: Template not found for this organization."
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5542,11 +3399,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Insufficient membership tier for this resource"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5556,11 +3408,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "template_not_found: Template not found for this organization."
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5595,17 +3442,12 @@ export interface operations {
                     "application/json": components["schemas"]["RichTemplateDetail"];
                 };
             };
-            /** @description Bad request — publish-validity or definition problems; the body carries machine-readable `reasons`. */
+            /** @description Bad request — drafts must be deleted rather than archived. */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "invalid_template_definition: A rich link requires a non-empty https URL."
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5615,11 +3457,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Insufficient membership tier for this resource"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5629,11 +3466,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "template_not_found: Template not found for this organization."
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5665,11 +3497,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "invalid_template_definition: A rich link requires a non-empty https URL."
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5679,11 +3506,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Insufficient membership tier for this resource"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5693,11 +3515,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "template_not_found: Template not found for this organization."
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5717,10 +3534,10 @@ export interface operations {
             query?: {
                 /** @description Keyset cursor: the `id` of the last row from the previous page (returned as `nextCursor`). Omit to fetch the first page. */
                 before?: string;
-                channel?: "amb" | "tiktok";
+                channel?: "amb";
                 /** @description Page size. Defaults to 25; hard cap 100. */
                 count?: number;
-                usage?: "interactive_image" | "rich_link_image" | "imessage_app_icon" | "app_clip_image";
+                usage?: "rich_image_200" | "rich_icon_15";
             };
             header?: never;
             path?: never;
@@ -5743,11 +3560,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Insufficient membership tier for this resource"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5773,8 +3585,11 @@ export interface operations {
                      * @description PNG image bytes.
                      */
                     file: string;
-                    /** @description Rich-message usage slot for the asset. */
-                    usage: string;
+                    /**
+                     * @description Rich-message size class for the asset.
+                     * @enum {string}
+                     */
+                    usage: "rich_image_200" | "rich_icon_15";
                 };
             };
         };
@@ -5808,11 +3623,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Insufficient membership tier for this resource"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5824,7 +3634,7 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "error": "Upload exceeds the 4194304-byte limit"
+                     *       "error": "Upload exceeds the 204800-byte limit"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorResponse"];
@@ -5858,11 +3668,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Insufficient membership tier for this resource"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5872,11 +3677,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Asset not found"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -5966,11 +3766,8 @@ export interface operations {
             query?: {
                 /** @description Page size. Defaults to 25; hard cap 100. */
                 count?: number;
-                /** @description Forward cursor: the `id` of the last conversation from the previous page (returned as `nextCursor`). Omit to fetch the first page. */
+                /** @description Forward cursor from the preceding page. */
                 cursor?: string;
-                /** @description Optional filter restricting the page to conversations on this channel platform. */
-                platform?: "amb" | "tiktok" | "custom";
-                /** @description Optional filter restricting the page to conversations in this lifecycle status. */
                 status?: "active" | "closed" | "opted_out";
             };
             header?: never;
@@ -5985,35 +3782,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "conversations": [
-                     *         {
-                     *           "id": "018f1a2b-0000-7000-8000-000000000001",
-                     *           "businessId": "018f1a2b-0000-7000-8000-0000000000b1",
-                     *           "firstName": "Ada",
-                     *           "lastName": "Lovelace",
-                     *           "email": "ada@example.com",
-                     *           "optedOut": false,
-                     *           "channelPlatform": "amb",
-                     *           "channelAddress": "urn:mbid:AQAAY...",
-                     *           "status": "active",
-                     *           "agentStatus": "live",
-                     *           "intentId": null,
-                     *           "groupId": null,
-                     *           "locale": "en_US",
-                     *           "capabilityList": [
-                     *             "QUICK"
-                     *           ],
-                     *           "assignedUserId": "018f1a2b-0000-7000-8000-0000000000c2",
-                     *           "lastMessageAt": "2026-06-11T14:32:00.000Z",
-                     *           "createdAt": "2026-06-01T09:00:00.000Z",
-                     *           "updatedAt": "2026-06-11T14:32:00.000Z"
-                     *         }
-                     *       ],
-                     *       "nextCursor": "018f1a2b-0000-7000-8000-000000000099"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ConversationListResponse"];
                 };
             };
@@ -6022,9 +3790,7 @@ export interface operations {
     getConversation: {
         parameters: {
             query?: {
-                /** @description Optional message-id cursor (UUIDv7). When set, returns messages strictly older than this message — pass the `id` of the oldest message already loaded to page backwards through message history. */
                 before?: string;
-                /** @description Number of messages to return for the conversation. Capped at 100. Defaults to 25 when `before` is supplied, otherwise the server default applies. */
                 count?: number;
             };
             header?: never;
@@ -6042,49 +3808,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "id": "018f1a2b-0000-7000-8000-000000000001",
-                     *       "businessId": "018f1a2b-0000-7000-8000-0000000000b1",
-                     *       "firstName": "Ada",
-                     *       "lastName": "Lovelace",
-                     *       "email": "ada@example.com",
-                     *       "optedOut": false,
-                     *       "channelPlatform": "amb",
-                     *       "channelAddress": "urn:mbid:AQAAY...",
-                     *       "status": "active",
-                     *       "agentStatus": "live",
-                     *       "intentId": null,
-                     *       "groupId": null,
-                     *       "locale": "en_US",
-                     *       "capabilityList": [
-                     *         "QUICK"
-                     *       ],
-                     *       "assignedUserId": "018f1a2b-0000-7000-8000-0000000000c2",
-                     *       "lastMessageAt": "2026-06-11T14:32:00.000Z",
-                     *       "createdAt": "2026-06-01T09:00:00.000Z",
-                     *       "updatedAt": "2026-06-11T14:32:00.000Z",
-                     *       "messages": [
-                     *         {
-                     *           "id": "018f1a2b-0000-7000-8000-0000000000ff",
-                     *           "conversationId": "018f1a2b-0000-7000-8000-000000000001",
-                     *           "senderType": "business",
-                     *           "messageType": "text",
-                     *           "isStandardized": true,
-                     *           "hasAttachments": false,
-                     *           "status": "delivered",
-                     *           "textBody": "Hi! Your appointment is confirmed for 2pm tomorrow.",
-                     *           "content": null,
-                     *           "attachments": [],
-                     *           "channelMessageId": "018f1a2b-0000-7000-8000-0000000000fe",
-                     *           "actorType": "user",
-                     *           "actorId": "018f1a2b-0000-7000-8000-0000000000c2",
-                     *           "createdAt": "2026-06-11T14:30:00.000Z",
-                     *           "updatedAt": "2026-06-11T14:30:00.000Z"
-                     *         }
-                     *       ]
-                     *     }
-                     */
                     "application/json": components["schemas"]["ConversationDetailResponse"];
                 };
             };
@@ -6094,11 +3817,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Conversation not found"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -6160,57 +3878,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Conversation not found"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    getInvitationByToken: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The opaque invitation token from the invite URL `/invite/<token>`. */
-                token: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The pending invitation preview. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "organizationName": "Acme Dental",
-                     *       "isSandbox": false,
-                     *       "tier": "member",
-                     *       "inviterName": "Jordan Lee",
-                     *       "expiresAt": "2026-06-20T14:30:00.000Z"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["InvitationPreview"];
-                };
-            };
-            /** @description The invitation does not exist, has expired, or has already been used. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Invitation not found"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -6237,7 +3904,7 @@ export interface operations {
                     /**
                      * @example {
                      *       "attachmentId": "018f1a2b-0000-7000-8000-00000000aaaa",
-                     *       "url": "https://attachments.example-bucket.s3.amazonaws.com/media/018f1a2b-0000-7000-8000-000000000001/018f1a2b-0000-7000-8000-00000000aaaa?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Expires=900&X-Amz-Signature=abc123",
+                     *       "url": "https://media.example.com/attachments/018f1a2b-0000-7000-8000-00000000aaaa?signature=example",
                      *       "expiresAt": "2026-06-11T18:30:00.000Z"
                      *     }
                      */
@@ -6250,11 +3917,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Attachment not found"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -6292,14 +3954,14 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                /** @description Declared body size in bytes. Optional; when present it is validated against the channel size ceiling (100 MiB default, 3 MiB for TikTok) before streaming begins. The actual streamed size is always enforced regardless of this header. */
+                /** @description Declared body size in bytes. Optional; when present it is validated against the 100 MiB size ceiling before upload. The actual body size is always enforced regardless of this header. */
                 "content-length"?: string;
-                /** @description MIME type of the uploaded bytes. Optional, but recommended. For `x-target-channel: tiktok` the asset must be `image/jpeg` or `image/png`, otherwise the upload is rejected with 400. */
+                /** @description MIME type of the uploaded bytes. Optional; unknown MIME type remains null. */
                 "content-type"?: string;
                 /** @description Original file name of the asset (required). Sanitized server-side: path separators and control characters are stripped and the value is truncated to 255 characters. Used for the download filename when the asset is later served. */
                 "x-original-filename": string;
-                /** @description Channel the asset is destined for. Optional; when set it tightens validation (TikTok: JPG/PNG only, 3 MiB ceiling). Omit for a general-purpose attachment. */
-                "x-target-channel"?: "amb" | "tiktok";
+                /** @description Optional messaging channel. AMB is the registered messaging channel. */
+                "x-target-channel"?: "amb";
             };
             path?: never;
             cookie?: never;
@@ -6311,7 +3973,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description The asset was streamed to storage and marked ready. */
+            /** @description The asset is ready to use. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -6325,7 +3987,7 @@ export interface operations {
                     "application/json": components["schemas"]["MediaUploadSuccess"];
                 };
             };
-            /** @description Bad request — invalid/missing metadata, an oversized body, an unsupported target channel, or a TikTok asset that is not JPG/PNG. */
+            /** @description Bad request — invalid/missing metadata, an oversized body, an unsupported target channel. */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -6339,7 +4001,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Internal error while streaming the asset to storage. */
+            /** @description Internal error while uploading the asset. */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -6355,7 +4017,7 @@ export interface operations {
             };
         };
     };
-    listConversationInitiations: {
+    listMessagingInvitations: {
         parameters: {
             query?: {
                 count?: number;
@@ -6368,18 +4030,18 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Organization-scoped conversation initiations, newest first. */
+            /** @description Organization-scoped messaging invitations, newest first. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConversationInitiationList"];
+                    "application/json": components["schemas"]["MessagingInvitationList"];
                 };
             };
         };
     };
-    createConversationInitiation: {
+    createMessagingInvitation: {
         parameters: {
             query?: never;
             header?: never;
@@ -6388,75 +4050,97 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateConversationInitiation"];
+                "application/json": components["schemas"]["CreateMessagingInvitation"];
             };
         };
         responses: {
-            /** @description Idempotent replay of an existing initiation. */
+            /** @description Messaging invitation accepted once, or an idempotent replay. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConversationInitiation"];
+                    "application/json": {
+                        duplicate: boolean;
+                        /** Format: uuid */
+                        messageId: string;
+                    };
                 };
             };
-            /** @description Initiation durably created and dispatched once. */
-            201: {
+            /** @description Malformed JSON or invalid request shape or branding syntax. */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConversationInitiation"];
+                    "application/json": components["schemas"]["MessagingInvitationRequestError"];
                 };
             };
-            /** @description Idempotency key reused with different caller input. */
+            /** @description Request ID is already submitting or is reused with different request bytes. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConversationInitiationError"];
+                    "application/json": components["schemas"]["MessagingInvitationError"];
                 };
             };
-            /** @description Invalid recipient/reference/name or initiation currently unavailable. */
+            /** @description The request body exceeds 256 KiB. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessagingInvitationBodyCapError"];
+                };
+            };
+            /** @description Invalid recipient/reference/name/logo, messaging invitation unavailable, or custom branding not approved. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConversationInitiationError"];
+                    "application/json": components["schemas"]["MessagingInvitationError"];
+                };
+            };
+            /** @description The request was recorded but the channel rejected or could not send it. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessagingInvitationSendFailure"];
                 };
             };
         };
     };
-    getConversationInitiation: {
+    getMessagingInvitation: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                initiationId: string;
+                messagingInvitationId: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Organization-scoped initiation. */
+            /** @description Organization-scoped messaging invitation. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConversationInitiation"];
+                    "application/json": components["schemas"]["MessagingInvitation"];
                 };
             };
-            /** @description Initiation not found for the authenticated organization. */
+            /** @description Messaging invitation not found for the authenticated organization. */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConversationInitiationError"];
+                    "application/json": components["schemas"]["MessagingInvitationError"];
                 };
             };
         };
@@ -6468,138 +4152,81 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        /** @description The message to send. `type` discriminates between `text` and `template` payloads. */
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SendMessageBody"];
             };
         };
         responses: {
-            /** @description Message delivered to the channel. `channelMessageId` is populated with the channel-assigned id; `duplicate` is `true` only on an idempotent replay. */
+            /** @description Accepted by the channel. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "messageId": "018f1a2b-0000-7000-8000-0000000000ff",
-                     *       "channelMessageId": "0987654321.0001",
-                     *       "duplicate": false
-                     *     }
-                     */
                     "application/json": components["schemas"]["SendMessageSuccess"];
                 };
             };
-            /** @description Bad request — invalid body, or a text message with neither body nor attachments. */
+            /** @description Invalid request. */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Text messages require a non-empty body or at least one attachmentId"
-                     *     }
-                     */
                     "application/json": components["schemas"]["SendMessageError"];
                 };
             };
-            /** @description Not found — conversation, rich template, or attachment not found (or not owned by this business). */
+            /** @description Conversation or template not found. */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Conversation not found for this business"
-                     *     }
-                     */
                     "application/json": components["schemas"]["SendMessageError"];
                 };
             };
-            /** @description Conflict — the same requestMessageId was already sent with different content. `reasons` carries `duplicate_request_conflict`. */
+            /** @description A requestMessageId cannot be reused with different bytes. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "A message with this requestMessageId was already sent with different content"
-                     *     }
-                     */
                     "application/json": components["schemas"]["SendMessageError"];
                 };
             };
-            /** @description Gone — the conversation recipient has opted out of messaging. */
+            /** @description The conversation is opted out. */
             410: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Conversation is opted out"
-                     *     }
-                     */
                     "application/json": components["schemas"]["SendMessageError"];
                 };
             };
-            /** @description Unprocessable — a rich send was rejected before dispatch: template not published or not ready on this channel, conversation not eligible, recipient capability missing, missing/invalid variable value, or a channel wire-contract violation. `reasons` carries the machine-readable codes. */
+            /** @description Request body exceeds 5 MiB. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendMessageError"];
+                };
+            };
+            /** @description The content is unsupported for this conversation. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "capability_not_supported: The recipient’s device has not advertised support for form messages."
-                     *     }
-                     */
                     "application/json": components["schemas"]["SendMessageError"];
                 };
             };
-            /** @description Internal error while processing the send. */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Unexpected send failure"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["SendMessageError"];
-                };
-            };
-            /** @description Not implemented — the channel adapter does not implement this message type yet. */
-            501: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "Channel adapter not yet implemented for messageType \"text\""
-                     *     }
-                     */
-                    "application/json": components["schemas"]["SendMessageError"];
-                };
-            };
-            /** @description Upstream failure before acceptance — the channel gateway rejected the send, a template asset could not be loaded from storage, or the App Clip Construct Payload call failed. Nothing was persisted; the caller may retry. `reasons` carries `channel_gateway_failed`, `asset_load_failed`, or `construct_payload_failed`. */
+            /** @description The channel did not accept the message. */
             502: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "channel_gateway_failed: Channel send failed"
-                     *     }
-                     */
                     "application/json": components["schemas"]["SendMessageError"];
                 };
             };
@@ -6614,165 +4241,80 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SendRawChannelPayloadBody"];
+                "application/json": components["schemas"]["SendRawMessageBody"];
             };
         };
         responses: {
-            /** @description Delivered; the channel message id is the platform-generated AMB envelope id. */
+            /** @description Accepted by the channel. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        channelMessageId: string | null;
-                        duplicate: boolean;
-                        messageId: string;
-                    };
+                    "application/json": components["schemas"]["SendMessageSuccess"];
                 };
             };
-            /** @description Malformed JSON or invalid request wrapper. */
+            /** @description Invalid request. */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                        reasons?: {
-                            /** @enum {string} */
-                            code: "unsupported_payload_type" | "envelope_field_present" | "invalid_payload_shape" | "message_type_mismatch" | "pitfall_guard_violated" | "channel_mismatch" | "capability_not_supported" | "raw_send_unsupported" | "provider_rejected" | "provider_unavailable" | "duplicate_request_conflict";
-                            constraint?: string;
-                            message: string;
-                            providerStatus?: number;
-                        }[];
-                    };
+                    "application/json": components["schemas"]["SendMessageError"];
                 };
             };
-            /** @description Conversation not found in the authenticated organization. */
+            /** @description Conversation not found. */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                        reasons?: {
-                            /** @enum {string} */
-                            code: "unsupported_payload_type" | "envelope_field_present" | "invalid_payload_shape" | "message_type_mismatch" | "pitfall_guard_violated" | "channel_mismatch" | "capability_not_supported" | "raw_send_unsupported" | "provider_rejected" | "provider_unavailable" | "duplicate_request_conflict";
-                            constraint?: string;
-                            message: string;
-                            providerStatus?: number;
-                        }[];
-                    };
+                    "application/json": components["schemas"]["SendMessageError"];
                 };
             };
-            /** @description The requestMessageId was reused with different payload intent. */
+            /** @description A requestMessageId cannot be reused with different bytes. */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                        reasons?: {
-                            /** @enum {string} */
-                            code: "unsupported_payload_type" | "envelope_field_present" | "invalid_payload_shape" | "message_type_mismatch" | "pitfall_guard_violated" | "channel_mismatch" | "capability_not_supported" | "raw_send_unsupported" | "provider_rejected" | "provider_unavailable" | "duplicate_request_conflict";
-                            constraint?: string;
-                            message: string;
-                            providerStatus?: number;
-                        }[];
-                    };
+                    "application/json": components["schemas"]["SendMessageError"];
                 };
             };
-            /** @description The recipient opted out. */
+            /** @description The conversation is opted out. */
             410: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                        reasons?: {
-                            /** @enum {string} */
-                            code: "unsupported_payload_type" | "envelope_field_present" | "invalid_payload_shape" | "message_type_mismatch" | "pitfall_guard_violated" | "channel_mismatch" | "capability_not_supported" | "raw_send_unsupported" | "provider_rejected" | "provider_unavailable" | "duplicate_request_conflict";
-                            constraint?: string;
-                            message: string;
-                            providerStatus?: number;
-                        }[];
-                    };
+                    "application/json": components["schemas"]["SendMessageError"];
                 };
             };
-            /** @description The request body exceeds 5 MiB. */
+            /** @description Request body exceeds 5 MiB. */
             413: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                        reasons?: {
-                            /** @enum {string} */
-                            code: "unsupported_payload_type" | "envelope_field_present" | "invalid_payload_shape" | "message_type_mismatch" | "pitfall_guard_violated" | "channel_mismatch" | "capability_not_supported" | "raw_send_unsupported" | "provider_rejected" | "provider_unavailable" | "duplicate_request_conflict";
-                            constraint?: string;
-                            message: string;
-                            providerStatus?: number;
-                        }[];
-                    };
+                    "application/json": components["schemas"]["SendMessageError"];
                 };
             };
-            /** @description Payload, channel, or recipient capability validation failed. */
+            /** @description Content does not match the conversation channel. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                        reasons?: {
-                            /** @enum {string} */
-                            code: "unsupported_payload_type" | "envelope_field_present" | "invalid_payload_shape" | "message_type_mismatch" | "pitfall_guard_violated" | "channel_mismatch" | "capability_not_supported" | "raw_send_unsupported" | "provider_rejected" | "provider_unavailable" | "duplicate_request_conflict";
-                            constraint?: string;
-                            message: string;
-                            providerStatus?: number;
-                        }[];
-                    };
+                    "application/json": components["schemas"]["SendMessageError"];
                 };
             };
-            /** @description Unexpected send failure. */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                        reasons?: {
-                            /** @enum {string} */
-                            code: "unsupported_payload_type" | "envelope_field_present" | "invalid_payload_shape" | "message_type_mismatch" | "pitfall_guard_violated" | "channel_mismatch" | "capability_not_supported" | "raw_send_unsupported" | "provider_rejected" | "provider_unavailable" | "duplicate_request_conflict";
-                            constraint?: string;
-                            message: string;
-                            providerStatus?: number;
-                        }[];
-                    };
-                };
-            };
-            /** @description The channel provider rejected or could not complete the send. */
+            /** @description The channel did not accept the message. */
             502: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                        reasons?: {
-                            /** @enum {string} */
-                            code: "unsupported_payload_type" | "envelope_field_present" | "invalid_payload_shape" | "message_type_mismatch" | "pitfall_guard_violated" | "channel_mismatch" | "capability_not_supported" | "raw_send_unsupported" | "provider_rejected" | "provider_unavailable" | "duplicate_request_conflict";
-                            constraint?: string;
-                            message: string;
-                            providerStatus?: number;
-                        }[];
-                    };
+                    "application/json": components["schemas"]["SendMessageError"];
                 };
             };
         };
@@ -6784,6 +4326,8 @@ export interface operations {
                 before?: string;
                 /** @description Page size. Defaults to 25; hard cap 100. */
                 count?: number;
+                /** @description Filter by authored template type. */
+                templateType?: "text" | "quick_reply" | "list_picker" | "rich_link" | "time_picker" | "form" | "imessage_app" | "app_clip_rich_link" | "authentication";
             };
             header?: never;
             path?: never;
@@ -6828,25 +4372,20 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Template not found"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
     };
-    webhookInitiationUpdated: {
+    webhookMessageReceived: {
         parameters: {
             query?: never;
             header: {
-                /** @description Event id (uuidv7), equal to the envelope `id`. Dedupe on this — retries reuse the same id; an admin replay mints a fresh one so the re-send is accepted. Header names are case-insensitive. */
+                /** @description Event id; retries reuse it. */
                 "Webhook-Id": string;
-                /** @description A `v1,<base64(HMAC-SHA256)>` token over `{Webhook-Id}.{Webhook-Timestamp}.{rawBody}`. May in future carry multiple space-delimited tokens (key rotation) — accept the delivery if any token matches. */
+                /** @description v1 base64 HMAC-SHA256 over id.timestamp.rawBody. */
                 "Webhook-Signature": string;
-                /** @description Unix time in seconds when we signed the request. Reject if more than 5 minutes from now. */
+                /** @description Unix seconds when this delivery attempt was signed; it is not the event timestamp. */
                 "Webhook-Timestamp": string;
             };
             path?: never;
@@ -6854,11 +4393,11 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["WebhookInitiationUpdatedEvent"];
+                "application/json": components["schemas"]["WebhookMessageReceivedEvent"];
             };
         };
         responses: {
-            /** @description Acknowledged. Return any 2xx; non-2xx (except 410 Gone) is retried with backoff. */
+            /** @description Acknowledged. Return any 2xx to stop retries. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -6867,15 +4406,15 @@ export interface operations {
             };
         };
     };
-    webhookMessageReceived: {
+    webhookMessagingInvitationUpdated: {
         parameters: {
             query?: never;
             header: {
-                /** @description Event id (uuidv7), equal to the envelope `id`. Dedupe on this — retries reuse the same id; an admin replay mints a fresh one so the re-send is accepted. Header names are case-insensitive. */
+                /** @description Event id; retries reuse it. */
                 "Webhook-Id": string;
-                /** @description A `v1,<base64(HMAC-SHA256)>` token over `{Webhook-Id}.{Webhook-Timestamp}.{rawBody}`. May in future carry multiple space-delimited tokens (key rotation) — accept the delivery if any token matches. */
+                /** @description v1 base64 HMAC-SHA256 over id.timestamp.rawBody. */
                 "Webhook-Signature": string;
-                /** @description Unix time in seconds when we signed the request. Reject if more than 5 minutes from now. */
+                /** @description Unix seconds when this delivery attempt was signed; it is not the event timestamp. */
                 "Webhook-Timestamp": string;
             };
             path?: never;
@@ -6883,40 +4422,11 @@ export interface operations {
         };
         requestBody: {
             content: {
-                /**
-                 * @example {
-                 *       "id": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a1234",
-                 *       "type": "message.received",
-                 *       "specVersion": 1,
-                 *       "dataVersion": "2026-07-20",
-                 *       "occurredAt": "2026-07-20T14:30:00.000Z",
-                 *       "organizationId": "org_123",
-                 *       "clientId": "client_123",
-                 *       "conversationId": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a5678",
-                 *       "data": {
-                 *         "message": {
-                 *           "id": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9012",
-                 *           "conversationId": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a5678",
-                 *           "channelPlatform": "amb",
-                 *           "messageType": "text",
-                 *           "content": {
-                 *             "body": "Hello, I need help with my order."
-                 *           },
-                 *           "timestamp": "2026-07-20T14:30:00.000Z",
-                 *           "intentId": null,
-                 *           "groupId": null,
-                 *           "locale": "en-US",
-                 *           "richRequestIdentifier": null,
-                 *           "attachments": []
-                 *         }
-                 *       }
-                 *     }
-                 */
-                "application/json": components["schemas"]["WebhookMessageReceivedEvent"];
+                "application/json": components["schemas"]["WebhookMessagingInvitationUpdatedEvent"];
             };
         };
         responses: {
-            /** @description Acknowledged. Return any 2xx; non-2xx (except 410 Gone) is retried with backoff. */
+            /** @description Acknowledged. Return any 2xx to stop retries. */
             200: {
                 headers: {
                     [name: string]: unknown;

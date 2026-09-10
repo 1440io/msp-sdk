@@ -11,7 +11,14 @@
  * verifications are printed loudly rather than silently dropped.
  */
 import { createServer } from 'node:http';
-import { MemoryReplayCache, WebhookReceiver } from '@1440io/msp-webhooks';
+import {
+  MemoryReplayCache,
+  WebhookReceiver,
+  isInteractiveResponse,
+  respondsTo,
+  selectedIds,
+  textBody,
+} from '@1440io/msp-webhooks';
 import { env } from '../env.ts';
 
 if (!env.webhookSecret) {
@@ -27,23 +34,26 @@ const receiver = new WebhookReceiver({
   replayCache: new MemoryReplayCache(),
   on: {
     'message.received': (event, context) => {
-      const { message } = event.data;
-      const preview =
-        message.messageType === 'text' && 'body' in message.content
-          ? JSON.stringify(message.content.body).slice(0, 120)
-          : message.messageType;
+      const { message } = event;
+      const body = textBody(message.content);
+      const preview = body !== null ? JSON.stringify(body).slice(0, 120) : message.content?.kind;
+      const extra = isInteractiveResponse(message.content)
+        ? `\n    chose ${JSON.stringify(selectedIds(message.content))} ` +
+          `in reply to ${respondsTo(message.content) ?? '(uncorrelated)'}`
+        : '';
       console.log(
         `✓ message.received  ${context.id}\n` +
-          `    conversation ${event.conversationId} · ${message.channelPlatform} · ${preview}` +
-          (message.attachments.length ? `\n    ${message.attachments.length} attachment(s)` : ''),
+          `    conversation ${event.conversationId} · ${message.channel} · ${preview}` +
+          (message.attachments.length ? `\n    ${message.attachments.length} attachment(s)` : '') +
+          extra,
       );
     },
-    'initiation.updated': (event, context) => {
-      const { initiationId, status, reasonCode, conversationId } = event.data;
+    'messaging_invitation.updated': (event, context) => {
+      const { messagingInvitationId, status, reasonCode } = event.messagingInvitation;
       console.log(
-        `✓ initiation.updated ${context.id}\n` +
-          `    ${initiationId} → ${status}${reasonCode ? ` (${reasonCode})` : ''}` +
-          (conversationId ? ` · conversation ${conversationId}` : ''),
+        `✓ messaging_invitation.updated ${context.id}\n` +
+          `    ${messagingInvitationId} → ${status}${reasonCode ? ` (${reasonCode})` : ''}` +
+          (event.conversationId ? ` · conversation ${event.conversationId}` : ''),
       );
     },
   },

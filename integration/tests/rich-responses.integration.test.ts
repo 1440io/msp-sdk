@@ -1,10 +1,10 @@
 import { expect, it } from 'vitest';
-import { parseAppleTimestamp } from '@1440io/msp-webhooks';
-import { INTERACTIVE_RESPONSE_TYPES } from '@1440io/msp-types';
+import { respondsTo, selectedTimeslot } from '@1440io/msp-webhooks';
+import { INBOUND_CONTENT_KINDS } from '@1440io/msp-types';
 import { describeApi } from '../gates.ts';
 import { env } from '../env.ts';
 import { testClient } from '../client.ts';
-import { assertMatchesSchema, checkSchema } from '../schema.ts';
+import { assertMatchesSchema } from '../schema.ts';
 
 /**
  * Customer replies as the read API stored them.
@@ -23,49 +23,61 @@ async function recentMessages() {
 }
 
 describeApi('stored replies: interactive responses', () => {
-  it('stores interactive responses in the documented shape', async () => {
+  it('stores every message under a documented content kind', async () => {
     const messages = await recentMessages();
-    const interactive = messages.filter((m) => m['messageType'] === 'interactive');
+    const withContent = messages.filter((m) => m['content'] != null);
 
+    if (withContent.length === 0) {
+      console.log('   no messages with content on this conversation — skipped');
+      return;
+    }
+
+    const kinds = new Set<string>();
+    for (const message of withContent) {
+      const kind = message['content']['kind'] as string | undefined;
+      if (kind === undefined) continue;
+      kinds.add(kind);
+    }
+    console.log(`   content kinds seen: ${[...kinds].join(', ') || '(none)'}`);
+
+    // History holds both directions. Outbound rich sends use the send kinds
+    // (`amb.quick_reply`), inbound replies the response kinds
+    // (`amb.quick_reply_response`) — only the latter are inbound content.
+    const inboundKinds = [...kinds].filter((kind) => kind.endsWith('_response') || kind === 'text');
+    const unknown = inboundKinds.filter(
+      (kind) => !(INBOUND_CONTENT_KINDS as readonly string[]).includes(kind),
+    );
+    if (unknown.length > 0) {
+      // A new inbound kind is the platform moving ahead of the spec.
+      console.warn(`   ⚠ inbound kind(s) outside the documented set: ${unknown.join(', ')}`);
+    }
+    expect(kinds.size).toBeGreaterThan(0);
+  });
+
+  it('correlates every interactive reply back to its prompt', async () => {
+    const messages = await recentMessages();
+    // Only inbound replies carry a correlation identifier; an outbound rich
+    // send shares the `amb.` prefix but is not a reply.
+    const interactive = messages.filter((m) =>
+      String(m['content']?.['kind'] ?? '').endsWith('_response'),
+    );
     if (interactive.length === 0) {
-      console.log('   no interactive replies on this conversation yet — skipped');
+      console.log('   no interactive replies yet — skipped');
       return;
     }
 
     for (const message of interactive) {
-      assertMatchesSchema(
-        'WebhookContentInteractiveResponse',
-        message['content'],
-        'stored interactive reply',
-      );
-      expect(INTERACTIVE_RESPONSE_TYPES as readonly string[]).toContain(
-        message['content']['responseType'],
-      );
-    }
-    console.log(
-      `   ${interactive.length} interactive reply(ies): ` +
-        interactive.map((m) => m['content']['responseType']).join(', '),
-    );
-  });
-
-  it('correlates every reply back to the message that prompted it', async () => {
-    const messages = await recentMessages();
-    const interactive = messages.filter((m) => m['messageType'] === 'interactive');
-    if (interactive.length === 0) return;
-
-    for (const message of interactive) {
+      const correlation = respondsTo(message['content']);
+      if (message['content']['kind'] === 'amb.imessage_app_response') continue; // no promise
       // Without an identifier a bot cannot tell which prompt was answered.
-      expect(
-        message['content']['requestIdentifier'],
-        `reply ${message['id']} carries no requestIdentifier`,
-      ).toBeTruthy();
+      expect(correlation, `reply ${message['id']} carries no requestIdentifier`).toBeTruthy();
     }
   });
 
   it('yields a usable instant for every time-picker reply', async () => {
     const messages = await recentMessages();
     const timePickers = messages.filter(
-      (m) => m['messageType'] === 'interactive' && m['content']['responseType'] === 'time_picker',
+      (m) => m['content']?.['kind'] === 'amb.time_picker_response',
     );
 
     if (timePickers.length === 0) {
@@ -74,31 +86,25 @@ describeApi('stored replies: interactive responses', () => {
     }
 
     for (const message of timePickers) {
-      const raw = message['content']['selectedStartTime'] as string | null;
-      expect(raw, 'a time-picker reply with no chosen time').not.toBeNull();
-
-      // The declared format and the real one disagree; the helper spans both.
-      const parsed = parseAppleTimestamp(raw);
-      expect(parsed, `could not parse selectedStartTime ${JSON.stringify(raw)}`).not.toBeNull();
-      expect(Number.isNaN(parsed!.getTime())).toBe(false);
-
-      const { undocumented } = checkSchema('WebhookContentInteractiveResponse', message['content']);
-      const formatDrift = undocumented.find((entry) => entry.includes('selectedStartTime'));
-      if (formatDrift) {
-        console.warn(`   ⚠ ${raw} is not RFC 3339 — parseAppleTimestamp() handled it`);
-      }
+      const slot = selectedTimeslot(message['content']);
+      expect(slot, `could not read a slot from ${JSON.stringify(message['content'])}`).not.toBeNull();
+      expect(Number.isNaN(slot!.startsAt.getTime())).toBe(false);
+      expect(slot!.durationSeconds).toBeGreaterThan(0);
+      console.log(`   booked ${slot!.startsAt.toISOString()} for ${slot!.durationSeconds}s`);
     }
   });
 
   it('reports how reactions actually arrive', async () => {
     const messages = await recentMessages();
 
-    const structuredTapbacks = messages.filter((m) => m['messageType'] === 'tapback');
+    // The spec no longer declares a tapback kind at all, which matches what we
+    // observed: reactions arrive as text prose.
+    const structuredTapbacks = messages.filter((m) => m['content']?.['kind'] === 'tapback');
     // Apple has been observed delivering reactions as prose rather than as a
     // structured tapback — "Liked 1 Business Message" arrives as plain text.
     const prose = messages.filter(
       (m) =>
-        m['messageType'] === 'text' &&
+        m['content']?.['kind'] === 'text' &&
         /^(Liked|Loved|Disliked|Laughed at|Emphasized|Questioned)\b/.test(
           String(m['content']?.['body'] ?? ''),
         ),
@@ -107,16 +113,13 @@ describeApi('stored replies: interactive responses', () => {
     console.log(
       `   reactions: ${structuredTapbacks.length} structured, ${prose.length} delivered as text`,
     );
-    if (prose.length > 0 && structuredTapbacks.length === 0) {
-      console.warn(
-        '   ⚠ reactions arrive as text, not messageType "tapback" — isTapbackMessage() ' +
-          'will never fire for these, so do not rely on it for AMB reactions.',
+    if (prose.length > 0) {
+      console.log(
+        '   reactions arrive as text prose — the spec dropped the tapback kind, ' +
+          'which matches this.',
       );
     }
-
-    for (const tapback of structuredTapbacks) {
-      assertMatchesSchema('WebhookContentTapback', tapback['content'], 'stored tapback');
-    }
-    expect(messages.length).toBeGreaterThanOrEqual(0);
+    // Nothing should be arriving under a kind the spec no longer declares.
+    expect(structuredTapbacks).toHaveLength(0);
   });
 });

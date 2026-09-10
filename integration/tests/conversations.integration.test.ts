@@ -70,10 +70,11 @@ describeApi('conversations: reading', () => {
     }
   });
 
-  it('filters by platform', async () => {
-    const page = await testClient().conversations.list({ count: 10, platform: 'amb' });
+  it('reports every conversation on a documented platform', async () => {
+    const page = await testClient().conversations.list({ count: 25 });
 
     for (const conversation of page.conversations) {
+      // Conversations are AMB-only in this spec revision.
       expect(conversation.channelPlatform).toBe('amb');
     }
   });

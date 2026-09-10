@@ -36,12 +36,6 @@ export const describeWebhookSecret = describeIf(
   'set MSP_WEBHOOK_SECRET in .env.local',
 );
 
-/** Delivery-log assertions. */
-export const describeDeliveries = describeIf(
-  hasCredentials && env.integrationId !== undefined,
-  'set MSP_TEST_INTEGRATION_ID to read the delivery log',
-);
-
 /** The tunnel-backed live webhook test. */
 export const describeWebhookLive = describeIf(
   hasCredentials && env.webhookSecret !== undefined && env.webhookLive,

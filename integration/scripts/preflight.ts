@@ -28,12 +28,12 @@ console.log(`${check(true)} API key exchanges for a JWT (expires ${token.expires
 console.log(`  tier: ${token.grant.tier}`);
 console.log(`  permissions: ${token.grant.permissionKeys?.join(', ') || '(none listed)'}`);
 
-const context = await client.admin.context().catch(() => undefined);
-if (context) {
-  console.log(`\n  business: ${context.business.name} (${context.business.slug})`);
-  console.log(`  business id: ${context.business.id}`);
+const settings = await client.admin.settings().catch(() => undefined);
+if (settings) {
+  console.log(`\n  business: ${settings.name} (${settings.slug})`);
+  console.log(`  business id: ${settings.id}`);
 } else {
-  console.log('\n  business context unavailable (integration lacks the admin tier)');
+  console.log('\n  business settings unavailable (integration lacks the admin tier)');
 }
 
 const channels = await client.channels.list().catch(() => []);

@@ -36,7 +36,7 @@ Credentials alone unlock reads. Everything with a side effect needs its own opt-
 | Read | `MSP_API_KEY` | Token exchange, conversations, templates, channels, initiations, admin reads, delivery log. No side effects. |
 | Write | `MSP_TEST_ALLOW_WRITES=1` | Creates and deletes template drafts, rich assets, and permission sets; renames a conversation and restores the old name. All cleaned up in `finally`. |
 | Send | `MSP_TEST_ALLOW_SEND=1` + `MSP_TEST_CONVERSATION_ID` | **Delivers real messages.** A person may read them. Each is prefixed `[SDK integration test <run id>]`. |
-| Initiate | `MSP_TEST_ALLOW_INITIATE=1` + `MSP_TEST_PHONE_NUMBER` | **Rings a real device** with an Apple Messages request. |
+| Invite | `MSP_TEST_ALLOW_INITIATE=1` + `MSP_TEST_PHONE_NUMBER` | **Rings a real device** with an Apple Messages invitation. A `422 messaging_invitation_unavailable` means the org lacks the capability, and the tests skip. |
 
 A skipped tier says so by name in the output, so a run that quietly did less than you expected is visible rather than silent.
 
@@ -51,14 +51,13 @@ A skipped tier says so by name in the output, so a run that quietly did less tha
 | `templates.integration.test.ts` | Published listing, readiness reasons, and the full draft → publish → archive → delete lifecycle. |
 | `media.integration.test.ts` | Upload, signed read URL, **byte-for-byte round trip**, TikTok content-type rejection, asset library lifecycle. |
 | `messaging.integration.test.ts` | Real sends, idempotent replay, 409 on a reused key with different content, attachments, template sends, readback. |
-| `initiations.integration.test.ts` | Listing, status vocabulary, and a real initiation followed to a terminal status. |
+| `invitations.integration.test.ts` | Listing, status vocabulary, and a real invitation followed to a terminal status. |
 | `rich-payloads.integration.test.ts` | Apple payload rules — envelope-field rejection, quick-reply item bounds, the `listPickerItem` pitfall, marker mismatches, the 5 MiB cap. **Non-destructive**: targets a conversation that cannot exist, so nothing is ever delivered. |
 | `rich-templates.integration.test.ts` | Authoring quick replies, list pickers (static and dynamic), and time pickers; readiness and `resolvedNativeType`; reject reason codes. |
 | `rich-send.integration.test.ts` | Real rich sends, per-send collection variables, variable validation, raw payload idempotency and conflict. |
 | `rich-responses.integration.test.ts` | Replies as the read API stored them — response shapes, correlation, time parsing, and how reactions really arrive. Read tier, no tap needed. |
 | `rich-roundtrip.integration.test.ts` | Prompt → human taps → reply, correlated by `requestIdentifier` and parsed with the narrowing helpers. |
 | `webhooks-secret.integration.test.ts` | The real signing secret: format, verification, tampering, rotation, replay dedupe. |
-| `webhooks-deliveries.integration.test.ts` | The delivery log — event types, attempt history, endpoint configuration. |
 | `webhooks-live.integration.test.ts` | A real platform delivery over the network, verified by this SDK. |
 
 ## Testing rich messages and replies
@@ -91,7 +90,14 @@ Live responses are checked against their schemas. The two outcomes are treated d
 
 ### Known drift
 
-`integration/schema.ts` carries a short `KNOWN_DRIFT` list: deviations confirmed against production and deliberately tracked as warnings rather than failures, each with a note on what to do about it. Today it holds one entry — time-picker `selectedStartTime` arriving in Apple's basic format instead of the RFC 3339 the spec declares. Reconcile the spec or the server and the entry comes out.
+`integration/schema.ts` carries a `KNOWN_DRIFT` list: deviations confirmed against production and deliberately tracked as warnings rather than failures. It is **empty** as of the 0.2.0 spec — the previous entry (time-picker `selectedStartTime` declared `date-time` while sending Apple's basic format) was resolved upstream by pinning the real shape with a pattern.
+
+Discrepancies the suite now records as assertions rather than drift entries, because they are behaviour rather than schema:
+
+- `mediaAssetId` from an upload is not usable as an `attachmentId` for `access-url`, despite the spec saying so in two places. Attaching mints a separate attachment id; read it from message history or an inbound webhook.
+- Unknown fields are rejected on the request body but silently ignored inside `content`.
+- Template-variable rejections are prose-only 422s with no machine-readable code.
+- Access tokens last 24 hours, not the ~15 minutes the spec describes.
 
 ## After a crash
 

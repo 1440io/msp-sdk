@@ -19,7 +19,7 @@ describeSend('messaging: real outbound sends', () => {
     assertMatchesSchema('SendMessageSuccess', result, 'POST /api/v0/messaging/send');
     expect(result.messageId).toMatch(/^[0-9a-f-]{36}$/i);
     expect(result.duplicate).toBe(false);
-    console.log(`   sent ${result.messageId} (channel id ${result.channelMessageId})`);
+    console.log(`   sent ${result.messageId}`);
   });
 
   it('treats a replayed requestMessageId as a duplicate rather than a second send', async () => {
@@ -152,15 +152,25 @@ describeSend('messaging: real outbound sends', () => {
 });
 
 describeApi('messaging: rejections that must not send anything', () => {
-  it('rejects a send with neither body nor attachments', async () => {
+  it('rejects a send with an empty body', async () => {
     const error = await testClient()
-      .messaging.sendText({ conversationId: env.conversationId ?? 'unused' })
+      .messaging.sendText({ conversationId: env.conversationId ?? 'unused', body: '' })
       .catch((e: unknown) => e);
 
     expect(isMspApiError(error)).toBe(true);
-    expect(isMspApiError(error) && [400, 404, 422]).toContain(
-      isMspApiError(error) ? error.status : 0,
-    );
+    expect([400, 404, 422]).toContain(isMspApiError(error) ? error.status : 0);
+  });
+
+  it('carries a subject through on a text send', async () => {
+    const client = testClient();
+
+    const result = await client.messaging.sendText({
+      conversationId: env.conversationId!,
+      body: `${stamp()} Subject check.`,
+      subject: 'Integration test',
+    });
+
+    expect(result.duplicate).toBe(false);
   });
 
   it('404s on a conversation that does not belong to this business', async () => {

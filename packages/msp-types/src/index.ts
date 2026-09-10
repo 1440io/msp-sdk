@@ -2,10 +2,10 @@
  * `@1440io/msp-types` — types for the 1440 Apple Messages for Business MSP API.
  *
  * `./openapi` holds the raw generated surface (`paths`, `webhooks`, `components`,
- * `operations`), regenerated from `spec/1440-cloud-openapi.json` by `npm run generate`.
- * This module re-exports it and adds the short, stable aliases the SDK and its
- * consumers actually reach for, plus the runtime enum vocabularies the spec
- * declares as string unions.
+ * `operations`), regenerated from `spec/1440-cloud-openapi.json` by
+ * `npm run generate`. This module re-exports it and adds the short, stable
+ * aliases the SDK and its consumers reach for, plus runtime vocabularies for
+ * the spec's string unions.
  */
 import type { components, operations } from './openapi.js';
 
@@ -24,16 +24,20 @@ export type Operation<K extends keyof operations> = operations[K];
 // Errors
 // ---------------------------------------------------------------------------
 
-/** Canonical error envelope returned by every non-2xx response. */
+/** Canonical error envelope returned by most non-2xx responses. */
 export type ErrorResponse = Schemas['ErrorResponse'];
-/** Error envelope for the send route, carrying rich-messaging reject reasons. */
+/** Error envelope for the messaging send routes. */
 export type SendMessageError = Schemas['SendMessageError'];
 /** A stable machine-readable rich-messaging reject reason. */
 export type RichReason = Schemas['RichReason'];
-/** Error envelope carrying only rich reasons (template/asset conflicts). */
+/** Error envelope carrying rich reasons (template and asset conflicts). */
 export type RichReasonsError = Schemas['RichReasonsError'];
-/** Error envelope for the conversation-initiation routes. */
-export type ConversationInitiationError = Schemas['ConversationInitiationError'];
+
+/** One field-level problem from a `validation_failed` send rejection. */
+export interface ValidationIssue {
+  path: string;
+  message: string;
+}
 
 // ---------------------------------------------------------------------------
 // Auth
@@ -45,52 +49,88 @@ export type IntegrationTokenResponse = Schemas['IntegrationTokenResponse'];
 export type ActorGrant = Schemas['ActorGrant'];
 
 // ---------------------------------------------------------------------------
-// Conversations & messages
+// Conversations
 // ---------------------------------------------------------------------------
 
-/** A conversation summary row, as returned by the conversation list endpoint. */
+/** A conversation summary row. */
 export type Conversation = Schemas['ConversationListItem'];
 /** A conversation together with its window of messages. */
 export type ConversationDetail = Schemas['ConversationDetailResponse'];
 /** A cursor-paginated page of conversation summaries. */
 export type ConversationListResponse = Schemas['ConversationListResponse'];
-/** A stored message on a conversation. */
-export type ConversationMessage = Schemas['ConversationMessage'];
-/** An attachment on a stored message. */
-export type ConversationMessageAttachment = Schemas['ConversationMessageAttachment'];
 /** Body for renaming a conversation's customer. */
 export type UpdateConversationNameBody = Schemas['UpdateConversationNameBody'];
+
+/** A stored message, as the conversation-detail route returns it. */
+export type ConversationMessage = NonNullable<ConversationDetail['messages']>[number];
 
 // ---------------------------------------------------------------------------
 // Sending
 // ---------------------------------------------------------------------------
 
-/** Outbound message request — a `text` or a `template` send. */
+/** Outbound message request — `text`, `template`, or `authentication`. */
 export type SendMessageBody = Schemas['SendMessageBody'];
 /** Free-form text and/or attachment send. */
 export type SendTextMessageBody = Schemas['SendTextMessageBody'];
 /** Send from a published rich template. */
 export type SendTemplateMessageBody = Schemas['SendTemplateMessageBody'];
-/** Result of a synchronous send. */
+/** Send an authentication (OAuth) request from a published template. */
+export type SendAuthenticationMessageBody = Schemas['SendAuthenticationMessageBody'];
+/** Channel-native passthrough send. */
+export type SendRawMessageBody = Schemas['SendRawMessageBody'];
+/** Result of a send. */
 export type SendMessageSuccess = Schemas['SendMessageSuccess'];
-/** Channel-native (Apple MSP) passthrough send. */
-export type SendRawChannelPayloadBody = Schemas['SendRawChannelPayloadBody'];
 
 /** Per-send value for a declared template variable. */
-export type TemplateVariableValue = NonNullable<
-  SendTemplateMessageBody['message']['variables']
->[string];
+export type TemplateVariableValue = NonNullable<SendTemplateMessageBody['variables']>[string];
 
 // ---------------------------------------------------------------------------
-// Initiations
+// Messaging invitations
 // ---------------------------------------------------------------------------
 
-/** A business-initiated conversation request. */
-export type ConversationInitiation = Schemas['ConversationInitiation'];
-/** Body for initiating a conversation with a customer. */
-export type CreateConversationInitiation = Schemas['CreateConversationInitiation'];
-/** A cursor-paginated page of initiations. */
-export type ConversationInitiationList = Schemas['ConversationInitiationList'];
+/** A business-initiated messaging invitation. */
+export type MessagingInvitation = Schemas['MessagingInvitation'];
+/** Body for inviting a customer into a conversation. */
+export type CreateMessagingInvitation = Schemas['CreateMessagingInvitation'];
+/** A cursor-paginated page of messaging invitations. */
+export type MessagingInvitationList = Schemas['MessagingInvitationList'];
+/** Error envelope for the invitation routes. */
+export type MessagingInvitationError = Schemas['MessagingInvitationError'];
+/** Validation error for an invitation request. */
+export type MessagingInvitationRequestError = Schemas['MessagingInvitationRequestError'];
+/** The invitation body exceeded its size cap. */
+export type MessagingInvitationBodyCapError = Schemas['MessagingInvitationBodyCapError'];
+/** The channel refused or failed to deliver the invitation. */
+export type MessagingInvitationSendFailure = Schemas['MessagingInvitationSendFailure'];
+
+/** Lifecycle status of a messaging invitation. */
+export type InvitationStatus = MessagingInvitation['status'];
+
+/** Every invitation status the spec declares. */
+export const INVITATION_STATUSES = [
+  'submitting',
+  'submitted',
+  'provider_rejected',
+  'error',
+  'accepted',
+  'declined',
+] as const satisfies readonly InvitationStatus[];
+
+/** Invitation statuses that are terminal — no further transitions follow. */
+export const TERMINAL_INVITATION_STATUSES = [
+  'provider_rejected',
+  'error',
+  'accepted',
+  'declined',
+] as const satisfies readonly InvitationStatus[];
+
+/** True when an invitation has reached a terminal status. */
+export function isTerminalInvitationStatus(status: InvitationStatus): boolean {
+  return (TERMINAL_INVITATION_STATUSES as readonly InvitationStatus[]).includes(status);
+}
+
+/** Machine-readable terminal reason on a failed invitation. */
+export type InvitationReasonCode = MessagingInvitation['reasonCode'];
 
 // ---------------------------------------------------------------------------
 // Templates & rich assets
@@ -113,135 +153,42 @@ export type RichAssetItem = Schemas['RichAssetItem'];
 /** A page of rich-message assets. */
 export type RichAssetList = Schemas['RichAssetList'];
 
-// ---------------------------------------------------------------------------
-// Media
-// ---------------------------------------------------------------------------
+/** Publication state of a rich template. */
+export type RichTemplateStatus = RichTemplateSummary['status'];
 
-/** Result of streaming a media asset to storage. */
-export type MediaUploadSuccess = Schemas['MediaUploadSuccess'];
-/** A short-lived signed read URL for an attachment. */
-export type MediaAccessUrlSuccess = Schemas['MediaAccessUrlSuccess'];
+/** Every rich-template status the spec declares. */
+export const RICH_TEMPLATE_STATUSES = [
+  'draft',
+  'published',
+  'archived',
+] as const satisfies readonly RichTemplateStatus[];
 
-// ---------------------------------------------------------------------------
-// Channels & admin
-// ---------------------------------------------------------------------------
+/** The kind of message a template produces. */
+export type RichTemplateType = NonNullable<
+  operations['adminListRichTemplates']['parameters']['query']
+>['templateType'];
 
-/** An active channel configured for the org. */
-export type Channel = Schemas['Channel'];
-/** The set of active channels for the org. */
-export type ChannelListResponse = Schemas['ChannelListResponse'];
-/** The authenticated business-admin context. */
-export type AdminBusinessContext = Schemas['AdminBusinessContext'];
-/** A messaging channel as seen by business admins. */
-export type AdminBusinessChannel = Schemas['AdminBusinessChannel'];
-/** Body for connecting a messaging channel to the business. */
-export type AdminCreateBusinessChannelBody = Schemas['AdminCreateBusinessChannelBody'];
-/** A member of the business. */
-export type AdminBusinessMember = Schemas['AdminBusinessMember'];
-/** A sandbox organization under the parent business. */
-export type AdminSandboxListItem = Schemas['AdminSandboxListItem'];
-/** Sandbox listing with its cap and current count. */
-export type AdminSandboxList = Schemas['AdminSandboxList'];
-/** Result of resyncing sandbox memberships from the parent org. */
-export type AdminSandboxMemberSyncResult = Schemas['AdminSandboxMemberSyncResult'];
-/** Business-level settings. */
-export type BusinessSettings = Schemas['BusinessSettings'];
-/** An integration (machine actor) belonging to the business. */
-export type Integration = Schemas['Integration'];
-/** An API key issued to an integration. */
-export type IntegrationApiKey = Schemas['IntegrationApiKey'];
-/** A webhook delivery attempt logged against an integration. */
-export type IntegrationDelivery = Schemas['IntegrationDelivery'];
-/** A named permission set. */
-export type PermissionSetView = Schemas['PermissionSetView'];
-/** Body for creating or updating a permission set. */
-export type PermissionSetBody = Schemas['PermissionSetBody'];
-/** A permission in the live catalog. */
-export type CatalogPermission = Schemas['CatalogPermission'];
-/** TikTok channel connection status. */
-export type TikTokChannelStatus = Schemas['TikTokChannelStatus'];
-/** Preview of a pending invitation. */
-export type InvitationPreview = Schemas['InvitationPreview'];
-
-// ---------------------------------------------------------------------------
-// Webhook events
-// ---------------------------------------------------------------------------
-
-/** `message.received` — a customer sent an inbound message. */
-export type WebhookMessageReceivedEvent = Schemas['WebhookMessageReceivedEvent'];
-/** The inbound message carried by a `message.received` event. */
-export type WebhookMessageSummary = Schemas['WebhookMessageSummary'];
-/** An attachment on an inbound webhook message. */
-export type WebhookAttachment = Schemas['WebhookAttachment'];
-/** `initiation.updated` — an initiation changed status. */
-export type WebhookInitiationUpdatedEvent = Schemas['WebhookInitiationUpdatedEvent'];
-
-/** Plain-text inbound content (`messageType: 'text'`). */
-export type WebhookContentText = Schemas['WebhookContentText'];
-/** Interactive-response content (`messageType: 'interactive'`). */
-export type WebhookContentInteractiveResponse = Schemas['WebhookContentInteractiveResponse'];
-/** One item a customer chose from a quick reply, list picker, or time picker. */
-export type WebhookContentInteractiveSelectedItem =
-  Schemas['WebhookContentInteractiveSelectedItem'];
-/** One submitted page of a form response. */
-export type WebhookContentInteractiveFormPageValue =
-  Schemas['WebhookContentInteractiveFormPageValue'];
-/** Tapback content (`messageType: 'tapback'`). */
-export type WebhookContentTapback = Schemas['WebhookContentTapback'];
-/** Opt-out content (`messageType: 'opt_out'`). */
-export type WebhookContentOptOut = Schemas['WebhookContentOptOut'];
-/** Typing content (`messageType: 'typing'` — reserved, not currently emitted). */
-export type WebhookContentTyping = Schemas['WebhookContentTyping'];
-
-/**
- * The `content` shape that goes with a given `messageType`.
- *
- * The spec discriminates `content` by its *sibling* `messageType`, which
- * TypeScript cannot narrow on its own — hence this mapping and the guards in
- * `@1440io/msp-webhooks` built over it.
- */
-export type WebhookContentFor<T extends WebhookMessageType> = T extends 'text'
-  ? WebhookContentText
-  : T extends 'interactive'
-    ? WebhookContentInteractiveResponse
-    : T extends 'tapback'
-      ? WebhookContentTapback
-      : T extends 'opt_out'
-        ? WebhookContentOptOut
-        : T extends 'typing'
-          ? WebhookContentTyping
-          : never;
-
-/** An inbound message narrowed to one `messageType`, with `content` to match. */
-export type WebhookMessageOfType<T extends WebhookMessageType> = Omit<
-  WebhookMessageSummary,
-  'messageType' | 'content'
-> & {
-  messageType: T;
-  content: WebhookContentFor<T>;
-};
-
-/** An inbound plain-text message. */
-export type WebhookTextMessage = WebhookMessageOfType<'text'>;
-/** A customer's reply to a rich message — quick reply, list picker, time picker, or form. */
-export type WebhookInteractiveMessage = WebhookMessageOfType<'interactive'>;
-/** A reaction to a message the business sent. */
-export type WebhookTapbackMessage = WebhookMessageOfType<'tapback'>;
-/** An opt-out. */
-export type WebhookOptOutMessage = WebhookMessageOfType<'opt_out'>;
-
-/** Which interactive prompt a customer answered. */
-export type InteractiveResponseType = WebhookContentInteractiveResponse['responseType'];
-
-/** Every interactive response type the spec declares. */
-export const INTERACTIVE_RESPONSE_TYPES = [
+/** Every template type the spec declares. */
+export const RICH_TEMPLATE_TYPES = [
+  'text',
   'quick_reply',
   'list_picker',
+  'rich_link',
   'time_picker',
   'form',
-  'invitation_accept',
-  'other',
-] as const satisfies readonly InteractiveResponseType[];
+  'imessage_app',
+  'app_clip_rich_link',
+  'authentication',
+] as const;
+
+/** Rich-message usage slot an asset can fill. */
+export type RichAssetUsage = RichAssetItem['usage'];
+
+/** Every rich-asset usage slot the spec declares. */
+export const RICH_ASSET_USAGES = [
+  'rich_image_200',
+  'rich_icon_15',
+] as const satisfies readonly RichAssetUsage[];
 
 /** A stable rich-messaging reject reason code. */
 export type RichReasonCode = RichReason['code'];
@@ -249,10 +196,8 @@ export type RichReasonCode = RichReason['code'];
 /**
  * Every rich-messaging reason code the spec declares.
  *
- * Production has been observed returning codes outside this set (for example
- * `message_type_mismatch` from the raw-send validator), so branch on the ones
- * you handle and treat an unrecognized code as a generic rejection rather than
- * assuming the list is exhaustive.
+ * Treat an unrecognized code as a generic rejection: production has been seen
+ * returning codes outside this set.
  */
 export const RICH_REASON_CODES = [
   'duplicate_template_name',
@@ -267,6 +212,7 @@ export const RICH_REASON_CODES = [
   'block_field_unsupported',
   'missing_asset',
   'payload_limit_exceeded',
+  'template_type_mismatch',
   'conversation_not_eligible',
   'capability_not_supported',
   'missing_variable_value',
@@ -283,44 +229,37 @@ export const RICH_REASON_CODES = [
   'asset_in_use',
 ] as const satisfies readonly RichReasonCode[];
 
-/** Every native message type a reason can be attributed to. */
-export const RICH_NATIVE_TYPES = [
-  'text',
-  'quick_reply',
-  'list_picker',
-  'rich_link',
-  'time_picker',
-  'form',
-  'imessage_app',
-  'app_clip_rich_link',
-] as const;
-
-/** The native message shape a template resolves to on a channel. */
-export type RichNativeType = NonNullable<RichChannelReadiness['resolvedNativeType']>;
-
-/** Any webhook event the platform delivers, discriminated by `type`. */
-export type WebhookEvent = WebhookMessageReceivedEvent | WebhookInitiationUpdatedEvent;
-
-/** The `type` discriminator of a delivered webhook event. */
-export type WebhookEventType = WebhookEvent['type'];
-
-/** Narrow a {@link WebhookEvent} to one `type`. */
-export type WebhookEventOfType<T extends WebhookEventType> = Extract<WebhookEvent, { type: T }>;
-
-/** Map of event type to its event shape — handy for handler maps. */
-export interface WebhookEventMap {
-  'message.received': WebhookMessageReceivedEvent;
-  'initiation.updated': WebhookInitiationUpdatedEvent;
-}
-
 // ---------------------------------------------------------------------------
-// Enum vocabularies (runtime values for the spec's string unions)
+// Media, channels, admin
 // ---------------------------------------------------------------------------
 
-/** The channel platform a conversation is carried over. */
+/** Result of streaming a media asset to storage. */
+export type MediaUploadSuccess = Schemas['MediaUploadSuccess'];
+/** A short-lived signed read URL for an attachment. */
+export type MediaAccessUrlSuccess = Schemas['MediaAccessUrlSuccess'];
+/** An active channel configured for the org. */
+export type Channel = Schemas['Channel'];
+/** The set of active channels for the org. */
+export type ChannelListResponse = Schemas['ChannelListResponse'];
+/** A messaging channel as business admins see it. */
+export type AdminBusinessChannel = Schemas['AdminBusinessChannel'];
+/** Business-level settings. */
+export type BusinessSettings = Schemas['BusinessSettings'];
+/** TikTok channel connection status. */
+export type TikTokChannelStatus = Schemas['TikTokChannelStatus'];
+
+/**
+ * The channel platform a conversation is carried over.
+ *
+ * Conversations are AMB-only in this spec revision, even though the channel
+ * registry still recognizes more platforms — see {@link ChannelListPlatform}.
+ */
 export type ChannelPlatform = Conversation['channelPlatform'];
 
-/** Every channel platform the spec declares, in spec order. */
+/** A platform the channel registry recognizes. */
+export type ChannelListPlatform = Channel['platform'];
+
+/** Every platform the channel registry declares. */
 export const CHANNEL_PLATFORMS = [
   'amb',
   'tiktok',
@@ -334,7 +273,7 @@ export const CHANNEL_PLATFORMS = [
   'wechat',
   'email',
   'custom',
-] as const satisfies readonly ChannelPlatform[];
+] as const satisfies readonly ChannelListPlatform[];
 
 /** Lifecycle status of a conversation. */
 export type ConversationStatus = Conversation['status'];
@@ -352,78 +291,101 @@ export type AgentStatus = Conversation['agentStatus'];
 /** Every agent status the spec declares. */
 export const AGENT_STATUSES = ['bot', 'live', 'closed'] as const satisfies readonly AgentStatus[];
 
-/** Lifecycle status of a conversation initiation. */
-export type InitiationStatus = ConversationInitiation['status'];
+// ---------------------------------------------------------------------------
+// Webhook events
+// ---------------------------------------------------------------------------
 
-/** Every initiation status the spec declares. */
-export const INITIATION_STATUSES = [
-  'submitting',
-  'submitted',
-  'provider_rejected',
-  'error',
-  'accepted',
-  'declined',
-] as const satisfies readonly InitiationStatus[];
+/** `message.received` — a customer sent an inbound message. */
+export type WebhookMessageReceivedEvent = Schemas['WebhookMessageReceivedEvent'];
+/** `messaging_invitation.updated` — an invitation changed status. */
+export type WebhookMessagingInvitationUpdatedEvent =
+  Schemas['WebhookMessagingInvitationUpdatedEvent'];
 
-/** Initiation statuses that are terminal — no further transitions follow. */
-export const TERMINAL_INITIATION_STATUSES = [
-  'provider_rejected',
-  'error',
-  'accepted',
-  'declined',
-] as const satisfies readonly InitiationStatus[];
+/** Any webhook event the platform delivers, discriminated by `type`. */
+export type WebhookEvent = WebhookMessageReceivedEvent | WebhookMessagingInvitationUpdatedEvent;
 
-/** True when an initiation has reached a terminal status. */
-export function isTerminalInitiationStatus(status: InitiationStatus): boolean {
-  return (TERMINAL_INITIATION_STATUSES as readonly InitiationStatus[]).includes(status);
+/** The `type` discriminator of a delivered webhook event. */
+export type WebhookEventType = WebhookEvent['type'];
+
+/** Narrow a {@link WebhookEvent} to one `type`. */
+export type WebhookEventOfType<T extends WebhookEventType> = Extract<WebhookEvent, { type: T }>;
+
+/** Map of event type to its event shape — handy for handler maps. */
+export interface WebhookEventMap {
+  'message.received': WebhookMessageReceivedEvent;
+  'messaging_invitation.updated': WebhookMessagingInvitationUpdatedEvent;
 }
 
-/** Machine-readable terminal reason on a failed initiation. */
-export type InitiationReasonCode = ConversationInitiation['reasonCode'];
+/** The invitation transition carried by a `messaging_invitation.updated` event. */
+export type InvitationTransition = WebhookMessagingInvitationUpdatedEvent['messagingInvitation'];
 
-/** Publication state of a rich template. */
-export type RichTemplateStatus = NonNullable<
-  operations['adminListRichTemplates']['parameters']['query']
->['status'];
+/** The inbound message carried by a `message.received` event. */
+export type InboundMessage = WebhookMessageReceivedEvent['message'];
 
-/** Every rich-template status the spec declares. */
-export const RICH_TEMPLATE_STATUSES = ['draft', 'published', 'archived'] as const;
+/** An attachment on an inbound message. */
+export type InboundAttachment = NonNullable<InboundMessage['attachments']>[number];
 
-/** Rich-message usage slot an asset can fill. */
-export type RichAssetUsage = NonNullable<
-  operations['adminListRichAssets']['parameters']['query']
->['usage'];
+/**
+ * Inbound message content, discriminated by `kind`.
+ *
+ * Unlike the previous spec, `content` is now a proper tagged union, so
+ * `content.kind === 'text'` narrows on its own.
+ */
+export type InboundContent = InboundMessage['content'];
 
-/** Every rich-asset usage slot the spec declares. */
-export const RICH_ASSET_USAGES = [
-  'interactive_image',
-  'rich_link_image',
-  'imessage_app_icon',
-  'app_clip_image',
+/** The `kind` tag on inbound content. */
+export type InboundContentKind = NonNullable<InboundContent>['kind'];
+
+/** Narrow inbound content to one `kind`. */
+export type InboundContentOfKind<K extends InboundContentKind> = Extract<
+  NonNullable<InboundContent>,
+  { kind: K }
+>;
+
+/** Every inbound content kind the spec declares. */
+export const INBOUND_CONTENT_KINDS = [
+  'text',
+  'opt_out',
+  'amb.quick_reply_response',
+  'amb.list_picker_response',
+  'amb.time_picker_response',
+  'amb.form_response',
+  'amb.authentication_response',
+  'amb.imessage_app_response',
+  'amb.invitation_response',
+  'amb.unrecognized_interactive_response',
 ] as const;
 
-/** Channel-native message types accepted by the raw-payload send route. */
-export type RawChannelMessageType = SendRawChannelPayloadBody['messageType'];
+/** The kinds that represent a customer answering a rich message. */
+export const INTERACTIVE_CONTENT_KINDS = [
+  'amb.quick_reply_response',
+  'amb.list_picker_response',
+  'amb.time_picker_response',
+  'amb.form_response',
+  'amb.authentication_response',
+  'amb.imessage_app_response',
+  'amb.invitation_response',
+  'amb.unrecognized_interactive_response',
+] as const;
 
-/** Every raw-payload message type the spec declares. */
-export const RAW_CHANNEL_MESSAGE_TYPES = [
-  'text',
-  'quick_reply',
-  'list_picker',
-  'time_picker',
-  'form',
-  'imessage_app',
-  'rich_link',
-] as const satisfies readonly RawChannelMessageType[];
+/**
+ * A rich-messaging capability the customer's device has advertised.
+ *
+ * Carried on `message.received` as `capabilityList`. Sending a rich message a
+ * device has not advertised support for is rejected, so this is the signal to
+ * check before choosing a template.
+ */
+export type DeviceCapability = NonNullable<WebhookMessageReceivedEvent['capabilityList']>[number];
 
-/** Message types that can arrive on a `message.received` webhook. */
-export type WebhookMessageType = WebhookMessageSummary['messageType'];
+/** Every device capability the spec declares. */
+export const DEVICE_CAPABILITIES = [
+  'QUICK',
+  'LIST',
+  'TIME',
+  'AUTH',
+  'AUTH2',
+  'FORM',
+] as const satisfies readonly DeviceCapability[];
 
-/** Every inbound webhook message type the spec declares. */
-export const WEBHOOK_MESSAGE_TYPES = [
-  'text',
-  'interactive',
-  'tapback',
-  'opt_out',
-  'typing',
-] as const satisfies readonly WebhookMessageType[];
+/** Outcome of an authentication (OAuth) request. */
+export type AuthenticationStatus = 'success' | 'failure' | 'cancel' | 'unknown';

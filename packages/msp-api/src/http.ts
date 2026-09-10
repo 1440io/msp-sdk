@@ -197,6 +197,7 @@ export class HttpClient {
         message: parsed.message,
         code: parsed.code,
         reasons: parsed.reasons,
+        issues: parsed.issues,
         body: payload,
         headers: headersToObject(response.headers),
         method,

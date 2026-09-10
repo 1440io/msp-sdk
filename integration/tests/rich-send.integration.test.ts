@@ -6,6 +6,7 @@ import { env, resourceName, RUN_ID } from '../env.ts';
 import { testClient } from '../client.ts';
 import { assertMatchesSchema } from '../schema.ts';
 import {
+  authenticationTemplate,
   listPickerTemplate,
   quickReplyTemplate,
   rawQuickReply,
@@ -130,7 +131,53 @@ describeSend('rich sends: templates', () => {
   });
 });
 
+describeSend('rich sends: authentication', () => {
+  it('sends an authentication request carrying its state', async () => {
+    const templateId = await publish(authenticationTemplate(resourceName('send-auth'))).catch(
+      (error: unknown) => {
+        // Authentication templates need channel configuration this org may lack.
+        if (isMspApiError(error)) {
+          console.warn(`   authentication template rejected: ${error.status} ${error.message}`);
+          return undefined;
+        }
+        throw error;
+      },
+    );
+    if (!templateId) return;
+
+    const state = `${RUN_ID}-auth-state`;
+    const outcome = await testClient()
+      .messaging.sendAuthentication({
+        conversationId: env.conversationId!,
+        templateId,
+        state,
+      })
+      .then(
+        (result) => ({ ok: true as const, result }),
+        (error: unknown) => {
+          if (!isMspApiError(error)) throw error;
+          return { ok: false as const, status: error.status, message: error.message };
+        },
+      );
+
+    if (!outcome.ok) {
+      console.warn(`   authentication send rejected: ${outcome.status} ${outcome.message}`);
+      return;
+    }
+    assertMatchesSchema('SendMessageSuccess', outcome.result, 'authentication send');
+    console.log(`   authentication request delivered as ${outcome.result.messageId}`);
+  });
+});
+
 describeSend('rich sends: variable validation', () => {
+  /**
+   * All three rejections are correct 422s that name the offending variable in
+   * prose, but they carry no machine-readable code — no `reasons`, no
+   * `issues`. An earlier revision returned
+   * `reasons: [{ code: 'missing_variable_value' }]`, so branching on a code is
+   * no longer possible for template-variable problems; only the message
+   * distinguishes them.
+   */
   it('refuses a send that omits a required variable', async () => {
     const templateId = await publish(listPickerTemplate(resourceName('send-missingvar')));
 
@@ -138,9 +185,12 @@ describeSend('rich sends: variable validation', () => {
 
     expect(outcome.ok, 'send was accepted without its required variable').toBe(false);
     if (outcome.ok) return;
-    expect(outcome.codes).toContain('missing_variable_value');
+    expect(outcome.status).toBe(422);
     // The reject has to name the variable, or the caller cannot fix it.
     expect(outcome.message).toContain('options');
+    if (outcome.codes.length === 0) {
+      console.log('   rejected in prose only — no reason code to branch on');
+    }
   });
 
   it('refuses a collection variable given a scalar', async () => {
@@ -150,7 +200,8 @@ describeSend('rich sends: variable validation', () => {
 
     expect(outcome.ok).toBe(false);
     if (outcome.ok) return;
-    expect(outcome.codes.some((code) => code.includes('variable'))).toBe(true);
+    expect(outcome.status).toBe(422);
+    expect(outcome.message).toMatch(/options/);
   });
 
   it('refuses a value for a variable the template never declared', async () => {
@@ -158,13 +209,11 @@ describeSend('rich sends: variable validation', () => {
 
     const outcome = await send(templateId, { neverDeclared: 'x' });
 
-    // Either rejected, or ignored — both are defensible, but silently sending
-    // with a typo'd variable name is worth knowing about either way.
-    if (outcome.ok) {
-      console.log('   undeclared variables are ignored rather than rejected');
-    } else {
-      expect(outcome.codes.length).toBeGreaterThan(0);
-    }
+    // Silently accepting a typo'd variable name would render the wrong message.
+    expect(outcome.ok, 'an undeclared variable was accepted').toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.status).toBe(422);
+    expect(outcome.message).toContain('neverDeclared');
   });
 });
 
@@ -172,78 +221,60 @@ describeSend('rich sends: raw channel payloads', () => {
   it('delivers a raw quick reply payload', async () => {
     const result = await testClient().messaging.sendRaw({
       conversationId: env.conversationId!,
-      channel: 'amb',
-      messageType: 'quick_reply',
-      payload: rawQuickReply([
+      content: rawQuickReply([
         { identifier: `${RUN_ID}-yes`, title: 'Yes' },
         { identifier: `${RUN_ID}-no`, title: 'No' },
       ]),
     });
 
-    expect(result).toBeTruthy();
-    console.log(`   raw quick reply: ${JSON.stringify(result).slice(0, 120)}`);
+    assertMatchesSchema('SendMessageSuccess', result, 'raw quick reply');
+    expect(result.duplicate).toBe(false);
+    console.log(`   raw quick reply delivered as ${result.messageId}`);
   });
 
-  it('replays an identical raw payload instead of sending it twice', async () => {
+  it('replays identical raw content instead of sending it twice', async () => {
     const client = testClient();
     const requestMessageId = uuidv7();
-    // Two items: Apple rejects a single-item quick reply outright (see below).
-    const payload = rawQuickReply([
+    // Two items: the schema pins quick replies to 2-5.
+    const content = rawQuickReply([
       { identifier: 'replay-a', title: 'Replay A' },
       { identifier: 'replay-b', title: 'Replay B' },
     ]);
 
     const first = await client.messaging.sendRaw({
       conversationId: env.conversationId!,
-      channel: 'amb',
-      messageType: 'quick_reply',
-      payload,
+      content,
       requestMessageId,
     });
     const replay = await client.messaging.sendRaw({
       conversationId: env.conversationId!,
-      channel: 'amb',
-      messageType: 'quick_reply',
-      payload,
+      content,
       requestMessageId,
     });
 
-    // Idempotency hashes canonical { channel, payload }, so this must replay
-    // the original message rather than delivering a second one.
+    // Idempotency hashes the canonical content, so this must replay the
+    // original message rather than delivering a second one.
     expect(replay.messageId).toBe(first.messageId);
     expect(first.duplicate).toBe(false);
     expect(replay.duplicate).toBe(true);
   });
 
-  it('surfaces Apple rejecting a one-item quick reply as a provider error', async () => {
-    // The spec documents quick replies as 1–5 items and the platform validator
-    // accepts one, but Apple's gateway 400s it — which reaches the caller as a
-    // 502 that says nothing about item counts. Pinned here so that if local
-    // validation is later tightened to catch it earlier, we notice.
+
+  it('rejects a one-item quick reply locally, never reaching Apple', async () => {
+    // Previously the spec said 1–5, the validator accepted one, and Apple
+    // rejected it as a 502 that named no cause. The schema now pins 2–5.
     const error = await testClient()
       .messaging.sendRaw({
         conversationId: env.conversationId!,
-        channel: 'amb',
-        messageType: 'quick_reply',
-        payload: rawQuickReply([{ identifier: 'solo', title: 'Only option' }]),
+        content: rawQuickReply([{ identifier: 'solo', title: 'Only option' }]),
       })
       .catch((e: unknown) => e);
 
     expect(isMspApiError(error)).toBe(true);
     if (!isMspApiError(error)) return;
-
-    if (error.status === 502) {
-      expect(error.reasons?.map((reason) => reason.code)).toContain('provider_rejected');
-      console.warn(
-        '   ⚠ a one-item quick reply is accepted locally and rejected by Apple — ' +
-          'the documented 1–5 range is really 2–5.',
-      );
-    } else {
-      // Better outcome: caught before it ever reached Apple.
-      expect(error.status).toBeGreaterThanOrEqual(400);
-      expect(error.status).toBeLessThan(500);
-      console.log('   local validation now rejects a one-item quick reply');
-    }
+    expect(error.status).toBeGreaterThanOrEqual(400);
+    expect(error.status).toBeLessThan(500);
+    expect(error.status, 'this should no longer reach the channel').not.toBe(502);
   });
 
   it('conflicts when the same key carries a changed payload', async () => {
@@ -252,9 +283,7 @@ describeSend('rich sends: raw channel payloads', () => {
 
     await client.messaging.sendRaw({
       conversationId: env.conversationId!,
-      channel: 'amb',
-      messageType: 'quick_reply',
-      payload: rawQuickReply([
+      content: rawQuickReply([
         { identifier: 'a', title: 'Original' },
         { identifier: 'a2', title: 'Original two' },
       ]),
@@ -264,9 +293,7 @@ describeSend('rich sends: raw channel payloads', () => {
     const error = await client.messaging
       .sendRaw({
         conversationId: env.conversationId!,
-        channel: 'amb',
-        messageType: 'quick_reply',
-        payload: rawQuickReply([
+        content: rawQuickReply([
           { identifier: 'b', title: 'Changed' },
           { identifier: 'b2', title: 'Changed two' },
         ]),

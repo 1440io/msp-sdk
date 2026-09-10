@@ -18,10 +18,13 @@ import type {
   ConversationMessage,
   SendMessageBody,
   SendMessageSuccess,
-  ConversationInitiation,
+  MessagingInvitation,
   RichTemplateDetail,
   WebhookEvent,
   WebhookMessageReceivedEvent,
+  InboundMessage,
+  InboundContent,
+  InboundContentOfKind,
 } from '@1440io/msp-types';
 ```
 
@@ -56,16 +59,19 @@ import {
   CHANNEL_PLATFORMS,
   CONVERSATION_STATUSES,
   AGENT_STATUSES,
-  INITIATION_STATUSES,
-  TERMINAL_INITIATION_STATUSES,
+  INVITATION_STATUSES,
+  TERMINAL_INVITATION_STATUSES,
   RICH_TEMPLATE_STATUSES,
+  RICH_TEMPLATE_TYPES,
   RICH_ASSET_USAGES,
-  RAW_CHANNEL_MESSAGE_TYPES,
-  WEBHOOK_MESSAGE_TYPES,
-  isTerminalInitiationStatus,
+  RICH_REASON_CODES,
+  INBOUND_CONTENT_KINDS,
+  INTERACTIVE_CONTENT_KINDS,
+  DEVICE_CAPABILITIES,
+  isTerminalInvitationStatus,
 } from '@1440io/msp-types';
 
-if (isTerminalInitiationStatus(initiation.status)) {
+if (isTerminalInvitationStatus(invitation.status)) {
   // No further transitions are coming.
 }
 ```

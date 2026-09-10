@@ -7,7 +7,14 @@
  */
 import { createServer } from 'node:http';
 import { MspClient } from '@1440io/msp-api';
-import { MemoryReplayCache, WebhookReceiver } from '@1440io/msp-webhooks';
+import {
+  MemoryReplayCache,
+  WebhookReceiver,
+  isInteractiveResponse,
+  respondsTo,
+  selectedIds,
+  textBody,
+} from '@1440io/msp-webhooks';
 
 const client = MspClient.fromEnv();
 
@@ -16,19 +23,30 @@ const receiver = new WebhookReceiver({
   replayCache: new MemoryReplayCache(),
   on: {
     'message.received': async (event, context) => {
-      const { message } = event.data;
-      console.log(`[${context.id}] ${message.messageType} on ${event.conversationId}`);
+      const { message } = event;
+      console.log(`[${context.id}] ${message.content?.kind} on ${event.conversationId}`);
 
-      if (message.messageType === 'text' && 'body' in message.content) {
+      const body = textBody(message.content);
+      if (body !== null) {
         await client.messaging.sendText({
           conversationId: event.conversationId,
-          body: `Got it — you said "${message.content.body}". An agent is on the way.`,
+          body: `Got it — you said "${body}". An agent is on the way.`,
         });
       }
+
+      // A tapped rich message: report what they chose and which prompt it answered.
+      if (isInteractiveResponse(message.content)) {
+        console.log(
+          `  chose ${JSON.stringify(selectedIds(message.content))} ` +
+            `in reply to ${respondsTo(message.content) ?? '(uncorrelated)'}`,
+        );
+      }
     },
-    'initiation.updated': async (event) => {
-      const { initiationId, status, reasonCode } = event.data;
-      console.log(`initiation ${initiationId} → ${status}${reasonCode ? ` (${reasonCode})` : ''}`);
+    'messaging_invitation.updated': async (event) => {
+      const { messagingInvitationId, status, reasonCode } = event.messagingInvitation;
+      console.log(
+        `invitation ${messagingInvitationId} → ${status}${reasonCode ? ` (${reasonCode})` : ''}`,
+      );
     },
   },
   onError: (error) => console.warn('webhook rejected:', error),

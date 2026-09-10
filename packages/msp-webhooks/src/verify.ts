@@ -146,6 +146,15 @@ export class WebhookVerifier {
     if (!event || typeof event !== 'object' || typeof (event as { type?: unknown }).type !== 'string') {
       throw new WebhookVerificationError('invalid_payload', 'Body is not a webhook event envelope');
     }
+    // The envelope carries the same id as the header; a mismatch means the
+    // body and the signature headers describe different events.
+    const envelopeId = (event as { eventId?: unknown }).eventId;
+    if (typeof envelopeId === 'string' && envelopeId !== id) {
+      throw new WebhookVerificationError(
+        'invalid_payload',
+        `Webhook-Id ${id} does not match the envelope eventId ${envelopeId}`,
+      );
+    }
 
     // Dedupe last: only a delivery that verified is worth remembering.
     if (this.#replayCache && (await this.#replayCache.seen(id))) {

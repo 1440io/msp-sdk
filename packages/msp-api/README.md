@@ -83,6 +83,7 @@ Every send carries a `requestMessageId` idempotency key. Omit it and the client 
 await client.messaging.sendText({
   conversationId,
   body: 'Your appointment is confirmed for 2pm tomorrow.',
+  subject: 'Appointment confirmed',   // optional
 });
 
 const { mediaAssetId } = await client.media.upload({
@@ -107,34 +108,45 @@ await client.messaging.sendTemplate({
   },
 });
 
-// Channel-native passthrough, when a template will not do.
+// Channel-native passthrough, when a template will not do. `content` is a
+// typed union tagged by `kind`; quick replies take 2–5 items.
 await client.messaging.sendRaw({
   conversationId,
-  channel: 'amb',
-  messageType: 'list_picker',
-  payload: { /* Apple MSP payload, minus the server-owned fields */ },
+  content: {
+    kind: 'amb.quick_reply',
+    data: { 'quick-reply': { summaryText: 'How did we do?', items } },
+  },
+});
+
+// Start an OAuth flow on the device. The outcome arrives as an
+// `amb.authentication_response` on the message.received webhook.
+await client.messaging.sendAuthentication({
+  conversationId,
+  templateId: authTemplateId,
+  state: `session-${sessionId}`,
 });
 ```
 
 Supply your own `requestMessageId` when a retry might span a process restart — store it with the work item, and a redelivery collapses onto the original send.
 
-## Initiations
+## Messaging invitations
 
-Reaching a customer first. Creation is asynchronous: the initiation starts at `submitting` and lands on `accepted`, `declined`, `provider_rejected`, or `error`. Watch the `initiation.updated` webhook instead of polling where you can.
+Reaching a customer first. Creation is asynchronous: an invitation starts at `submitting` and lands on `accepted`, `declined`, `provider_rejected`, or `error`. Watch the `messaging_invitation.updated` webhook instead of polling where you can.
 
 ```ts
-const initiation = await client.initiations.create({
-  channel: 'amb',
+const invitation = await client.invitations.create({
   phoneNumber: '+15551234567',
-  idempotencyKey: `case-${caseId}-attempt-1`,
   targetFirstName: 'Ada',
   targetAgentStatus: 'live',
+  branding: { brandName: 'Acme Dental', brandLogoPngBase64: logo },
 });
 
-for await (const item of client.initiations.list({ status: 'submitted' })) {
+for await (const item of client.invitations.list({ status: 'submitted' })) {
   // …
 }
 ```
+
+A `422` carrying `messaging_invitation_unavailable` means the capability is not enabled for the org, not that your request was wrong.
 
 ## Media
 
@@ -143,18 +155,22 @@ const { mediaAssetId } = await client.media.upload({
   body: bytes,              // Uint8Array | ArrayBuffer | Blob | ReadableStream | string
   filename: 'photo.jpg',
   contentType: 'image/jpeg',
-  targetChannel: 'amb',     // 'tiktok' tightens to JPG/PNG and a 3 MiB ceiling
+  targetChannel: 'amb',
 });
 
-const { url, expiresAt } = await client.media.getAccessUrl(attachmentId);
+// Read URLs take an *attachment* id, from message history or an inbound
+// webhook — not the mediaAssetId you just uploaded.
+const { url, expiresAt } = await client.media.getAccessUrl(attachment.id);
 ```
 
-The size ceiling (100 MiB, or 3 MiB for TikTok) is checked client-side whenever the length is known, so an oversized upload fails before the transfer rather than after it. Pass `contentLength` when streaming to get the same early check.
+The 100 MiB ceiling is checked client-side whenever the length is known, so an oversized upload fails before the transfer rather than after it. Pass `contentLength` when streaming to get the same early check.
+
+**`mediaAssetId` is not an `attachmentId`.** The spec says to reference the uploaded `mediaAssetId` when minting a read URL; measured against production it is a `404`, before and after the asset is attached to a message. Uploading creates a media asset, and attaching it to a message mints a separate attachment with its own id. Take that id from the conversation's message history or from an inbound webhook.
 
 ## Templates and channels
 
 ```ts
-for await (const template of client.templates.list()) {
+for await (const template of client.templates.list({ templateType: 'quick_reply' })) {
   // Published templates, ready to send.
 }
 
@@ -166,33 +182,21 @@ const channels = await client.channels.list();
 Business-admin routes live under `client.admin` and require the `admin` membership tier.
 
 ```ts
-await client.admin.context();
 await client.admin.settings();
-await client.admin.listMembers();
-await client.admin.listSandboxes();
-
 await client.admin.channels.list();
-await client.admin.channels.create({ platform: 'amb', externalId: 'amb-acct-7f3c9a21' });
 await client.admin.channels.tiktokStatus();
 
 const draft = await client.admin.templates.create({ name: 'Appointment picker', definition, slotBindings: [] });
 await client.admin.templates.publish(draft.id);
 await client.admin.templates.uploadAsset({
   channel: 'amb',
-  usage: 'interactive_image',
+  usage: 'rich_image_200',
   displayName: 'Hero image',
   file: pngBytes,
 });
-
-await client.admin.integrations.list();
-await client.admin.integrations.listDeliveries(integrationId); // webhook delivery log
-
-await client.admin.permissions.catalog();
-await client.admin.permissions.createSet({
-  name: 'Front-desk Agent',
-  permissions: ['ViewConversations', 'SendMessages'],
-});
 ```
+
+Members, sandboxes, integrations, permission sets, and the business context left the documented API surface and were removed from the client in 0.2.0. Some still answer on the server; call them with `fetch` if you need them, knowing they may be withdrawn.
 
 ## Errors
 
@@ -210,8 +214,9 @@ try {
     await sleep(error.retryAfterMs ?? 1000);
   } else if (isMspApiError(error)) {
     error.status;   // 422
-    error.code;     // 'capability_not_supported'
-    error.reasons;  // rich-messaging reject reasons, when the send pipeline rejected it
+    error.code;     // machine-readable code, when the response carries one
+    error.issues;   // [{ path, message }] on a validation_failed send
+    error.reasons;  // rich reason codes, on template and asset routes
   }
 }
 ```

@@ -41,46 +41,44 @@ export {
 
 export {
   dispatchEvent,
-  isInitiationUpdated,
   isMessageReceived,
+  isMessagingInvitationUpdated,
   type WebhookEventContext,
   type WebhookEventHandler,
   type WebhookHandlers,
 } from './events.js';
 
 export {
-  formValuesByPage,
-  isInteractiveMessage,
-  isOptOutMessage,
-  isTapbackMessage,
-  isTextMessage,
+  authenticationStatus,
+  contentOf,
+  formAnswers,
+  isInteractiveResponse,
+  isKind,
+  isPrivateForm,
+  isRedacted,
+  messageOf,
   parseAppleTimestamp,
   respondsTo,
   selectedIds,
-  selectedStartTime,
+  selectedTimeslot,
   selectedTitles,
+  sessionOf,
+  textBody,
 } from './messages.js';
 
 export { MemoryReplayCache, type ReplayCache } from './replay.js';
 export { extractWebhookHeaders, getHeader, type HeadersLike, type WebhookHeaders } from './headers.js';
 
 export type {
-  InteractiveResponseType,
-  WebhookContentInteractiveFormPageValue,
-  WebhookContentInteractiveResponse,
-  WebhookContentInteractiveSelectedItem,
-  WebhookContentOptOut,
-  WebhookContentTapback,
-  WebhookContentText,
+  AuthenticationStatus,
+  InboundAttachment,
+  InboundContent,
+  InboundContentKind,
+  InboundContentOfKind,
+  InboundMessage,
   WebhookEvent,
   WebhookEventMap,
   WebhookEventType,
-  WebhookInitiationUpdatedEvent,
-  WebhookInteractiveMessage,
   WebhookMessageReceivedEvent,
-  WebhookMessageSummary,
-  WebhookMessageType,
-  WebhookOptOutMessage,
-  WebhookTapbackMessage,
-  WebhookTextMessage,
+  WebhookMessagingInvitationUpdatedEvent,
 } from '@1440io/msp-types';

@@ -1,215 +1,170 @@
 import { expect, it } from 'vitest';
 import { isMspApiError, uuidv7 } from '@1440io/msp-api';
+import type { SendRawMessageBody } from '@1440io/msp-types';
 import { describeApi } from '../gates.ts';
 import { testClient } from '../client.ts';
-import {
-  AMB_INTERACTIVE_BID,
-  rawListPicker,
-  rawListPickerWithWrongItemKey,
-  rawQuickReply,
-  rawQuickReplyWrongMarker,
-} from '../fixtures/rich.ts';
+import { rawListPicker, rawQuickReply, rawText } from '../fixtures/rich.ts';
 
 /**
- * Rich payload validation — deliberately non-destructive.
+ * Channel-content validation — deliberately non-destructive.
  *
- * Every send here targets a conversation id that cannot exist, so even a
- * payload that passes validation is answered with 404 rather than delivered.
- * That makes the whole file safe to run without the send tier, while still
- * exercising the real validator on the real API.
+ * Every send targets a conversation id that cannot exist, so even content that
+ * passes validation is answered with 404 rather than delivered. That makes the
+ * file safe to run without the send tier, and makes 404 a *useful* assertion:
+ * it proves validation passed instead of tripping a shape guard.
  *
- * The spec is explicit that a documented set of rejections happens *before*
- * conversation lookup, so for those a 404 means the guard did not fire.
+ * The contract changed in this spec revision. `content` is now a typed union
+ * tagged by `kind`, and unknown fields are rejected, so the platform no longer
+ * accepts arbitrary Apple JSON — the old envelope-injection and
+ * marker-mismatch guards have nothing left to catch.
  */
 const NOWHERE = '01890000-0000-7000-8000-0000000d0000';
 
-async function sendRaw(messageType: string, payload: Record<string, unknown>) {
+async function sendRaw(content: unknown) {
   return testClient()
     .messaging.sendRaw({
       conversationId: NOWHERE,
-      channel: 'amb',
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      messageType: messageType as any,
-      payload,
+      content: content as SendRawMessageBody['content'],
       requestMessageId: uuidv7(),
     })
     .then(
-      () => ({ ok: true as const, status: 0, code: undefined as string | undefined, reasons: [] as string[] }),
+      () => ({ ok: true as const, status: 0, issues: [] as string[], message: '' }),
       (error: unknown) => {
         if (!isMspApiError(error)) throw error;
         return {
           ok: false as const,
           status: error.status,
-          code: error.code,
-          reasons: (error.reasons ?? []).map((reason) => reason.code),
+          issues: (error.issues ?? []).map((issue) => issue.path),
           message: error.message,
         };
       },
     );
 }
 
-/** Assert a rejection that the spec promises happens before conversation lookup. */
-function expectPreLookupRejection(result: Awaited<ReturnType<typeof sendRaw>>, what: string) {
-  expect(result.ok, `${what} was accepted — it should have been rejected`).toBe(false);
-  expect(result.status).toBeGreaterThanOrEqual(400);
-  expect(result.status).toBeLessThan(500);
-  expect(
-    result.status,
-    `${what} produced a 404, so the payload reached conversation lookup — the spec says ` +
-      'this class of payload is rejected before that point',
-  ).not.toBe(404);
-}
+describeApi('channel content: valid shapes reach conversation lookup', () => {
+  it('accepts text and then 404s on the unknown conversation', async () => {
+    const result = await sendRaw(rawText('Integration test — never delivered'));
 
-describeApi('rich payloads: caller-owned envelope fields are rejected', () => {
-  it.each([['sourceId'], ['destinationId'], ['id'], ['v']])(
-    'rejects a payload carrying %s',
-    async (field) => {
-      const result = await sendRaw('text', { type: 'text', body: 'hi', [field]: 'caller-supplied' });
-
-      // The platform owns the envelope; letting a caller set these would let
-      // one business address another's conversation.
-      expectPreLookupRejection(result, `payload with ${field}`);
-    },
-  );
-
-  it('rejects interactiveDataRef', async () => {
-    const result = await sendRaw('list_picker', {
-      type: 'interactive',
-      interactiveDataRef: { title: 'x', url: 'https://example.com', owner: 'x', signature: 'x' },
-    });
-
-    expectPreLookupRejection(result, 'interactiveDataRef');
+    expect(result.status).toBe(404);
   });
 
-  it('rejects richLinkDataRef', async () => {
-    const result = await sendRaw('rich_link', {
-      type: 'interactive',
-      richLinkDataRef: { title: 'x', url: 'https://example.com' },
-    });
+  it('accepts a two-item quick reply', async () => {
+    const result = await sendRaw(rawQuickReply());
 
-    expectPreLookupRejection(result, 'richLinkDataRef');
+    expect(result.status).toBe(404);
   });
 
-  it('rejects an attachments payload', async () => {
-    const result = await sendRaw('text', { type: 'attachment', body: 'x', attachments: [] });
-
-    expectPreLookupRejection(result, 'attachment payload');
-  });
-
-  it('rejects a typing indicator payload', async () => {
-    const result = await sendRaw('text', { type: 'typing_start' });
-
-    expectPreLookupRejection(result, 'typing payload');
-  });
-
-  it('rejects an Apple Pay payload', async () => {
-    const result = await sendRaw('text', {
-      type: 'interactive',
-      interactiveData: {
-        bid: 'com.apple.messages.MSMessageExtensionBalloonPlugin:0000000000:com.apple.icloud.apps.messages.business.extension',
-        data: { version: '1.0', requestIdentifier: 'x', applePay: { payment: {} } },
-      },
-    });
-
-    expectPreLookupRejection(result, 'Apple Pay payload');
-  });
-
-  it('rejects an authentication payload', async () => {
-    const result = await sendRaw('text', {
-      type: 'interactive',
-      interactiveData: {
-        bid: AMB_INTERACTIVE_BID,
-        data: { version: '1.0', authenticate: { oauth2: {} } },
-      },
-    });
-
-    expectPreLookupRejection(result, 'authentication payload');
-  });
-});
-
-describeApi('rich payloads: shape validation', () => {
-  it('rejects a quick reply with no items', async () => {
-    const result = await sendRaw('quick_reply', rawQuickReply([]));
-
-    // Documented as 1–5 items.
-    expect(result.ok).toBe(false);
-    expect(result.status).toBeGreaterThanOrEqual(400);
-    expect(result.status).toBeLessThan(500);
-  });
-
-  it('rejects a quick reply with more than five items', async () => {
-    const tooMany = Array.from({ length: 6 }, (_, index) => ({
-      identifier: `item-${index}`,
-      title: `Item ${index}`,
-    }));
-
-    const result = await sendRaw('quick_reply', rawQuickReply(tooMany));
-
-    expect(result.ok).toBe(false);
-    expect(result.status).toBeGreaterThanOrEqual(400);
-    expect(result.status).toBeLessThan(500);
-  });
-
-  it('accepts a quick reply at the five-item boundary', async () => {
+  it('accepts a quick reply at the five-item ceiling', async () => {
     const five = Array.from({ length: 5 }, (_, index) => ({
       identifier: `item-${index}`,
       title: `Item ${index}`,
     }));
 
-    const result = await sendRaw('quick_reply', rawQuickReply(five));
+    const result = await sendRaw(rawQuickReply(five));
 
-    // Valid shape, unroutable conversation: 404 is the *correct* answer here,
-    // and proves validation passed rather than tripping a shape guard.
     expect(result.status).toBe(404);
   });
 
-  it('rejects the documented listPickerItem pitfall', async () => {
-    const result = await sendRaw('list_picker', rawListPickerWithWrongItemKey());
+  it('accepts a list picker with its required bubbles', async () => {
+    const result = await sendRaw(rawListPicker());
 
-    // The one capture-backed guard the spec calls out by name.
+    expect(result.status).toBe(404);
+  });
+});
+
+describeApi('channel content: shape validation', () => {
+  it('rejects a quick reply with a single item', async () => {
+    // The spec now pins items to 2–5. Previously it said 1–5 while Apple
+    // rejected one item with a gateway 400 that named no cause.
+    const result = await sendRaw(rawQuickReply([{ identifier: 'solo', title: 'Only option' }]));
+
+    expect(result.ok).toBe(false);
+    expect(result.status).toBeGreaterThanOrEqual(400);
+    expect(result.status).toBeLessThan(500);
+    // Caught locally now, so it never reaches Apple as a 502.
+    expect(result.status).not.toBe(502);
+  });
+
+  it('rejects a quick reply with six items', async () => {
+    const six = Array.from({ length: 6 }, (_, index) => ({
+      identifier: `item-${index}`,
+      title: `Item ${index}`,
+    }));
+
+    const result = await sendRaw(rawQuickReply(six));
+
     expect(result.ok).toBe(false);
     expect(result.status).not.toBe(404);
-    expect(result.status).toBeGreaterThanOrEqual(400);
-    expect(result.status).toBeLessThan(500);
   });
 
-  it('accepts a correctly keyed list picker', async () => {
-    const result = await sendRaw('list_picker', rawListPicker());
-
-    expect(result.status).toBe(404); // shape fine, conversation absent
-  });
-
-  it('rejects the camelCase quickReply marker', async () => {
-    const result = await sendRaw('quick_reply', rawQuickReplyWrongMarker());
-
-    // Apple's marker is `quick-reply`; `quickReply` reads as a different type
-    // entirely, and the mismatch is reported against the type rather than the
-    // spelling — worth a test, because the error does not name the real cause.
-    expect(result.ok).toBe(false);
-    expect(result.reasons).toContain('message_type_mismatch');
-  });
-
-  it('rejects a declared type that disagrees with the payload', async () => {
-    // Declared quick_reply, but the payload carries a list picker.
-    const result = await sendRaw('quick_reply', rawListPicker());
+  it('rejects an unknown content kind', async () => {
+    const result = await sendRaw({ kind: 'amb.carrier_pigeon', data: {} });
 
     expect(result.ok).toBe(false);
     expect(result.status).toBeGreaterThanOrEqual(400);
     expect(result.status).toBeLessThan(500);
   });
 
-  it('rejects a message type outside the supported set', async () => {
-    const result = await sendRaw('carrier_pigeon', { type: 'text', body: 'hi' });
+  it('rejects text with no body', async () => {
+    const result = await sendRaw({ kind: 'text' });
 
     expect(result.ok).toBe(false);
-    expect(result.status).toBe(400);
+    expect(result.status).not.toBe(404);
   });
 
-  it('rejects a body over the 5 MiB cap', async () => {
-    const result = await sendRaw('text', { type: 'text', body: 'x'.repeat(5 * 1024 * 1024 + 1024) });
+  it('ignores unknown fields inside content, despite the schema saying otherwise', async () => {
+    // The schema description claims "unknown fields are rejected". Measured
+    // against production, that holds for the request body but not for
+    // `content`: unknown keys at any depth inside the payload are dropped
+    // silently. A typo in an Apple payload therefore produces a message that
+    // renders wrong rather than an error, which is worth knowing.
+    const result = await sendRaw({ ...(rawText('hi') as object), sourceId: 'caller-supplied' });
+
+    expect(result.status, 'content-level unknown keys now reject — update this test').toBe(404);
+  });
+
+  it('rejects unknown fields on the request body', async () => {
+    const client = testClient();
+    const token = await client.getAccessToken();
+
+    const response = await fetch(`${client.baseUrl}/api/v0/messaging/send-raw`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        requestMessageId: uuidv7(),
+        conversationId: NOWHERE,
+        content: rawText('hi'),
+        extraTopLevel: true,
+      }),
+    });
+    const body = (await response.json()) as { error?: string; issues?: { message: string }[] };
+
+    // The envelope is closed, and says which key it did not recognize.
+    expect(response.status).toBe(400);
+    expect(body.error).toBe('validation_failed');
+    expect(JSON.stringify(body.issues)).toContain('extraTopLevel');
+  });
+
+  it('rejects a list picker missing its required bubbles', async () => {
+    const content = rawListPicker() as unknown as Record<string, unknown>;
+    delete content['receivedMessage'];
+
+    const result = await sendRaw(content);
 
     expect(result.ok).toBe(false);
-    // Documented as a hard cap measured before JSON parsing.
-    expect([400, 413]).toContain(result.status);
-  }, 120_000);
+    expect(result.status).not.toBe(404);
+  });
+
+  it('reports validation problems with a field path', async () => {
+    const result = await sendRaw(rawQuickReply([{ identifier: 'solo', title: 'Only' }]));
+
+    if (result.ok) return;
+    // `issues` replaced `reasons` on the send routes in this revision.
+    if (result.issues.length > 0) {
+      expect(result.issues.join(' ')).toMatch(/content|quick-reply|items/);
+      console.log(`   issue paths: ${result.issues.join(', ')}`);
+    } else {
+      console.log(`   rejected without field paths: ${result.message.slice(0, 90)}`);
+    }
+  });
 });

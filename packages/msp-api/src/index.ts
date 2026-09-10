@@ -51,29 +51,26 @@ export {
 } from './resources/conversations.js';
 export {
   MessagingResource,
+  type SendAuthenticationParams,
   type SendRawParams,
   type SendTemplateParams,
   type SendTextParams,
 } from './resources/messaging.js';
 export {
-  InitiationsResource,
-  type CreateInitiationParams,
-  type ListInitiationsParams,
-} from './resources/initiations.js';
+  InvitationsResource,
+  type CreateInvitationParams,
+  type ListInvitationsParams,
+} from './resources/invitations.js';
 export { TemplatesResource, type ListTemplatesParams } from './resources/templates.js';
 export {
   MediaResource,
-  MAX_TIKTOK_UPLOAD_BYTES,
   MAX_UPLOAD_BYTES,
   type UploadBody,
   type UploadMediaParams,
 } from './resources/media.js';
 export { ChannelsResource } from './resources/channels.js';
-export { InvitationsResource } from './resources/invitations.js';
 export {
   AdminChannelsResource,
-  AdminIntegrationsResource,
-  AdminPermissionsResource,
   AdminResource,
   AdminTemplatesResource,
   type AdminListAssetsParams,

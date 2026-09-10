@@ -10,18 +10,18 @@ const SECRET = makeSecret(1);
 describe('WebhookReceiver', () => {
   it('dispatches to the handler for the event type', async () => {
     const onMessage = vi.fn();
-    const onInitiation = vi.fn();
+    const onInvitation = vi.fn();
     const receiver = new WebhookReceiver({
       secret: SECRET,
-      on: { 'message.received': onMessage, 'initiation.updated': onInitiation },
+      on: { 'message.received': onMessage, 'messaging_invitation.updated': onInvitation },
     });
 
     const result = await receiver.handle(await buildDelivery({ secret: SECRET }));
 
     expect(result.status).toBe(200);
     expect(onMessage).toHaveBeenCalledOnce();
-    expect(onMessage.mock.calls[0]![1]).toMatchObject({ id: messageReceivedEvent.id });
-    expect(onInitiation).not.toHaveBeenCalled();
+    expect(onMessage.mock.calls[0]![1]).toMatchObject({ id: messageReceivedEvent.eventId });
+    expect(onInvitation).not.toHaveBeenCalled();
   });
 
   it('answers 400 when verification fails, and reports the reason', async () => {
