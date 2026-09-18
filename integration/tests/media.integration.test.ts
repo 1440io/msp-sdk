@@ -23,7 +23,7 @@ describeWrites('media: upload and access', () => {
       targetChannel: 'amb',
     });
 
-    assertMatchesSchema('MediaUploadSuccess', result, 'POST /api/v0/media/upload');
+    assertMatchesSchema('MediaUploadResult', result, 'POST /api/v0/media/upload');
     expect(result.mediaAssetId).toMatch(/^[0-9a-f-]{36}$/i);
     console.log(`   uploaded ${result.mediaAssetId}`);
   });
@@ -65,7 +65,7 @@ describeWrites('media: upload and access', () => {
 
     const access = await client.media.getAccessUrl(attachment.id);
 
-    assertMatchesSchema('MediaAccessUrlSuccess', access, 'GET .../access-url');
+    assertMatchesSchema('MediaAccessUrlResult', access, 'GET .../access-url');
     expect(access.attachmentId).toBe(attachment.id);
     expect(access.url).toMatch(/^https:\/\//);
     // Documented as short-lived and signed — an unsigned or eternal URL would
@@ -136,7 +136,7 @@ describeWrites('media: rich asset library', () => {
     } finally {
       if (assetId) {
         const result = await client.admin.templates.deleteAsset(assetId);
-        assertMatchesSchema('RichAssetDeleteResult', result, 'DELETE .../assets/{id}');
+        assertMatchesSchema('DeleteResult', result, 'DELETE .../assets/{id}');
       }
     }
   });

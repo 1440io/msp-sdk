@@ -7,6 +7,7 @@ import {
   isKind,
   isPrivateForm,
   isRedacted,
+  isVisible,
   parseAppleTimestamp,
   respondsTo,
   selectedIds,
@@ -17,7 +18,10 @@ import {
 } from '../src/index.js';
 
 /** An inbound message with the boilerplate filled in. */
-function message(content: unknown, overrides: Partial<InboundMessage> = {}): InboundMessage {
+function message(
+  content: unknown,
+  overrides: Record<string, unknown> = {},
+): InboundMessage {
   return {
     id: '0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9012',
     channel: 'amb',
@@ -59,10 +63,26 @@ describe('content narrowing', () => {
     ).toBe(true);
   });
 
-  it('treats a withheld body as redacted', () => {
-    expect(isRedacted(message({ kind: 'text', body: 'x' }))).toBe(false);
-    expect(isRedacted(message(undefined, { redacted: true }))).toBe(true);
-    expect(isRedacted(message(null))).toBe(true);
+  it('narrows a redacted message, and tells the compiler content is null', () => {
+    const visible = message({ kind: 'text', body: 'x' });
+    const withheld = message(null, { redacted: true });
+
+    expect(isRedacted(visible)).toBe(false);
+    expect(isRedacted(withheld)).toBe(true);
+
+    // `redacted` and `content` move together, so narrowing on one settles the
+    // other — no null check needed after the guard.
+    if (isVisible(visible)) expect(visible.content.kind).toBe('text');
+    if (isRedacted(withheld)) expect(withheld.content).toBeNull();
+  });
+
+  it('keeps the readers safe on a redacted message', () => {
+    const withheld = message(null, { redacted: true });
+
+    expect(textBody(withheld.content)).toBeNull();
+    expect(selectedIds(withheld.content)).toEqual([]);
+    expect(respondsTo(withheld.content)).toBeNull();
+    expect(formAnswers(withheld.content)).toEqual({});
   });
 });
 

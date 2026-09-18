@@ -1,6 +1,6 @@
 {
   "name": "@1440io/msp-webhooks",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Signature verification and framework adapters for 1440 MSP API webhooks (Web Crypto — Node, edge, Workers, Deno).",
   "license": "MIT",
   "type": "module",
@@ -61,7 +61,7 @@
     "msp"
   ],
   "dependencies": {
-    "@1440io/msp-types": "0.2.0"
+    "@1440io/msp-types": "0.3.0"
   },
   "devDependencies": {
     "tsup": "^8.5.1",

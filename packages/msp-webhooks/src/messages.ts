@@ -3,6 +3,8 @@ import type {
   InboundContent,
   InboundContentOfKind,
   InboundMessage,
+  InboundMessageRedacted,
+  InboundMessageVisible,
   WebhookMessageReceivedEvent,
 } from '@1440io/msp-types';
 
@@ -17,31 +19,41 @@ import type {
  * where the bugs live.
  */
 
-/** The content of an inbound message, or undefined for a redacted one. */
-export function contentOf(message: InboundMessage): InboundContent {
+/** The content of an inbound message, or null when it was redacted. */
+export function contentOf(message: InboundMessage): InboundContent | null {
   return message.content;
 }
 
-/** True when the message body was withheld (a private form response). */
-export function isRedacted(message: InboundMessage): boolean {
-  return message.redacted === true || message.content == null;
+/**
+ * Narrow to a message whose body was withheld — a private form response.
+ *
+ * `redacted` and `content` move together in this spec revision, so this also
+ * tells the compiler that `content` is null.
+ */
+export function isRedacted(message: InboundMessage): message is InboundMessageRedacted {
+  return message.redacted === true;
+}
+
+/** Narrow to a message whose body was delivered, making `content` non-null. */
+export function isVisible(message: InboundMessage): message is InboundMessageVisible {
+  return message.redacted === false;
 }
 
 /** Narrow content to one `kind`. */
 export function isKind<K extends NonNullable<InboundContent>['kind']>(
-  content: InboundContent,
+  content: InboundContent | null | undefined,
   kind: K,
 ): content is InboundContentOfKind<K> {
   return content?.kind === kind;
 }
 
 /** True when the content is a customer answering a rich message. */
-export function isInteractiveResponse(content: InboundContent): boolean {
+export function isInteractiveResponse(content: InboundContent | null | undefined): boolean {
   return typeof content?.kind === 'string' && content.kind.startsWith('amb.');
 }
 
 /** The plain-text body, or null when this is not a text message. */
-export function textBody(content: InboundContent): string | null {
+export function textBody(content: InboundContent | null | undefined): string | null {
   return isKind(content, 'text') ? content.body : null;
 }
 
@@ -51,7 +63,7 @@ export function textBody(content: InboundContent): string | null {
  * Covers quick replies (one item), list pickers (one or more across sections),
  * and time pickers (the chosen slot). Empty for anything else.
  */
-export function selectedIds(content: InboundContent): string[] {
+export function selectedIds(content: InboundContent | null | undefined): string[] {
   if (isKind(content, 'amb.quick_reply_response')) {
     const picked = content.data?.['quick-reply']?.selectedIdentifier;
     return picked ? [picked] : [];
@@ -68,7 +80,7 @@ export function selectedIds(content: InboundContent): string[] {
 }
 
 /** The titles the customer saw for what they chose, where the channel echoed them. */
-export function selectedTitles(content: InboundContent): string[] {
+export function selectedTitles(content: InboundContent | null | undefined): string[] {
   if (isKind(content, 'amb.quick_reply_response')) {
     const qr = content.data?.['quick-reply'];
     const picked = qr?.selectedIdentifier;
@@ -92,7 +104,7 @@ export function selectedTitles(content: InboundContent): string[] {
  * value}` rather than a bare string.
  */
 export function formAnswers(
-  content: InboundContent,
+  content: InboundContent | null | undefined,
 ): Record<string, { id: string; title?: string; value?: string; type?: string }[]> {
   if (!isKind(content, 'amb.form_response')) return {};
   const out: Record<string, { id: string; title?: string; value?: string; type?: string }[]> = {};
@@ -109,12 +121,12 @@ export function formAnswers(
 }
 
 /** True when a form response was marked private, so its values are restricted. */
-export function isPrivateForm(content: InboundContent): boolean {
+export function isPrivateForm(content: InboundContent | null | undefined): boolean {
   return isKind(content, 'amb.form_response') && content.data?.dynamic?.private === true;
 }
 
 /** The outcome of an authentication (OAuth) request, or null for other content. */
-export function authenticationStatus(content: InboundContent): AuthenticationStatus | null {
+export function authenticationStatus(content: InboundContent | null | undefined): AuthenticationStatus | null {
   if (!isKind(content, 'amb.authentication_response')) return null;
   return (content.data?.authenticate?.status ?? null) as AuthenticationStatus | null;
 }
@@ -140,7 +152,7 @@ export function parseAppleTimestamp(value: string | null | undefined): Date | nu
 
 /** The slot a customer chose from a time picker, as an instant and a duration. */
 export function selectedTimeslot(
-  content: InboundContent,
+  content: InboundContent | null | undefined,
 ): { id: string; startsAt: Date; durationSeconds: number } | null {
   if (!isKind(content, 'amb.time_picker_response')) return null;
   const slot = content.data?.event?.timeslots?.[0];
@@ -157,7 +169,7 @@ export function selectedTimeslot(
  * holding several prompts open at once can tell which was answered. Null when
  * the channel made no correlation promise — custom iMessage apps carry none.
  */
-export function respondsTo(content: InboundContent): string | null {
+export function respondsTo(content: InboundContent | null | undefined): string | null {
   if (content == null) return null;
   const data = (content as { data?: { requestIdentifier?: string } }).data;
   if (typeof data?.requestIdentifier === 'string') return data.requestIdentifier;
@@ -166,7 +178,7 @@ export function respondsTo(content: InboundContent): string | null {
 }
 
 /** The channel session an interactive reply belongs to, when it has one. */
-export function sessionOf(content: InboundContent): string | null {
+export function sessionOf(content: InboundContent | null | undefined): string | null {
   if (content == null) return null;
   const session = (content as { sessionIdentifier?: string | null }).sessionIdentifier;
   return typeof session === 'string' ? session : null;

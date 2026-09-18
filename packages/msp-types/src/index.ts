@@ -24,8 +24,15 @@ export type Operation<K extends keyof operations> = operations[K];
 // Errors
 // ---------------------------------------------------------------------------
 
-/** Canonical error envelope returned by most non-2xx responses. */
-export type ErrorResponse = Schemas['ErrorResponse'];
+/**
+ * Canonical error envelope returned by most non-2xx responses.
+ *
+ * Named `ApiError` in the spec; both names are exported and identical.
+ */
+export type ErrorResponse = Schemas['ApiError'];
+export type { Schemas as _Schemas };
+/** The spec's own name for {@link ErrorResponse}. */
+export type ApiError = Schemas['ApiError'];
 /** Error envelope for the messaging send routes. */
 export type SendMessageError = Schemas['SendMessageError'];
 /** A stable machine-readable rich-messaging reject reason. */
@@ -44,7 +51,7 @@ export interface ValidationIssue {
 // ---------------------------------------------------------------------------
 
 /** Result of exchanging an integration API key for a short-lived access JWT. */
-export type IntegrationTokenResponse = Schemas['IntegrationTokenResponse'];
+export type IntegrationTokenResponse = Schemas['IntegrationTokenResult'];
 /** The display-only authorization grant carried alongside a minted token. */
 export type ActorGrant = Schemas['ActorGrant'];
 
@@ -53,16 +60,18 @@ export type ActorGrant = Schemas['ActorGrant'];
 // ---------------------------------------------------------------------------
 
 /** A conversation summary row. */
-export type Conversation = Schemas['ConversationListItem'];
+export type Conversation = Schemas['Conversation'];
 /** A conversation together with its window of messages. */
-export type ConversationDetail = Schemas['ConversationDetailResponse'];
+export type ConversationDetail = Schemas['ConversationDetail'];
 /** A cursor-paginated page of conversation summaries. */
-export type ConversationListResponse = Schemas['ConversationListResponse'];
+export type ConversationListResponse = Schemas['ConversationList'];
 /** Body for renaming a conversation's customer. */
 export type UpdateConversationNameBody = Schemas['UpdateConversationNameBody'];
 
 /** A stored message, as the conversation-detail route returns it. */
-export type ConversationMessage = NonNullable<ConversationDetail['messages']>[number];
+export type ConversationMessage = Schemas['ConversationMessage'];
+/** An attachment on a stored message. */
+export type ConversationMessageAttachment = Schemas['ConversationMessageAttachment'];
 
 // ---------------------------------------------------------------------------
 // Sending
@@ -79,7 +88,7 @@ export type SendAuthenticationMessageBody = Schemas['SendAuthenticationMessageBo
 /** Channel-native passthrough send. */
 export type SendRawMessageBody = Schemas['SendRawMessageBody'];
 /** Result of a send. */
-export type SendMessageSuccess = Schemas['SendMessageSuccess'];
+export type SendMessageSuccess = Schemas['SendMessageResult'];
 
 /** Per-send value for a declared template variable. */
 export type TemplateVariableValue = NonNullable<SendTemplateMessageBody['variables']>[string];
@@ -91,7 +100,7 @@ export type TemplateVariableValue = NonNullable<SendTemplateMessageBody['variabl
 /** A business-initiated messaging invitation. */
 export type MessagingInvitation = Schemas['MessagingInvitation'];
 /** Body for inviting a customer into a conversation. */
-export type CreateMessagingInvitation = Schemas['CreateMessagingInvitation'];
+export type CreateMessagingInvitation = Schemas['CreateMessagingInvitationBody'];
 /** A cursor-paginated page of messaging invitations. */
 export type MessagingInvitationList = Schemas['MessagingInvitationList'];
 /** Error envelope for the invitation routes. */
@@ -165,7 +174,7 @@ export const RICH_TEMPLATE_STATUSES = [
 
 /** The kind of message a template produces. */
 export type RichTemplateType = NonNullable<
-  operations['adminListRichTemplates']['parameters']['query']
+  operations['listAdminRichTemplates']['parameters']['query']
 >['templateType'];
 
 /** Every template type the spec declares. */
@@ -196,8 +205,11 @@ export type RichReasonCode = RichReason['code'];
 /**
  * Every rich-messaging reason code the spec declares.
  *
- * Treat an unrecognized code as a generic rejection: production has been seen
- * returning codes outside this set.
+ * Scoped to template and asset authoring — the send-pipeline codes left this
+ * enum when send errors moved to `issues`. Production has been observed
+ * returning codes outside the declared set (`message_type_mismatch`,
+ * `provider_rejected` with a `providerStatus`), so branch on the ones you
+ * handle and treat anything else as a generic rejection.
  */
 export const RICH_REASON_CODES = [
   'duplicate_template_name',
@@ -209,19 +221,11 @@ export const RICH_REASON_CODES = [
   'undeclared_variable_reference',
   'unsatisfiable_variable_type',
   'block_type_unsupported',
-  'block_field_unsupported',
   'missing_asset',
   'payload_limit_exceeded',
-  'template_type_mismatch',
-  'conversation_not_eligible',
-  'capability_not_supported',
   'missing_variable_value',
   'invalid_variable_value',
   'asset_load_failed',
-  'construct_payload_failed',
-  'wire_constraint_violated',
-  'channel_gateway_failed',
-  'duplicate_request_conflict',
   'asset_format_unsupported',
   'asset_format_mismatch',
   'asset_too_large',
@@ -234,13 +238,13 @@ export const RICH_REASON_CODES = [
 // ---------------------------------------------------------------------------
 
 /** Result of streaming a media asset to storage. */
-export type MediaUploadSuccess = Schemas['MediaUploadSuccess'];
+export type MediaUploadSuccess = Schemas['MediaUploadResult'];
 /** A short-lived signed read URL for an attachment. */
-export type MediaAccessUrlSuccess = Schemas['MediaAccessUrlSuccess'];
+export type MediaAccessUrlSuccess = Schemas['MediaAccessUrlResult'];
 /** An active channel configured for the org. */
 export type Channel = Schemas['Channel'];
 /** The set of active channels for the org. */
-export type ChannelListResponse = Schemas['ChannelListResponse'];
+export type ChannelListResponse = Schemas['ChannelList'];
 /** A messaging channel as business admins see it. */
 export type AdminBusinessChannel = Schemas['AdminBusinessChannel'];
 /** Business-level settings. */
@@ -320,18 +324,22 @@ export interface WebhookEventMap {
 export type InvitationTransition = WebhookMessagingInvitationUpdatedEvent['messagingInvitation'];
 
 /** The inbound message carried by a `message.received` event. */
-export type InboundMessage = WebhookMessageReceivedEvent['message'];
+export type InboundMessage = Schemas['WebhookInboundMessage'];
+
+/** An inbound message whose body was delivered. */
+export type InboundMessageVisible = Schemas['WebhookInboundMessageVisible'];
+/** An inbound message whose body was withheld (a private form response). */
+export type InboundMessageRedacted = Schemas['WebhookInboundMessageRedacted'];
 
 /** An attachment on an inbound message. */
-export type InboundAttachment = NonNullable<InboundMessage['attachments']>[number];
+export type InboundAttachment = NonNullable<InboundMessageVisible['attachments']>[number];
 
 /**
  * Inbound message content, discriminated by `kind`.
  *
- * Unlike the previous spec, `content` is now a proper tagged union, so
- * `content.kind === 'text'` narrows on its own.
+ * A proper tagged union, so `content.kind === 'text'` narrows on its own.
  */
-export type InboundContent = InboundMessage['content'];
+export type InboundContent = Schemas['InboundMessageContent'];
 
 /** The `kind` tag on inbound content. */
 export type InboundContentKind = NonNullable<InboundContent>['kind'];
@@ -339,6 +347,48 @@ export type InboundContentKind = NonNullable<InboundContent>['kind'];
 /** Narrow inbound content to one `kind`. */
 export type InboundContentOfKind<K extends InboundContentKind> = Extract<
   NonNullable<InboundContent>,
+  { kind: K }
+>;
+
+// Each inbound content variant is a named schema in this spec revision, so
+// they can be referenced directly rather than pulled out of the union.
+
+/** Inbound plain text. */
+export type InboundText = Schemas['InboundMessageContentText'];
+/** The customer opted out. */
+export type InboundOptOut = Schemas['InboundMessageContentOptOut'];
+/** A tapped quick reply. */
+export type InboundQuickReplyResponse = Schemas['InboundMessageContentAmbQuickReplyResponse'];
+/** A list-picker selection. */
+export type InboundListPickerResponse = Schemas['InboundMessageContentAmbListPickerResponse'];
+/** A chosen time slot. */
+export type InboundTimePickerResponse = Schemas['InboundMessageContentAmbTimePickerResponse'];
+/** A submitted form. */
+export type InboundFormResponse = Schemas['InboundMessageContentAmbFormResponse'];
+/** The outcome of an authentication (OAuth) request. */
+export type InboundAuthenticationResponse =
+  Schemas['InboundMessageContentAmbAuthenticationResponse'];
+/** A reply from a custom iMessage app. */
+export type InboundImessageAppResponse = Schemas['InboundMessageContentAmbImessageAppResponse'];
+/** An accepted messaging invitation. */
+export type InboundInvitationResponse = Schemas['InboundMessageContentAmbInvitationResponse'];
+/** An interactive reply the platform could not classify. */
+export type InboundUnrecognizedInteractiveResponse =
+  Schemas['InboundMessageContentAmbUnrecognizedInteractiveResponse'];
+
+/** Stored outbound content, discriminated by `kind`. */
+export type OutboundContent = Schemas['OutboundMessageContent'];
+/** Narrow outbound content to one `kind`. */
+export type OutboundContentOfKind<K extends NonNullable<OutboundContent>['kind']> = Extract<
+  NonNullable<OutboundContent>,
+  { kind: K }
+>;
+
+/** Channel-native content accepted by the raw send route. */
+export type RawContent = Schemas['RawMessageContent'];
+/** Narrow raw content to one `kind`. */
+export type RawContentOfKind<K extends NonNullable<RawContent>['kind']> = Extract<
+  NonNullable<RawContent>,
   { kind: K }
 >;
 

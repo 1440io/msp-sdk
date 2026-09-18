@@ -28,6 +28,29 @@ import type {
 } from '@1440io/msp-types';
 ```
 
+## Message content
+
+Every content variant is a named type, so a function can be annotated with the
+exact shape it handles:
+
+```ts
+import type {
+  InboundText, InboundQuickReplyResponse, InboundTimePickerResponse,
+  InboundFormResponse, InboundAuthenticationResponse,
+  InboundContent, InboundContentOfKind,
+  OutboundContent, RawContent,
+} from '@1440io/msp-types';
+
+function onSlotChosen(reply: InboundTimePickerResponse) { /* … */ }
+
+// Or pull a variant out of the union by its tag.
+type OptOut = InboundContentOfKind<'opt_out'>;
+```
+
+`InboundMessageVisible` and `InboundMessageRedacted` split an inbound message
+by whether its body was delivered; `redacted` and `content` move together, so
+narrowing on one settles the other.
+
 ## Raw generated surface
 
 Everything the spec declares, unmodified:

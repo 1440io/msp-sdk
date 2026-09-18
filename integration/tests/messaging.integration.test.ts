@@ -16,7 +16,7 @@ describeSend('messaging: real outbound sends', () => {
       body: `${stamp()} Please ignore — automated test message.`,
     });
 
-    assertMatchesSchema('SendMessageSuccess', result, 'POST /api/v0/messaging/send');
+    assertMatchesSchema('SendMessageResult', result, 'POST /api/v0/messaging/send');
     expect(result.messageId).toMatch(/^[0-9a-f-]{36}$/i);
     expect(result.duplicate).toBe(false);
     console.log(`   sent ${result.messageId}`);
@@ -90,7 +90,7 @@ describeSend('messaging: real outbound sends', () => {
       attachmentIds: [mediaAssetId],
     });
 
-    assertMatchesSchema('SendMessageSuccess', result, 'send with attachment');
+    assertMatchesSchema('SendMessageResult', result, 'send with attachment');
     expect(result.duplicate).toBe(false);
   });
 
@@ -146,7 +146,7 @@ describeSend('messaging: real outbound sends', () => {
       variables: chosen.variables,
     });
 
-    assertMatchesSchema('SendMessageSuccess', result, 'template send');
+    assertMatchesSchema('SendMessageResult', result, 'template send');
     expect(result.duplicate).toBe(false);
   });
 });

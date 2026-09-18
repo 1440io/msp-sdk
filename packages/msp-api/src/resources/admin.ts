@@ -181,8 +181,8 @@ export class AdminTemplatesResource extends Resource {
   async delete(
     templateId: string,
     options: RequestOverrides = {},
-  ): Promise<Schemas['RichTemplateDeleteResult']> {
-    return this.http.request<Schemas['RichTemplateDeleteResult']>({
+  ): Promise<Schemas['DeleteResult']> {
+    return this.http.request<Schemas['DeleteResult']>({
       method: 'DELETE',
       path: `${ADMIN}/templates/${encodeURIComponent(templateId)}`,
       idempotent: true,
@@ -267,8 +267,8 @@ export class AdminTemplatesResource extends Resource {
   async deleteAsset(
     assetId: string,
     options: RequestOverrides = {},
-  ): Promise<Schemas['RichAssetDeleteResult']> {
-    return this.http.request<Schemas['RichAssetDeleteResult']>({
+  ): Promise<Schemas['DeleteResult']> {
+    return this.http.request<Schemas['DeleteResult']>({
       method: 'DELETE',
       path: `${ADMIN}/templates/assets/${encodeURIComponent(assetId)}`,
       idempotent: true,

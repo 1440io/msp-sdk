@@ -11,7 +11,7 @@ describeApi('auth: integration token exchange', () => {
 
     const response = await client.auth.exchangeIntegrationToken(env.apiKey!);
 
-    assertMatchesSchema('IntegrationTokenResponse', response);
+    assertMatchesSchema('IntegrationTokenResult', response);
     expect(response.type).toBe('api');
     expect(response.tokenType).toBe('Bearer');
     expect(response.token.split('.')).toHaveLength(3); // header.payload.signature

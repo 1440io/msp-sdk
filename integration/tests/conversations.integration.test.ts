@@ -10,7 +10,7 @@ describeApi('conversations: reading', () => {
   it('returns a page in the documented envelope', async () => {
     const page = await testClient().conversations.list({ count: 5 });
 
-    assertMatchesSchema('ConversationListResponse', page, 'GET /api/v0/conversations');
+    assertMatchesSchema('ConversationList', page, 'GET /api/v0/conversations');
     expect(Array.isArray(page.conversations)).toBe(true);
     expect(page.conversations.length).toBeLessThanOrEqual(5);
     console.log(`   ${page.conversations.length} conversation(s), nextCursor=${page.nextCursor}`);
@@ -33,7 +33,7 @@ describeApi('conversations: reading', () => {
 
     const second = await client.conversations.list({ count: 1, cursor: first.nextCursor });
 
-    assertMatchesSchema('ConversationListResponse', second, 'page 2');
+    assertMatchesSchema('ConversationList', second, 'page 2');
     const firstId = first.conversations[0]?.id;
     const secondId = second.conversations[0]?.id;
     if (firstId && secondId) expect(secondId).not.toBe(firstId);
@@ -91,7 +91,7 @@ describeApi('conversations: reading', () => {
 
     const detail = await client.conversations.get(summary.id, { count: 10 });
 
-    assertMatchesSchema('ConversationDetailResponse', detail, `GET /conversations/${summary.id}`);
+    assertMatchesSchema('ConversationDetail', detail, `GET /conversations/${summary.id}`);
     expect(detail.id).toBe(summary.id);
     expect(Array.isArray(detail.messages)).toBe(true);
     assertEachMatchesSchema('ConversationMessage', detail.messages, 'messages');
@@ -154,7 +154,7 @@ describeWrites('conversations: renaming', () => {
         lastName: 'Test',
       });
 
-      assertMatchesSchema('ConversationListItem', renamed, 'PATCH /conversations/{id}');
+      assertMatchesSchema('Conversation', renamed, 'PATCH /conversations/{id}');
       expect(renamed.firstName).toBe('Integration');
       expect(renamed.lastName).toBe('Test');
 

@@ -78,7 +78,7 @@ describeSend('rich sends: templates', () => {
       expect(outcome.codes.length).toBeGreaterThan(0);
       return;
     }
-    assertMatchesSchema('SendMessageSuccess', outcome.result, 'quick reply send');
+    assertMatchesSchema('SendMessageResult', outcome.result, 'quick reply send');
     expect(outcome.result.duplicate).toBe(false);
     console.log(`   quick reply delivered as ${outcome.result.messageId}`);
   });
@@ -164,7 +164,7 @@ describeSend('rich sends: authentication', () => {
       console.warn(`   authentication send rejected: ${outcome.status} ${outcome.message}`);
       return;
     }
-    assertMatchesSchema('SendMessageSuccess', outcome.result, 'authentication send');
+    assertMatchesSchema('SendMessageResult', outcome.result, 'authentication send');
     console.log(`   authentication request delivered as ${outcome.result.messageId}`);
   });
 });
@@ -227,7 +227,7 @@ describeSend('rich sends: raw channel payloads', () => {
       ]),
     });
 
-    assertMatchesSchema('SendMessageSuccess', result, 'raw quick reply');
+    assertMatchesSchema('SendMessageResult', result, 'raw quick reply');
     expect(result.duplicate).toBe(false);
     console.log(`   raw quick reply delivered as ${result.messageId}`);
   });

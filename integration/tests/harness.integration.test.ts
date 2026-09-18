@@ -46,7 +46,7 @@ describe('harness: schema validation', () => {
   });
 
   it('rejects a payload missing a required field', () => {
-    const { violations } = checkSchema('MediaUploadSuccess', {});
+    const { violations } = checkSchema('MediaUploadResult', {});
 
     expect(violations.length).toBeGreaterThan(0);
     expect(violations.join(' ')).toContain('mediaAssetId');
@@ -63,7 +63,7 @@ describe('harness: schema validation', () => {
   });
 
   it('reports an undocumented property separately from a real violation', () => {
-    const { violations, undocumented } = checkSchema('CreateMessagingInvitation', {
+    const { violations, undocumented } = checkSchema('CreateMessagingInvitationBody', {
       channel: 'amb',
       phoneNumber: '+15551234567',
       purpose: 'connect',
@@ -77,7 +77,7 @@ describe('harness: schema validation', () => {
   });
 
   it('throws with the offending payload when a live response contradicts the spec', () => {
-    expect(() => assertMatchesSchema('MediaUploadSuccess', { wrong: 1 }, 'unit')).toThrow(
+    expect(() => assertMatchesSchema('MediaUploadResult', { wrong: 1 }, 'unit')).toThrow(
       /does not match the OpenAPI schema/,
     );
   });

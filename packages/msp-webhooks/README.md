@@ -181,6 +181,20 @@ if (message.content?.kind === 'text') {
 }
 ```
 
+Redaction is a discriminated union, so one guard settles both fields:
+
+```ts
+import { isVisible, isRedacted } from '@1440io/msp-webhooks';
+
+if (isVisible(message)) {
+  message.content.kind;      // non-null, no check needed
+} else if (isRedacted(message)) {
+  // A private form response: the body was withheld.
+}
+```
+
+Every reader below accepts `null | undefined` and returns an empty result, so a redacted message needs no special casing.
+
 What the helpers add is normalization. The interactive payloads arrive in Apple's native shape — hyphenated keys, per-kind nesting, timestamps that are not RFC 3339 — and reading them by hand is where the bugs live:
 
 ```ts
@@ -233,7 +247,7 @@ on: {
 
 ### Two things production does that the spec does not describe
 
-**Reactions arrive as text.** A "Liked" reaction comes through as `kind: 'text'` with the body `"Liked 1 Business Message"`. This revision dropped the `tapback` kind entirely, which matches the behaviour, so there is nothing to narrow to.
+**Reactions arrive as text.** A "Liked" reaction comes through as `kind: 'text'` with the body `"Liked 1 Business Message"`. The spec has no `tapback` kind, which matches the behaviour, so there is nothing to narrow to.
 
 **Time-picker times are not RFC 3339.** The schema pins them to `YYYY-MM-DDTHH:mm+0000` — no seconds, no colon in the offset. JavaScript's `Date` accepts it, so the problem stays hidden until the value reaches a stricter parser (`Temporal.Instant.from`, `date-fns/parseISO`, Go, Java, Python). `selectedTimeslot()` and `parseAppleTimestamp()` handle both forms and hand back a real `Date`.
 

@@ -1,5 +1,28 @@
 # @1440io/msp-api
 
+## 0.3.0
+
+### Minor Changes
+
+- Regenerate against the current MSP API spec. Paths, parameters, request bodies, and response shapes are unchanged — this revision renames things and extracts previously-inline shapes into named schemas — so no call you make changes. The curated exports keep their names and were repointed underneath, so ordinary use of the client is unaffected.
+
+  **Named types for every message-content variant.** The content unions used to be anonymous shapes reachable only by indexing into an event type. Each variant is now a named schema, and `@1440io/msp-types` exports them: `InboundText`, `InboundOptOut`, `InboundQuickReplyResponse`, `InboundListPickerResponse`, `InboundTimePickerResponse`, `InboundFormResponse`, `InboundAuthenticationResponse`, `InboundImessageAppResponse`, `InboundInvitationResponse`, `InboundUnrecognizedInteractiveResponse`, plus `OutboundContent`, `RawContent`, and `…OfKind` helpers for both. Annotating a function parameter with the exact variant it handles no longer needs an `Extract<>` incantation.
+
+  **Redaction is a discriminated union.** `redacted: false` now implies `content` is present and `redacted: true` implies it is null, so `isRedacted(message)` and the new `isVisible(message)` are type guards: after `isVisible`, `message.content` is non-null with no check. Every content reader accepts `null | undefined` and returns an empty result, so a redacted message needs no special casing.
+
+  **`ConversationMessage` and `ConversationMessageAttachment` are named schemas**, exported directly rather than derived by indexing into the conversation-detail response.
+
+  **`ApiError` is the spec's name for the error envelope**, exported alongside the existing `ErrorResponse` — both identical, neither removed. It now documents `missingPermission`, which production has been returning on a 403 since at least August.
+
+  **`RICH_REASON_CODES` narrowed from 27 codes to 19.** The send-pipeline codes (`capability_not_supported`, `channel_gateway_failed`, `duplicate_request_conflict`, `construct_payload_failed`, `wire_constraint_violated`, `conversation_not_eligible`, `template_type_mismatch`, `block_field_unsupported`) left the enum; the reason set is now scoped to template and asset authoring, matching send errors having moved to `issues`. Production has been observed returning codes outside the declared set, so keep treating an unrecognized code as a generic rejection.
+
+  Note for anyone using the raw escape hatches: `Schemas['…']` keys and `operations['…']` ids both moved. Renamed schemas include `ErrorResponse`→`ApiError`, `ConversationListItem`→`Conversation`, `ConversationListResponse`→`ConversationList`, `ConversationDetailResponse`→`ConversationDetail`, `ChannelListResponse`→`ChannelList`, `IntegrationTokenResponse`→`IntegrationTokenResult`, `MediaUploadSuccess`→`MediaUploadResult`, `MediaAccessUrlSuccess`→`MediaAccessUrlResult`, `SendMessageSuccess`→`SendMessageResult`, `CreateMessagingInvitation`→`CreateMessagingInvitationBody`, and the two delete results merged into `DeleteResult`. The ten admin template and asset operations moved to verb-first ids (`adminListRichTemplates`→`listAdminRichTemplates`).
+
+### Patch Changes
+
+- Updated dependencies
+  - @1440io/msp-types@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes

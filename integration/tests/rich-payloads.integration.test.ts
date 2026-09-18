@@ -112,15 +112,16 @@ describeApi('channel content: shape validation', () => {
     expect(result.status).not.toBe(404);
   });
 
-  it('ignores unknown fields inside content, despite the schema saying otherwise', async () => {
-    // The schema description claims "unknown fields are rejected". Measured
-    // against production, that holds for the request body but not for
-    // `content`: unknown keys at any depth inside the payload are dropped
-    // silently. A typo in an Apple payload therefore produces a message that
-    // renders wrong rather than an error, which is worth knowing.
+  it('rejects unknown fields inside content', async () => {
+    // Measured in August this was silently ignored, so a payload typo rendered
+    // wrong instead of erroring. The content schemas are closed
+    // (`additionalProperties: false`) in this spec revision and production
+    // enforces it, so the typo is now a 400 before conversation lookup.
     const result = await sendRaw({ ...(rawText('hi') as object), sourceId: 'caller-supplied' });
 
-    expect(result.status, 'content-level unknown keys now reject — update this test').toBe(404);
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe(400);
+    expect(result.status, 'rejected before conversation lookup').not.toBe(404);
   });
 
   it('rejects unknown fields on the request body', async () => {

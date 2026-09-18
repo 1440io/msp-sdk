@@ -13,9 +13,13 @@ export interface paths {
         };
         /**
          * List the business’s messaging channels
-         * @description List the messaging channels connected to the authenticated business. Returns at most `count` channels (default 25, hard cap 100); no cursor yet.
+         * @description List the messaging channels connected to the authenticated business. Returns up to `count` channels (default 25, max 100); there is no cursor, so raise `count` to see more.
          *
-         *     **Permission.** Requires admin tier and `ViewChannels`.
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `admin`
+         *
+         *     **Required Permissions:** `ViewChannels`
          */
         get: operations["listAdminBusinessChannels"];
         put?: never;
@@ -37,9 +41,13 @@ export interface paths {
          * Get TikTok channel status
          * @description Read the TikTok channel connection and OAuth status for the authenticated business.
          *
-         *     **Permission.** Requires admin tier and `ViewChannels`.
+         *     **Credentials:** No access or refresh tokens are returned — only their presence, expiry, and the granted scope.
          *
-         *     **Credentials.** No access or refresh tokens are returned — only their presence, expiry, and the granted scope.
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `admin`
+         *
+         *     **Required Permissions:** `ViewChannels`
          */
         get: operations["getAdminBusinessTikTokStatus"];
         put?: never;
@@ -61,7 +69,11 @@ export interface paths {
          * Get business settings
          * @description Read the authenticated business’s name, slug, logo URL, and active status.
          *
-         *     **Permission.** Requires admin tier and `ViewBusiness`.
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `admin`
+         *
+         *     **Required Permissions:** `ViewBusiness`
          */
         get: operations["getAdminBusinessSettings"];
         put?: never;
@@ -81,21 +93,29 @@ export interface paths {
         };
         /**
          * List rich templates
-         * @description List the organization’s rich templates across all lifecycle statuses (draft, published, archived), optionally filtered by `status` and authored `templateType`.
+         * @description List the business’s rich templates across all lifecycle statuses (draft, published, archived), optionally filtered by `status` and authored `templateType`.
          *
-         *     **Pagination.** Keyset-paginated newest first: supply `count` for the page size (default 25, max 100) and `before` (the `id` of the last row from the previous page, surfaced as `nextCursor`) to fetch the next page. `nextCursor` is `null` on the final page.
+         *     **Pagination:** Keyset-paginated newest first: use `before` (the `id` of the last row from the previous page, surfaced as `nextCursor`) to fetch the next page. `nextCursor` is `null` on the final page.
          *
-         *     **Permission.** Requires admin tier and `ManageTemplates`.
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `admin`
+         *
+         *     **Required Permissions:** `ManageTemplates`
          */
-        get: operations["adminListRichTemplates"];
+        get: operations["listAdminRichTemplates"];
         put?: never;
         /**
          * Create a rich template
-         * @description Create a draft rich template: a unique name, one definition (a canonical block or one channel-native content object), and slot → library-asset bindings. The definition is publish-validity checked on create; failures return `reasons`.
+         * @description Create a draft rich template with a unique name, one definition (a canonical block or one channel-native content object), and slot → library-asset bindings.
          *
-         *     **Permission.** Requires admin tier and `ManageTemplates`.
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `admin`
+         *
+         *     **Required Permissions:** `ManageTemplates`
          */
-        post: operations["adminCreateRichTemplate"];
+        post: operations["createAdminRichTemplate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -113,24 +133,36 @@ export interface paths {
          * Get a rich template
          * @description Fetch one rich template with its definition, slot bindings, and per-channel readiness (including the deterministic resolved native type).
          *
-         *     **Permission.** Requires admin tier and `ManageTemplates`.
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `admin`
+         *
+         *     **Required Permissions:** `ManageTemplates`
          */
-        get: operations["adminGetRichTemplate"];
+        get: operations["getAdminRichTemplate"];
         /**
          * Edit a rich template
-         * @description Replace a template’s name, definition, and slot bindings. Edits apply to drafts and published templates alike — a published edit changes future sends immediately. Authoring mode and native channel are fixed at creation; archived templates cannot be edited.
+         * @description Replace a template’s name, definition, and slot bindings. Edits apply to drafts and published templates alike; published edits are validated for publication before they change future sends. Authoring mode and native channel are fixed at creation.
          *
-         *     **Permission.** Requires admin tier and `ManageTemplates`.
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `admin`
+         *
+         *     **Required Permissions:** `ManageTemplates`
          */
-        put: operations["adminEditRichTemplate"];
+        put: operations["updateAdminRichTemplate"];
         post?: never;
         /**
          * Delete a rich template draft
-         * @description Delete a never-published draft. Published or archived templates cannot be deleted; archive published templates instead.
+         * @description Delete a never-published draft.
          *
-         *     **Permission.** Requires admin tier and `ManageTemplates`.
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `admin`
+         *
+         *     **Required Permissions:** `ManageTemplates`
          */
-        delete: operations["adminDeleteRichTemplate"];
+        delete: operations["deleteAdminRichTemplate"];
         options?: never;
         head?: never;
         patch?: never;
@@ -147,11 +179,15 @@ export interface paths {
         put?: never;
         /**
          * Archive a rich template
-         * @description Archive a published template. It stops being sendable, while historical messages remain renderable. Drafts are deleted, not archived.
+         * @description Archive a published template. Historical messages remain renderable.
          *
-         *     **Permission.** Requires admin tier and `ManageTemplates`.
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `admin`
+         *
+         *     **Required Permissions:** `ManageTemplates`
          */
-        post: operations["adminArchiveRichTemplate"];
+        post: operations["archiveAdminRichTemplate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -169,11 +205,15 @@ export interface paths {
         put?: never;
         /**
          * Publish a rich template
-         * @description Publish a draft. Requires publish-validity (structural) only — a published template may still be `blocked` on every channel; readiness gates sending, not publication. Publishing an already-published template is a no-op.
+         * @description Publish a draft after validating its fixed content, bound assets, and rendered payload. Invalid templates remain drafts.
          *
-         *     **Permission.** Requires admin tier and `ManageTemplates`.
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `admin`
+         *
+         *     **Required Permissions:** `ManageTemplates`
          */
-        post: operations["adminPublishRichTemplate"];
+        post: operations["publishAdminRichTemplate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -189,21 +229,31 @@ export interface paths {
         };
         /**
          * List rich-message assets
-         * @description List the organization’s rich-message asset library, optionally filtered by `channel` and `usage`.
+         * @description List the business’s rich-message asset library, optionally filtered by `channel` and `usage`.
          *
-         *     **Pagination.** Keyset-paginated newest first: supply `count` for the page size (default 25, max 100) and `before` (the `id` of the last row from the previous page, surfaced as `nextCursor`) to fetch the next page. `nextCursor` is `null` on the final page. Access URLs are cached on each immutable asset, signed for seven days, and refreshed when less than 24 hours remain.
+         *     **Pagination:** Keyset-paginated newest first: supply `count` for the page size and `before` (the `id` of the last row from the previous page, surfaced as `nextCursor`) to fetch the next page. `nextCursor` is `null` on the final page.
          *
-         *     **Permission.** Requires admin tier and `ManageTemplates`.
+         *     **Access URLs:** Each asset carries a signed access URL valid for seven days; it is refreshed when less than 24 hours remain.
+         *
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `admin`
+         *
+         *     **Required Permissions:** `ManageTemplates`
          */
-        get: operations["adminListRichAssets"];
+        get: operations["listAdminRichAssets"];
         put?: never;
         /**
          * Upload a rich-message asset
-         * @description Upload one immutable library asset as `multipart/form-data`: string fields `channel`, `usage`, `displayName` plus a single `file` part. Bytes are validated by magic-byte sniffing (AMB: PNG only), checked against the declared content type and the per-usage size cap. The request body has a hard 200 KiB cap. The created asset includes a publicly cacheable seven-day signed access URL.
+         * @description Upload one immutable library asset as `multipart/form-data`: string fields `channel`, `usage`, `displayName` plus a single `file` part. PNG bytes are verified (AMB accepts PNG only), checked against the declared content type, and measured against the cap of the selected `usage` (see the `file` field for the exact limits). Multipart headers and text fields have a separate 262144-byte allowance. The created asset includes a publicly cacheable seven-day signed access URL.
          *
-         *     **Permission.** Requires admin tier and `ManageTemplates`.
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `admin`
+         *
+         *     **Required Permissions:** `ManageTemplates`
          */
-        post: operations["adminUploadRichAsset"];
+        post: operations["uploadAdminRichAsset"];
         delete?: never;
         options?: never;
         head?: never;
@@ -224,9 +274,13 @@ export interface paths {
          * Delete a rich-message asset
          * @description Delete an unreferenced library asset. Assets bound to any template (including archived ones) cannot be deleted — unbind them first.
          *
-         *     **Permission.** Requires admin tier and `ManageTemplates`.
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `admin`
+         *
+         *     **Required Permissions:** `ManageTemplates`
          */
-        delete: operations["adminDeleteRichAsset"];
+        delete: operations["deleteAdminRichAsset"];
         options?: never;
         head?: never;
         patch?: never;
@@ -245,9 +299,9 @@ export interface paths {
          * Exchange an integration API key for an access JWT
          * @description Exchange a long-lived integration API key for a short-lived business access JWT (`type: "api"`).
          *
-         *     Present the API key as `Authorization: Bearer msp_…`; no body is required. An unknown, revoked, expired, or disabled key — or an inactive owning organization — is rejected with an indistinguishable `401`.
+         *     Present the API key as `Authorization: Bearer msp_…`; no body is required. An unknown, revoked, expired, or disabled key — or an inactive owning business — is rejected with an indistinguishable `401`.
          *
-         *     **Using the token.** Send the returned `token` as `Authorization: Bearer <token>` on authenticated routes. The token is short-lived (~15 min): re-exchange the API key when `expiresAt` passes. Do not send the raw API key on other routes.
+         *     **Using the token:** Send the returned `token` as `Authorization: Bearer <token>` on authenticated routes. Token lifetime is deployment-configured; obtain a new token once `expiresAt` passes. Do not send the raw API key on other routes.
          */
         post: operations["exchangeIntegrationToken"];
         delete?: never;
@@ -265,9 +319,13 @@ export interface paths {
         };
         /**
          * List active channels
-         * @description List every active channel configured for the authenticated org, each with its `platform`, `id`, and `externalId`.
+         * @description List every active channel configured for the authenticated business, each with its `platform`, `id`, and `externalId`.
          *
-         *     **Permission.** Requires the `ViewChannels` permission.
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `member`
+         *
+         *     **Required Permissions:** `ViewChannels`
          */
         get: operations["listChannels"];
         put?: never;
@@ -289,11 +347,15 @@ export interface paths {
          * List conversations
          * @description List the authenticated business’s conversations, newest activity first.
          *
-         *     **Pagination.** Cursor-paginated: supply `count` for the page size (default 25, max 100) and `cursor` (the `id` of the last row from the previous page, surfaced as `nextCursor`) to fetch the next page. `nextCursor` is `null` on the final page.
+         *     **Pagination:** Cursor-paginated: use `cursor` (the `id` of the last row from the previous page, surfaced as `nextCursor`) to fetch the next page. `nextCursor` is `null` on the final page.
          *
-         *     **Filtering.** Optionally narrow by `status`.
+         *     **Filtering:** Optionally narrow by `status`.
          *
-         *     **Permission.** Requires the `ViewConversations` permission.
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `member`
+         *
+         *     **Required Permissions:** `ViewConversations`
          */
         get: operations["listConversations"];
         put?: never;
@@ -315,9 +377,13 @@ export interface paths {
          * Get a conversation with its messages
          * @description Fetch a single conversation owned by the authenticated business, together with a window of its messages.
          *
-         *     **Message window.** Messages are returned oldest-first within the window. Use `count` to bound the number of messages (max 100) and `before` (a message id) to page backwards through history, returning messages strictly older than that message. To fetch the next older page, pass the `id` of the first (oldest) message in the current window as `before`. When `before` is supplied without `count`, `count` defaults to 25.
+         *     **Message window:** Messages are returned oldest-first within the window. Use `count` to bound the number of messages and `before` (a message id) to page backwards through history, returning messages strictly older than that message. To fetch the next older page, pass the `id` of the first (oldest) message in the current window as `before`. A conversation that does not belong to the authenticated business is reported as `404` (it is not disclosed).
          *
-         *     **Permission.** Requires the `ViewConversations` permission. A conversation that does not belong to the authenticated business is reported as `404` (it is not disclosed).
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `member`
+         *
+         *     **Required Permissions:** `ViewConversations`
          */
         get: operations["getConversation"];
         put?: never;
@@ -327,9 +393,13 @@ export interface paths {
         head?: never;
         /**
          * Update a conversation’s customer name
-         * @description Set the customer first and last name on a conversation owned by the authenticated business. Both fields are required and replace the current values; pass `null` to clear a name.
+         * @description Set the customer first and last name on a conversation owned by the authenticated business. Both fields are required and replace the current values; pass `null` to clear a name. A conversation that does not belong to the authenticated business is reported as `404` (it is not disclosed).
          *
-         *     **Permission.** Requires the `ManageConversations` permission. A conversation that does not belong to the authenticated business is reported as `404` (it is not disclosed).
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `member`
+         *
+         *     **Required Permissions:** `ManageConversations`
          */
         patch: operations["updateConversationName"];
         trace?: never;
@@ -345,9 +415,15 @@ export interface paths {
          * Get a signed read URL for an attachment
          * @description Mint a short-lived, signed read URL for an attachment owned by the authenticated business. Use this to download or display attachment bytes (e.g. inbound message media) without exposing long-lived storage credentials.
          *
+         *     Pass the stored attachment id from `messages[].attachments[].id` in conversation history, not the `mediaAssetId` returned by upload.
+         *
          *     The attachment must belong to the authenticated business and be in the `ready` state; a pending or failed attachment yields `409`. The returned `url` expires at `expiresAt` — re-request this endpoint for a fresh URL after expiry.
          *
-         *     **Permission.** Requires the `ViewMessages` permission.
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `member`
+         *
+         *     **Required Permissions:** `ViewMessages`
          */
         get: operations["getMediaAttachmentAccessUrl"];
         put?: never;
@@ -369,11 +445,15 @@ export interface paths {
         put?: never;
         /**
          * Upload a media asset
-         * @description Upload a media asset as raw request-body bytes. The upload metadata (filename, content-type, size, target channel) is supplied via headers — see the header parameters below — while the body is the raw `application/octet-stream` payload, not JSON. The size limit is 100 MiB.
+         * @description Upload a media asset as raw request-body bytes. The upload metadata (filename, optional asset MIME type, size, target channel) is supplied via headers — see the header parameters below — while the body is raw bytes, not JSON. Set `content-type` to the actual MIME type when known; `application/octet-stream` is the fallback. The shared 100 MiB (104857600 bytes) message attachment limit applies to both the declared size and the streamed body.
          *
-         *     Reference the returned `mediaAssetId` as an attachment id when sending a message or when minting a read URL via `GET /api/v0/media/attachments/{attachmentId}/access-url`.
+         *     Use the returned `mediaAssetId` in `attachmentIds` on `POST /api/v0/messaging/send`. The send mints a separate stored attachment id. Get that id from `messages[].attachments[].id` in conversation history before calling the access-URL endpoint.
          *
-         *     **Permission.** Requires the `SendMessages` permission.
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `member`
+         *
+         *     **Required Permissions:** `SendMessages`
          */
         post: operations["uploadMediaAsset"];
         delete?: never;
@@ -389,10 +469,28 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List messaging invitations */
+        /**
+         * List messaging invitations
+         * @description List the authenticated business’s messaging invitations, newest first. Use `cursor` from `nextCursor` to fetch the next page; `nextCursor` is `null` on the final page. Optionally filter by `status`.
+         *
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `member`
+         *
+         *     **Required Permissions:** `SendMessagingInvitations`, `SendMessages`
+         */
         get: operations["listMessagingInvitations"];
         put?: never;
-        /** Create a messaging invitation */
+        /**
+         * Create a messaging invitation
+         * @description Create a messaging invitation for the authenticated business. `requestMessageId` makes the request idempotent: identical request bytes replay the recorded outcome. The request body is limited to 256 KiB.
+         *
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `member`
+         *
+         *     **Required Permissions:** `SendMessagingInvitations`, `SendMessages`
+         */
         post: operations["createMessagingInvitation"];
         delete?: never;
         options?: never;
@@ -407,7 +505,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a messaging invitation */
+        /**
+         * Get a messaging invitation
+         * @description Return one messaging invitation owned by the authenticated business. An invitation outside the authenticated business is reported as `404`.
+         *
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `member`
+         *
+         *     **Required Permissions:** `SendMessagingInvitations`, `SendMessages`
+         */
         get: operations["getMessagingInvitation"];
         put?: never;
         post?: never;
@@ -428,7 +535,21 @@ export interface paths {
         put?: never;
         /**
          * Send a message
-         * @description For the `text` variant, provide a non-whitespace `body`, at least one `attachmentIds` entry, or both.
+         * @description Send an outbound message to a conversation owned by the authenticated business. `type` selects one of three variants: `text` (a free-form body, media attachments, or both), `template` (a published rich template rendered with `variables`), or `authentication` (an AMB Authentication Message from a published authentication template).
+         *
+         *     **Text variant:** `body` is required and must contain non-whitespace text unless `attachmentIds` is non-empty, in which case it may be an empty string. `attachmentIds` holds at most 10 `mediaAssetId` values returned by upload. Sending creates a separate stored attachment per id; read its `messages[].attachments[].id` from conversation history before minting a read URL.
+         *
+         *     **Template variants:** `variables` must satisfy the published template’s variable declaration; invalid dynamic values are rejected with `422`. Publication validates fixed content and assets.
+         *
+         *     Request bodies are limited to 5,000,000 bytes.
+         *
+         *     **Idempotency:** `requestMessageId` is scoped to the conversation. Replaying it with identical request bytes returns the original result with `duplicate: true`; different bytes are rejected with `409`.
+         *
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `member`
+         *
+         *     **Required Permissions:** `SendMessages`
          */
         post: operations["sendConversationMessage"];
         delete?: never;
@@ -446,7 +567,16 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Send channel content */
+        /**
+         * Send channel content
+         * @description Send a channel-native payload to a conversation owned by the authenticated business. `content.kind` selects the payload shape; unknown fields are rejected. Request bodies are limited to 5,000,000 bytes. AMB images must be PNG and at most 200,000 bytes Base64-encoded. Callers must verify image-size compliance and device rendering. Provider acceptance does not prove device rendering.
+         *
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `member`
+         *
+         *     **Required Permissions:** `SendMessages`, `SendRawChannelPayloads`
+         */
         post: operations["sendRawChannelPayload"];
         delete?: never;
         options?: never;
@@ -463,11 +593,15 @@ export interface paths {
         };
         /**
          * List published rich templates
-         * @description List the organization’s published rich templates — the set available to send. Optionally filter by authored `templateType`.
+         * @description List the authenticated business’s published rich templates — the set available to send. Optionally filter by authored `templateType`.
          *
-         *     **Pagination.** Keyset-paginated newest first: supply `count` for the page size (default 25, max 100) and `before` (the `id` of the last row from the previous page, surfaced as `nextCursor`) to fetch the next page. `nextCursor` is `null` on the final page.
+         *     **Pagination:** Keyset-paginated newest first: use `before` (the `id` of the last row from the previous page, surfaced as `nextCursor`) to fetch the next page. `nextCursor` is `null` on the final page.
          *
-         *     **Permission.** Requires the `ViewTemplates` permission.
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `member`
+         *
+         *     **Required Permissions:** `ViewTemplates`
          */
         get: operations["listRichTemplates"];
         put?: never;
@@ -489,7 +623,11 @@ export interface paths {
          * Get a published rich template
          * @description Fetch one published rich template with its definition, slot bindings, and per-channel readiness (which channels it can send on right now, and the deterministic resolved native type). Unpublished templates return `404`.
          *
-         *     **Permission.** Requires the `ViewTemplates` permission.
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `member`
+         *
+         *     **Required Permissions:** `ViewTemplates`
          */
         get: operations["getRichTemplate"];
         put?: never;
@@ -552,12 +690,12 @@ export interface components {
         /** @description The actor’s resolved authorization grant (tier + permission keys). Display only — the server remains the sole authority and re-gates every request. */
         ActorGrant: {
             /** @description Granted fine-grained permission keys. */
-            permissionKeys: string[];
+            permissionKeys: ("ViewBusiness" | "ManageBusiness" | "ViewMembers" | "ManageMembers" | "ViewChannels" | "ManageChannels" | "SendMessagingInvitations" | "SendMessages" | "ViewMessages" | "ViewConversations" | "ManageConversations" | "ViewTemplates" | "ManageTemplates" | "ViewCustomers" | "ManageCustomers" | "ViewAudit" | "ViewPermissionSets" | "CreatePermissionSets" | "DeletePermissionSets" | "ViewSandboxes" | "ManageSandboxes" | "SyncSandbox" | "ViewIntegrations" | "ManageIntegrations" | "ManagePermissions" | "ViewSensitiveResponses" | "SendRawChannelPayloads")[];
             /**
              * @description The actor’s coarse membership tier.
              * @enum {string}
              */
-            tier: "member" | "admin" | "owner" | "1440_user";
+            tier: "member" | "admin" | "1440_user" | "owner";
         };
         /** @description A messaging channel connected to the business. */
         AdminBusinessChannel: {
@@ -575,8 +713,23 @@ export interface components {
              */
             platform: "amb" | "tiktok" | "whatsapp";
         };
-        /** @description The business’s connected messaging channels (capped at 100 per page). */
+        /** @description The business’s connected messaging channels. */
         AdminBusinessChannelList: components["schemas"]["AdminBusinessChannel"][];
+        /** @description Common error envelope used where declared: an `error` string describing what went wrong, plus an optional machine-readable `code`. */
+        ApiError: {
+            /**
+             * @description Stable machine-readable reason code, present when the failure has one the client is expected to branch on (e.g. mapping it to a field-level message).
+             * @example PERMISSION_DENIED
+             */
+            code?: string;
+            /**
+             * @description Human-readable explanation of why the request failed.
+             * @example Conversation not found for this business
+             */
+            error: string;
+            /** @description The required permission key when code is PERMISSION_DENIED. */
+            missingPermission?: string;
+        };
         /**
          * @description The current settings for a business.
          * @example {
@@ -599,11 +752,14 @@ export interface components {
             /** @description URL-safe slug for the business, derived from the name. Read-only — not editable via this endpoint. */
             slug: string;
         };
-        /** @description A single active channel configured for the authenticated org. */
+        /** @description A single active channel configured for the authenticated business. */
         Channel: {
             /** @description Provider-side external identifier for the channel. */
             externalId: string;
-            /** @description UUIDv7 identifier of the channel. */
+            /**
+             * Format: uuid
+             * @description UUIDv7 identifier of the channel.
+             */
             id: string;
             /**
              * @description The channel platform slug (e.g. `amb`, `tiktok`).
@@ -611,20 +767,25 @@ export interface components {
              */
             platform: "amb" | "tiktok" | "whatsapp" | "rcs" | "sms" | "instagram" | "facebook_messenger" | "telegram" | "line" | "wechat" | "email" | "custom";
         };
-        /** @description The set of active channels configured for the authenticated org. */
-        ChannelListResponse: {
-            /** @description All active channels for the authenticated org. */
+        /** @description The set of active channels configured for the authenticated business. */
+        ChannelList: {
+            /** @description All active channels for the authenticated business. */
             channels: components["schemas"]["Channel"][];
         };
-        /** @description A single conversation with its MessageRead window. */
-        ConversationDetailResponse: {
-            /** @enum {string} */
+        /** @description A conversation between the business and one customer on one channel, as returned by the list, detail, and update operations. */
+        Conversation: {
+            /**
+             * @description Who handles replies: `bot` for automated handling, `live` for a human agent, `closed` for nobody. Integrations receive `message.received` only when their `aiMode` matches (`bot` ↔ `ai_enabled`, `live` ↔ `ai_disabled`, `both` ↔ either; `closed` delivers to none). Outbound channel messages are flagged as automatic replies unless `live`.
+             * @enum {string}
+             */
             agentStatus: "bot" | "live" | "closed";
             /** Format: uuid */
             assignedUserId: string | null;
             /** Format: uuid */
             businessId: string;
+            /** @description Interactive capabilities the customer device last reported (AMB `Capability-List` header); null when never reported, [] when the reported set is empty. */
             capabilityList: ("QUICK" | "LIST" | "TIME" | "AUTH" | "AUTH2" | "FORM")[] | null;
+            /** @description Customer channel-specific address stored on the conversation; not a message ID or necessarily a phone number. */
             channelAddress: string;
             /** @enum {string} */
             channelPlatform: "amb";
@@ -632,878 +793,40 @@ export interface components {
             createdAt: string;
             email: string | null;
             firstName: string | null;
+            /** @description Group identifier from the most recent inbound message that carried one (AMB `group` envelope field); null when no inbound message has supplied one. */
             groupId: string | null;
             /** Format: uuid */
             id: string;
+            /** @description Intent identifier from the most recent inbound message that carried one (AMB `intent` envelope field); null when no inbound message has supplied one. */
             intentId: string | null;
             /** Format: date-time */
             lastMessageAt: string;
             lastName: string | null;
             locale: string | null;
-            messages: ({
-                actor: {
-                    /** Format: uuid */
-                    id: string;
-                    /** @enum {string} */
-                    type: "user";
-                } | {
-                    /** Format: uuid */
-                    id: string;
-                    /** @enum {string} */
-                    type: "integration";
-                } | {
-                    /** @enum {string} */
-                    type: "system";
-                };
-                attachments: {
-                    /** Format: uri */
-                    accessUrl: string | null;
-                    /** Format: date-time */
-                    accessUrlExpiresAt: string | null;
-                    /** Format: uuid */
-                    id: string;
-                    mimeType: string | null;
-                    originalFileName: string | null;
-                    sizeBytes: number | null;
-                    sortOrder: number;
-                    /** @enum {string} */
-                    status: "pending" | "ready" | "failed";
-                }[];
-                /** @enum {string} */
-                channel: "amb";
-                content: ({
-                    body: string;
-                    /** @enum {string} */
-                    kind: "text";
-                    subject?: string;
-                } | {
-                    data: {
-                        "quick-reply": {
-                            items: {
-                                identifier: string;
-                                title: string;
-                            }[];
-                            summaryText: string;
-                        };
-                    };
-                    /** @enum {string} */
-                    kind: "amb.quick_reply";
-                } | {
-                    data: {
-                        images?: {
-                            description?: string | null;
-                            identifier: string;
-                            name: string | null;
-                        }[];
-                        listPicker: {
-                            sections: {
-                                items: {
-                                    identifier: string;
-                                    imageIdentifier?: string;
-                                    order?: number;
-                                    style?: string;
-                                    subtitle?: string;
-                                    title: string;
-                                }[];
-                                multipleSelection?: boolean;
-                                order?: number;
-                                title?: string;
-                            }[];
-                        };
-                    };
-                    /** @enum {string} */
-                    kind: "amb.list_picker";
-                    receivedMessage: {
-                        alternateTitle?: string;
-                        imageDescription?: string;
-                        imageIdentifier?: string;
-                        imageSubtitle?: string;
-                        imageTitle?: string;
-                        secondarySubtitle?: string;
-                        /** @enum {string} */
-                        style?: "icon" | "small" | "large";
-                        subtitle?: string;
-                        tertiarySubtitle?: string;
-                        title: string;
-                    };
-                    replyMessage: {
-                        alternateTitle?: string;
-                        imageDescription?: string;
-                        imageIdentifier?: string;
-                        imageSubtitle?: string;
-                        imageTitle?: string;
-                        secondarySubtitle?: string;
-                        /** @enum {string} */
-                        style?: "icon" | "small" | "large";
-                        subtitle?: string;
-                        tertiarySubtitle?: string;
-                        title: string;
-                    };
-                } | {
-                    data: {
-                        event: {
-                            identifier: string;
-                            imageIdentifier?: string;
-                            location?: {
-                                latitude?: number;
-                                longitude?: number;
-                                radius?: number;
-                                title?: string;
-                            };
-                            timeslots: {
-                                duration: number;
-                                identifier: string;
-                                startTime: string;
-                            }[];
-                            timezoneOffset?: number;
-                            title?: string;
-                        };
-                        images?: {
-                            description?: string | null;
-                            identifier: string;
-                            name: string | null;
-                        }[];
-                    };
-                    /** @enum {string} */
-                    kind: "amb.time_picker";
-                    receivedMessage: {
-                        alternateTitle?: string;
-                        imageDescription?: string;
-                        imageIdentifier?: string;
-                        imageSubtitle?: string;
-                        imageTitle?: string;
-                        secondarySubtitle?: string;
-                        /** @enum {string} */
-                        style?: "icon" | "small" | "large";
-                        subtitle?: string;
-                        tertiarySubtitle?: string;
-                        title: string;
-                    };
-                    replyMessage: {
-                        alternateTitle?: string;
-                        imageDescription?: string;
-                        imageIdentifier?: string;
-                        imageSubtitle?: string;
-                        imageTitle?: string;
-                        secondarySubtitle?: string;
-                        /** @enum {string} */
-                        style?: "icon" | "small" | "large";
-                        subtitle?: string;
-                        tertiarySubtitle?: string;
-                        title: string;
-                    };
-                } | {
-                    data: {
-                        dynamic: {
-                            data: {
-                                pages: ({
-                                    items: {
-                                        identifier: string;
-                                        imageIdentifier?: string;
-                                        nextPageIdentifier?: string;
-                                        title: string;
-                                        value: string;
-                                    }[];
-                                    multipleSelection?: boolean;
-                                    nextPageIdentifier?: string;
-                                    pageIdentifier: string;
-                                    submitForm?: boolean;
-                                    subtitle: string;
-                                    title?: string;
-                                    /** @enum {string} */
-                                    type: "select";
-                                } | {
-                                    items: {
-                                        identifier: string;
-                                        title: string;
-                                        value: string;
-                                    }[];
-                                    nextPageIdentifier?: string;
-                                    pageIdentifier: string;
-                                    pickerTitle?: string;
-                                    selectedItemIndex?: number;
-                                    submitForm?: boolean;
-                                    subtitle: string;
-                                    title?: string;
-                                    /** @enum {string} */
-                                    type: "picker";
-                                } | {
-                                    hintText?: string;
-                                    nextPageIdentifier?: string;
-                                    options?: {
-                                        dateFormat?: string;
-                                        labelText?: string;
-                                        maximumDate?: string;
-                                        minimumDate?: string;
-                                        startDate?: string;
-                                    };
-                                    pageIdentifier: string;
-                                    submitForm?: boolean;
-                                    subtitle: string;
-                                    title?: string;
-                                    /** @enum {string} */
-                                    type: "datePicker";
-                                } | {
-                                    hintText?: string;
-                                    nextPageIdentifier?: string;
-                                    options?: {
-                                        /** @enum {string} */
-                                        inputType?: "singleline" | "multiline";
-                                        /** @enum {string} */
-                                        keyboardType?: "default" | "asciiCapable" | "numbersAndPunctuation" | "URL" | "numberPad" | "phonePad" | "namePhonePad" | "emailAddress" | "decimalPad" | "webSearch";
-                                        labelText?: string;
-                                        maximumCharacterCount?: number;
-                                        placeholder?: string;
-                                        prefixText?: string;
-                                        regex?: string;
-                                        required?: boolean;
-                                        /** @enum {string} */
-                                        textContentType?: "name" | "namePrefix" | "givenName" | "middleName" | "familyName" | "nameSuffix" | "nickname" | "jobTitle" | "organizationName" | "location" | "fullStreetAddress" | "streetAddressLine1" | "streetAddressLine2" | "addressCity" | "addressState" | "addressCityAndState" | "sublocality" | "countryName" | "postalCode" | "telephoneNumber" | "emailAddress" | "URL" | "creditCardNumber" | "username" | "password" | "newPassword" | "oneTimeCode";
-                                    };
-                                    pageIdentifier: string;
-                                    submitForm?: boolean;
-                                    subtitle: string;
-                                    title?: string;
-                                    /** @enum {string} */
-                                    type: "input";
-                                })[];
-                                private?: boolean;
-                                showSummary?: boolean;
-                                splash?: {
-                                    buttonTitle: string;
-                                    header?: string;
-                                    imageIdentifier?: string;
-                                    splashtext?: string;
-                                };
-                                startPageIdentifier: string;
-                            };
-                            /** @enum {string} */
-                            template: "messageForms";
-                            /** @enum {string} */
-                            version: "1.2";
-                        };
-                        images?: {
-                            description?: string | null;
-                            identifier: string;
-                            name: string | null;
-                        }[];
-                    };
-                    /** @enum {string} */
-                    kind: "amb.form";
-                    receivedMessage: {
-                        alternateTitle?: string;
-                        imageDescription?: string;
-                        imageIdentifier?: string;
-                        imageSubtitle?: string;
-                        imageTitle?: string;
-                        secondarySubtitle?: string;
-                        /** @enum {string} */
-                        style?: "icon" | "small" | "large";
-                        subtitle?: string;
-                        tertiarySubtitle?: string;
-                        title: string;
-                    };
-                    replyMessage: {
-                        alternateTitle?: string;
-                        imageDescription?: string;
-                        imageIdentifier?: string;
-                        imageSubtitle?: string;
-                        imageTitle?: string;
-                        secondarySubtitle?: string;
-                        /** @enum {string} */
-                        style?: "icon" | "small" | "large";
-                        subtitle?: string;
-                        tertiarySubtitle?: string;
-                        title: string;
-                    };
-                } | {
-                    data: {
-                        authenticate: {
-                            oauth2: {
-                                /** Format: uri */
-                                redirectURI: string;
-                                /** @enum {string} */
-                                responseType: "code";
-                                scope: string[];
-                            };
-                        };
-                        images?: {
-                            description?: string | null;
-                            identifier: string;
-                            name: string | null;
-                        }[];
-                    };
-                    /** @enum {string} */
-                    kind: "amb.authentication";
-                    receivedMessage: {
-                        alternateTitle?: string;
-                        imageDescription?: string;
-                        imageIdentifier?: string;
-                        imageSubtitle?: string;
-                        imageTitle?: string;
-                        secondarySubtitle?: string;
-                        /** @enum {string} */
-                        style?: "icon" | "small" | "large";
-                        subtitle?: string;
-                        tertiarySubtitle?: string;
-                        title: string;
-                    };
-                    replyMessage: {
-                        alternateTitle?: string;
-                        imageDescription?: string;
-                        imageIdentifier?: string;
-                        imageSubtitle?: string;
-                        imageTitle?: string;
-                        secondarySubtitle?: string;
-                        /** @enum {string} */
-                        style?: "icon" | "small" | "large";
-                        subtitle?: string;
-                        tertiarySubtitle?: string;
-                        title: string;
-                    };
-                } | {
-                    /** @enum {string} */
-                    kind: "amb.rich_link";
-                    richLinkData?: {
-                        assets: {
-                            image: {
-                                data: {
-                                    name: string | null;
-                                };
-                                /** @enum {string} */
-                                mimeType: "image/png";
-                            };
-                            video?: {
-                                mimeType: string;
-                                /** Format: uri */
-                                url: string;
-                            };
-                        };
-                        title: string;
-                        /** Format: uri */
-                        url: string;
-                    };
-                    richLinkDataRef?: {
-                        title?: string;
-                        /** Format: uri */
-                        url: string;
-                    };
-                } | {
-                    appIcon?: {
-                        name: string | null;
-                    };
-                    appId: string;
-                    appName: string;
-                    bid: string;
-                    /** @enum {string} */
-                    kind: "amb.imessage_app";
-                    receivedMessage: {
-                        alternateTitle?: string;
-                        imageDescription?: string;
-                        imageIdentifier?: string;
-                        imageSubtitle?: string;
-                        imageTitle?: string;
-                        secondarySubtitle?: string;
-                        /** @enum {string} */
-                        style?: "icon" | "small" | "large";
-                        subtitle?: string;
-                        tertiarySubtitle?: string;
-                        title: string;
-                    };
-                    replyMessage?: {
-                        alternateTitle?: string;
-                        imageDescription?: string;
-                        imageIdentifier?: string;
-                        imageSubtitle?: string;
-                        imageTitle?: string;
-                        secondarySubtitle?: string;
-                        /** @enum {string} */
-                        style?: "icon" | "small" | "large";
-                        subtitle?: string;
-                        tertiarySubtitle?: string;
-                        title: string;
-                    };
-                    sessionIdentifier?: string;
-                    URL: string;
-                    useLiveLayout: boolean;
-                } | {
-                    data: {
-                        notification: {
-                            locale?: string;
-                            parameters: {
-                                brandLogo: {
-                                    name: string | null;
-                                };
-                                brandName: string;
-                            };
-                            referenceId: string;
-                            /** @enum {string} */
-                            templateId: "binaryChoice.engage.withImage";
-                        };
-                    };
-                    /** @enum {string} */
-                    kind: "amb.invitation";
-                    useLiveLayout: boolean;
-                }) & {
-                    source: {
-                        /** @enum {string} */
-                        type: "direct";
-                    } | {
-                        /** @enum {string} */
-                        type: "raw";
-                    } | {
-                        name: string;
-                        /** Format: uuid */
-                        templateId: string;
-                        /** @enum {string} */
-                        type: "template";
-                    };
-                };
-                /** Format: uuid */
-                conversationId: string;
-                /** Format: date-time */
-                createdAt: string;
-                /** @enum {string} */
-                direction: "outbound";
-                externalId: string;
-                /** Format: uuid */
-                id: string;
-                /** @enum {boolean} */
-                redacted: false;
-            } | {
-                actor: {
-                    /** @enum {string} */
-                    type: "customer";
-                };
-                attachments: {
-                    /** Format: uri */
-                    accessUrl: string | null;
-                    /** Format: date-time */
-                    accessUrlExpiresAt: string | null;
-                    /** Format: uuid */
-                    id: string;
-                    mimeType: string | null;
-                    originalFileName: string | null;
-                    sizeBytes: number | null;
-                    sortOrder: number;
-                    /** @enum {string} */
-                    status: "pending" | "ready" | "failed";
-                }[];
-                /** @enum {string} */
-                channel: "amb";
-                content: {
-                    body: string;
-                    /** @enum {string} */
-                    kind: "text";
-                    subject?: string;
-                } | {
-                    /** @enum {string} */
-                    kind: "opt_out";
-                } | {
-                    data: {
-                        images?: {
-                            description?: string | null;
-                            identifier: string;
-                            name: string | null;
-                        }[];
-                        "quick-reply": {
-                            items?: {
-                                identifier: string;
-                                title: string;
-                            }[];
-                            selectedIdentifier?: string;
-                            selectedIndex?: number;
-                        };
-                        receivedMessage?: {
-                            alternateTitle?: string;
-                            imageDescription?: string;
-                            imageIdentifier?: string;
-                            imageSubtitle?: string;
-                            imageTitle?: string;
-                            secondarySubtitle?: string;
-                            /** @enum {string} */
-                            style?: "icon" | "small" | "large";
-                            subtitle?: string;
-                            tertiarySubtitle?: string;
-                            title: string;
-                        };
-                        replyMessage?: {
-                            alternateTitle?: string;
-                            imageDescription?: string;
-                            imageIdentifier?: string;
-                            imageSubtitle?: string;
-                            imageTitle?: string;
-                            secondarySubtitle?: string;
-                            /** @enum {string} */
-                            style?: "icon" | "small" | "large";
-                            subtitle?: string;
-                            tertiarySubtitle?: string;
-                            title: string;
-                        };
-                        requestIdentifier?: string;
-                    };
-                    /** @enum {string} */
-                    kind: "amb.quick_reply_response";
-                    sessionIdentifier?: string;
-                } | {
-                    data: {
-                        images?: {
-                            description?: string | null;
-                            identifier: string;
-                            name: string | null;
-                        }[];
-                        listPicker: {
-                            sections: {
-                                items: {
-                                    identifier: string;
-                                    imageIdentifier?: string;
-                                    order?: number;
-                                    style?: string;
-                                    subtitle?: string;
-                                    title?: string;
-                                }[];
-                                title?: string;
-                            }[];
-                        };
-                        receivedMessage?: {
-                            alternateTitle?: string;
-                            imageDescription?: string;
-                            imageIdentifier?: string;
-                            imageSubtitle?: string;
-                            imageTitle?: string;
-                            secondarySubtitle?: string;
-                            /** @enum {string} */
-                            style?: "icon" | "small" | "large";
-                            subtitle?: string;
-                            tertiarySubtitle?: string;
-                            title: string;
-                        };
-                        replyMessage?: {
-                            alternateTitle?: string;
-                            imageDescription?: string;
-                            imageIdentifier?: string;
-                            imageSubtitle?: string;
-                            imageTitle?: string;
-                            secondarySubtitle?: string;
-                            /** @enum {string} */
-                            style?: "icon" | "small" | "large";
-                            subtitle?: string;
-                            tertiarySubtitle?: string;
-                            title: string;
-                        };
-                        requestIdentifier?: string;
-                    };
-                    /** @enum {string} */
-                    kind: "amb.list_picker_response";
-                    sessionIdentifier?: string;
-                } | {
-                    data: {
-                        event: {
-                            identifier: string;
-                            imageIdentifier?: string;
-                            location?: {
-                                latitude?: number;
-                                longitude?: number;
-                                radius?: number;
-                                title?: string;
-                            };
-                            timeslots: {
-                                duration: number;
-                                identifier: string;
-                                startTime: string;
-                            }[];
-                            timezoneOffset?: number;
-                            title?: string;
-                        };
-                        images?: {
-                            description?: string | null;
-                            identifier: string;
-                            name: string | null;
-                        }[];
-                        receivedMessage?: {
-                            alternateTitle?: string;
-                            imageDescription?: string;
-                            imageIdentifier?: string;
-                            imageSubtitle?: string;
-                            imageTitle?: string;
-                            secondarySubtitle?: string;
-                            /** @enum {string} */
-                            style?: "icon" | "small" | "large";
-                            subtitle?: string;
-                            tertiarySubtitle?: string;
-                            title: string;
-                        };
-                        replyMessage?: {
-                            alternateTitle?: string;
-                            imageDescription?: string;
-                            imageIdentifier?: string;
-                            imageSubtitle?: string;
-                            imageTitle?: string;
-                            secondarySubtitle?: string;
-                            /** @enum {string} */
-                            style?: "icon" | "small" | "large";
-                            subtitle?: string;
-                            tertiarySubtitle?: string;
-                            title: string;
-                        };
-                        requestIdentifier?: string;
-                    };
-                    /** @enum {string} */
-                    kind: "amb.time_picker_response";
-                    sessionIdentifier?: string;
-                } | {
-                    data: {
-                        dynamic: {
-                            private?: boolean;
-                            selections: {
-                                items: {
-                                    identifier: string;
-                                    title?: string;
-                                    /** @enum {string} */
-                                    type?: "select" | "picker" | "datePicker" | "input";
-                                    value?: string;
-                                }[];
-                                pageIdentifier: string;
-                                subtitle?: string;
-                                title?: string;
-                            }[];
-                            /** @enum {string} */
-                            template: "messageForms";
-                            /** @enum {string} */
-                            version: "1.2";
-                        };
-                        images?: {
-                            description?: string | null;
-                            identifier: string;
-                            name: string | null;
-                        }[];
-                        receivedMessage?: {
-                            alternateTitle?: string;
-                            imageDescription?: string;
-                            imageIdentifier?: string;
-                            imageSubtitle?: string;
-                            imageTitle?: string;
-                            secondarySubtitle?: string;
-                            /** @enum {string} */
-                            style?: "icon" | "small" | "large";
-                            subtitle?: string;
-                            tertiarySubtitle?: string;
-                            title: string;
-                        };
-                        replyMessage?: {
-                            alternateTitle?: string;
-                            imageDescription?: string;
-                            imageIdentifier?: string;
-                            imageSubtitle?: string;
-                            imageTitle?: string;
-                            secondarySubtitle?: string;
-                            /** @enum {string} */
-                            style?: "icon" | "small" | "large";
-                            subtitle?: string;
-                            tertiarySubtitle?: string;
-                            title: string;
-                        };
-                        requestIdentifier?: string;
-                    };
-                    /** @enum {string} */
-                    kind: "amb.form_response";
-                    sessionIdentifier?: string;
-                } | {
-                    data: {
-                        authenticate: {
-                            error_code?: string;
-                            /** @enum {string} */
-                            status: "success" | "failure" | "cancel" | "unknown";
-                        };
-                        images?: {
-                            description?: string | null;
-                            identifier: string;
-                            name: string | null;
-                        }[];
-                        receivedMessage?: {
-                            alternateTitle?: string;
-                            imageDescription?: string;
-                            imageIdentifier?: string;
-                            imageSubtitle?: string;
-                            imageTitle?: string;
-                            secondarySubtitle?: string;
-                            /** @enum {string} */
-                            style?: "icon" | "small" | "large";
-                            subtitle?: string;
-                            tertiarySubtitle?: string;
-                            title: string;
-                        };
-                        replyMessage?: {
-                            alternateTitle?: string;
-                            imageDescription?: string;
-                            imageIdentifier?: string;
-                            imageSubtitle?: string;
-                            imageTitle?: string;
-                            secondarySubtitle?: string;
-                            /** @enum {string} */
-                            style?: "icon" | "small" | "large";
-                            subtitle?: string;
-                            tertiarySubtitle?: string;
-                            title: string;
-                        };
-                        requestIdentifier?: string;
-                    };
-                    /** @enum {string} */
-                    kind: "amb.authentication_response";
-                    sessionIdentifier?: string;
-                } | {
-                    appIcon?: {
-                        name: string | null;
-                    };
-                    bid: string;
-                    /** @enum {string} */
-                    kind: "amb.imessage_app_response";
-                    receivedMessage?: {
-                        alternateTitle?: string;
-                        imageDescription?: string;
-                        imageIdentifier?: string;
-                        imageSubtitle?: string;
-                        imageTitle?: string;
-                        secondarySubtitle?: string;
-                        /** @enum {string} */
-                        style?: "icon" | "small" | "large";
-                        subtitle?: string;
-                        tertiarySubtitle?: string;
-                        title: string;
-                    };
-                    replyMessage?: {
-                        alternateTitle?: string;
-                        imageDescription?: string;
-                        imageIdentifier?: string;
-                        imageSubtitle?: string;
-                        imageTitle?: string;
-                        secondarySubtitle?: string;
-                        /** @enum {string} */
-                        style?: "icon" | "small" | "large";
-                        subtitle?: string;
-                        tertiarySubtitle?: string;
-                        title: string;
-                    };
-                    sessionIdentifier?: string;
-                    URL?: string;
-                } | {
-                    /** @enum {string} */
-                    kind: "amb.invitation_response";
-                    requestIdentifier: string;
-                    /** @enum {string} */
-                    result: "accepted";
-                    sessionIdentifier: string | null;
-                } | {
-                    bid: string | null;
-                    /** @enum {string} */
-                    kind: "amb.unrecognized_interactive_response";
-                    markers: string[];
-                    requestIdentifier: string | null;
-                    sessionIdentifier: string | null;
-                };
-                /** Format: uuid */
-                conversationId: string;
-                /** Format: date-time */
-                createdAt: string;
-                /** @enum {string} */
-                direction: "inbound";
-                externalId: string;
-                /** Format: uuid */
-                id: string;
-                /** @enum {boolean} */
-                redacted: false;
-            } | {
-                actor: {
-                    /** @enum {string} */
-                    type: "customer";
-                };
-                attachments: {
-                    /** Format: uri */
-                    accessUrl: string | null;
-                    /** Format: date-time */
-                    accessUrlExpiresAt: string | null;
-                    /** Format: uuid */
-                    id: string;
-                    mimeType: string | null;
-                    originalFileName: string | null;
-                    sizeBytes: number | null;
-                    sortOrder: number;
-                    /** @enum {string} */
-                    status: "pending" | "ready" | "failed";
-                }[];
-                /** @enum {string} */
-                channel: "amb";
-                content: null;
-                /** Format: uuid */
-                conversationId: string;
-                /** Format: date-time */
-                createdAt: string;
-                /** @enum {string} */
-                direction: "inbound";
-                externalId: string;
-                /** Format: uuid */
-                id: string;
-                /** @enum {boolean} */
-                redacted: true;
-            } | {
-                actor: {
-                    /** Format: uuid */
-                    id: string;
-                    /** @enum {string} */
-                    type: "user";
-                } | {
-                    /** Format: uuid */
-                    id: string;
-                    /** @enum {string} */
-                    type: "integration";
-                } | {
-                    /** @enum {string} */
-                    type: "system";
-                };
-                attachments: {
-                    /** Format: uri */
-                    accessUrl: string | null;
-                    /** Format: date-time */
-                    accessUrlExpiresAt: string | null;
-                    /** Format: uuid */
-                    id: string;
-                    mimeType: string | null;
-                    originalFileName: string | null;
-                    sizeBytes: number | null;
-                    sortOrder: number;
-                    /** @enum {string} */
-                    status: "pending" | "ready" | "failed";
-                }[];
-                /** @enum {string} */
-                channel: "amb";
-                content: null;
-                /** Format: uuid */
-                conversationId: string;
-                /** Format: date-time */
-                createdAt: string;
-                /** @enum {string} */
-                direction: "outbound";
-                externalId: string;
-                /** Format: uuid */
-                id: string;
-                /** @enum {boolean} */
-                redacted: true;
-            })[];
+            /** @description True while the customer is opted out of messaging. Set by an inbound `opt_out` message and cleared by the next customer-authored message. */
             optedOut: boolean;
-            /** @enum {string} */
+            /**
+             * @description Conversation lifecycle state. New conversations start `active`; `opted_out` mirrors `optedOut: true` and returns to `active` on the next customer-authored message.
+             * @enum {string}
+             */
             status: "active" | "closed" | "opted_out";
             /** Format: date-time */
             updatedAt: string;
         };
-        /** @description A single conversation summary returned by the conversation list endpoint. */
-        ConversationListItem: {
-            /** @enum {string} */
+        /** @description A single conversation with its message window. */
+        ConversationDetail: {
+            /**
+             * @description Who handles replies: `bot` for automated handling, `live` for a human agent, `closed` for nobody. Integrations receive `message.received` only when their `aiMode` matches (`bot` ↔ `ai_enabled`, `live` ↔ `ai_disabled`, `both` ↔ either; `closed` delivers to none). Outbound channel messages are flagged as automatic replies unless `live`.
+             * @enum {string}
+             */
             agentStatus: "bot" | "live" | "closed";
             /** Format: uuid */
             assignedUserId: string | null;
             /** Format: uuid */
             businessId: string;
+            /** @description Interactive capabilities the customer device last reported (AMB `Capability-List` header); null when never reported, [] when the reported set is empty. */
             capabilityList: ("QUICK" | "LIST" | "TIME" | "AUTH" | "AUTH2" | "FORM")[] | null;
+            /** @description Customer channel-specific address stored on the conversation; not a message ID or necessarily a phone number. */
             channelAddress: string;
             /** @enum {string} */
             channelPlatform: "amb";
@@ -1511,85 +834,576 @@ export interface components {
             createdAt: string;
             email: string | null;
             firstName: string | null;
+            /** @description Group identifier from the most recent inbound message that carried one (AMB `group` envelope field); null when no inbound message has supplied one. */
             groupId: string | null;
             /** Format: uuid */
             id: string;
+            /** @description Intent identifier from the most recent inbound message that carried one (AMB `intent` envelope field); null when no inbound message has supplied one. */
             intentId: string | null;
             /** Format: date-time */
             lastMessageAt: string;
             lastName: string | null;
             locale: string | null;
+            messages: components["schemas"]["ConversationMessage"][];
+            /** @description True while the customer is opted out of messaging. Set by an inbound `opt_out` message and cleared by the next customer-authored message. */
             optedOut: boolean;
-            /** @enum {string} */
+            /**
+             * @description Conversation lifecycle state. New conversations start `active`; `opted_out` mirrors `optedOut: true` and returns to `active` on the next customer-authored message.
+             * @enum {string}
+             */
             status: "active" | "closed" | "opted_out";
             /** Format: date-time */
             updatedAt: string;
         };
-        /** @description A cursor-paginated page of conversation summaries. */
-        ConversationListResponse: {
-            conversations: {
-                /** @enum {string} */
-                agentStatus: "bot" | "live" | "closed";
-                /** Format: uuid */
-                assignedUserId: string | null;
-                /** Format: uuid */
-                businessId: string;
-                capabilityList: ("QUICK" | "LIST" | "TIME" | "AUTH" | "AUTH2" | "FORM")[] | null;
-                channelAddress: string;
-                /** @enum {string} */
-                channelPlatform: "amb";
-                /** Format: date-time */
-                createdAt: string;
-                email: string | null;
-                firstName: string | null;
-                groupId: string | null;
-                /** Format: uuid */
-                id: string;
-                intentId: string | null;
-                /** Format: date-time */
-                lastMessageAt: string;
-                lastName: string | null;
-                locale: string | null;
-                optedOut: boolean;
-                /** @enum {string} */
-                status: "active" | "closed" | "opted_out";
-                /** Format: date-time */
-                updatedAt: string;
-            }[];
+        /** @description A cursor-paginated page of conversations. */
+        ConversationList: {
+            conversations: components["schemas"]["Conversation"][];
+            /** Format: uuid */
             nextCursor: string | null;
         };
-        CreateMessagingInvitation: {
+        /** @description Stored message in a conversation history window, including explicit redaction. */
+        ConversationMessage: {
+            actor: {
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                type: "user";
+            } | {
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                type: "integration";
+            } | {
+                /** @enum {string} */
+                type: "system";
+            };
+            attachments: components["schemas"]["ConversationMessageAttachment"][];
+            /** @enum {string} */
+            channel: "amb";
+            content: Omit<components["schemas"]["OutboundMessageContent"], "kind"> & {
+                source: {
+                    /** @enum {string} */
+                    type: "direct";
+                } | {
+                    /** @enum {string} */
+                    type: "raw";
+                } | {
+                    name: string;
+                    /** Format: uuid */
+                    templateId: string;
+                    /** @enum {string} */
+                    type: "template";
+                };
+            };
+            /** Format: uuid */
+            conversationId: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            direction: "outbound";
+            externalId: string;
+            /** Format: uuid */
+            id: string;
+            /** @enum {boolean} */
+            redacted: false;
+        } | {
+            actor: {
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                type: "user";
+            } | {
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                type: "integration";
+            } | {
+                /** @enum {string} */
+                type: "system";
+            };
+            attachments: components["schemas"]["ConversationMessageAttachment"][];
+            /** @enum {string} */
+            channel: "amb";
+            content: null;
+            /** Format: uuid */
+            conversationId: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            direction: "outbound";
+            externalId: string;
+            /** Format: uuid */
+            id: string;
+            /** @enum {boolean} */
+            redacted: true;
+        } | {
+            actor: {
+                /** @enum {string} */
+                type: "customer";
+            };
+            attachments: components["schemas"]["ConversationMessageAttachment"][];
+            /** @enum {string} */
+            channel: "amb";
+            content: components["schemas"]["InboundMessageContent"];
+            /** Format: uuid */
+            conversationId: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            direction: "inbound";
+            externalId: string;
+            /** Format: uuid */
+            id: string;
+            /** @enum {boolean} */
+            redacted: false;
+        } | {
+            actor: {
+                /** @enum {string} */
+                type: "customer";
+            };
+            attachments: components["schemas"]["ConversationMessageAttachment"][];
+            /** @enum {string} */
+            channel: "amb";
+            content: null;
+            /** Format: uuid */
+            conversationId: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            direction: "inbound";
+            externalId: string;
+            /** Format: uuid */
+            id: string;
+            /** @enum {boolean} */
+            redacted: true;
+        };
+        /** @description Attachment metadata for a stored conversation message. */
+        ConversationMessageAttachment: {
+            /** Format: uri */
+            accessUrl: string | null;
+            /** Format: date-time */
+            accessUrlExpiresAt: string | null;
+            /** Format: uuid */
+            id: string;
+            mimeType: string | null;
+            originalFileName: string | null;
+            sizeBytes: number | null;
+            sortOrder: number;
+            /** @enum {string} */
+            status: "pending" | "ready" | "failed";
+        };
+        /** @description Request to invite a phone number into a conversation on the `amb` channel. `requestMessageId` makes the request idempotent; `branding` is accepted only when custom branding is approved for the business. Unknown fields are rejected. */
+        CreateMessagingInvitationBody: {
             branding?: {
                 /** @description Canonical padded RFC 4648 Base64 only. The decoded value is also validated as a product-accepted PNG. */
                 brandLogoPngBase64: string;
                 /** @description Brand name is trimmed before validation and must contain 1–255 Unicode code points with no control characters. */
                 brandName: string;
             };
+            /** @description Non-blank invitation reference up to 1,000 Unicode code points without lone surrogates, controls, ../, or straight quotes. When omitted or null, the invitation ID is used. */
             callerReference?: string | null;
             /** @enum {string} */
             channel: "amb";
+            /** @description Recipient phone number. It is trimmed, then validated as strict E.164. */
             phoneNumber: string;
             /** @enum {string} */
             purpose: "connect";
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description Caller-generated request identifier used for idempotency. Reusing it with identical request bytes replays the accepted result.
+             */
             requestMessageId: string;
-            /** @enum {string} */
+            /**
+             * @description Agent status applied to the conversation when the customer accepts. When omitted, a conversation created by the acceptance starts `bot`; an existing conversation keeps its status.
+             * @enum {string}
+             */
             targetAgentStatus?: "bot" | "live";
+            /** @description Optional target first name. It is trimmed, then must contain 1–255 Unicode code points with no control characters. */
             targetFirstName?: string;
+            /** @description Optional target last name. It is trimmed, then must contain 1–255 Unicode code points with no control characters. */
             targetLastName?: string;
         };
-        /** @description Common error envelope used where declared: an `error` string describing what went wrong, plus an optional machine-readable `code`. */
-        ErrorResponse: {
+        /** @description Confirms the resource was deleted. Always `{ "deleted": true }`. */
+        DeleteResult: {
+            /** @enum {boolean} */
+            deleted: true;
+        };
+        /** @description Stored inbound message content. `kind` selects the persisted channel response shape. */
+        InboundMessageContent: components["schemas"]["InboundMessageContentText"] | components["schemas"]["InboundMessageContentOptOut"] | components["schemas"]["InboundMessageContentAmbQuickReplyResponse"] | components["schemas"]["InboundMessageContentAmbListPickerResponse"] | components["schemas"]["InboundMessageContentAmbTimePickerResponse"] | components["schemas"]["InboundMessageContentAmbFormResponse"] | components["schemas"]["InboundMessageContentAmbAuthenticationResponse"] | components["schemas"]["InboundMessageContentAmbImessageAppResponse"] | components["schemas"]["InboundMessageContentAmbInvitationResponse"] | components["schemas"]["InboundMessageContentAmbUnrecognizedInteractiveResponse"];
+        /** @description Stored inbound amb.authentication_response content. */
+        InboundMessageContentAmbAuthenticationResponse: {
+            data: {
+                authenticate: {
+                    error_code?: string;
+                    /** @enum {string} */
+                    status: "success" | "failure" | "cancel" | "unknown";
+                };
+                images?: {
+                    description?: string | null;
+                    identifier: string;
+                    name: string | null;
+                }[];
+                receivedMessage?: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    /** @description Image identifier for this bubble. */
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title: string;
+                };
+                replyMessage?: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    /** @description Image identifier for this bubble. */
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title: string;
+                };
+                requestIdentifier?: string;
+            };
             /**
-             * @description Stable machine-readable reason code, present when the failure has one the client is expected to branch on (e.g. mapping it to a field-level message).
-             * @example logo_format_unsupported
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
-            code?: string;
+            kind: "amb.authentication_response";
+            sessionIdentifier?: string;
+        };
+        /** @description Stored inbound amb.form_response content. */
+        InboundMessageContentAmbFormResponse: {
+            data: {
+                dynamic: {
+                    private?: boolean;
+                    selections: {
+                        items: {
+                            identifier: string;
+                            title?: string;
+                            /** @enum {string} */
+                            type?: "select" | "picker" | "datePicker" | "input";
+                            value?: string;
+                        }[];
+                        pageIdentifier: string;
+                        subtitle?: string;
+                        title?: string;
+                    }[];
+                    /** @enum {string} */
+                    template: "messageForms";
+                    /** @enum {string} */
+                    version: "1.2";
+                };
+                images?: {
+                    description?: string | null;
+                    identifier: string;
+                    name: string | null;
+                }[];
+                receivedMessage?: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    /** @description Image identifier for this bubble. */
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title: string;
+                };
+                replyMessage?: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    /** @description Image identifier for this bubble. */
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title: string;
+                };
+                requestIdentifier?: string;
+            };
             /**
-             * @description Human-readable explanation of why the request failed.
-             * @example Conversation not found for this business
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
-            error: string;
+            kind: "amb.form_response";
+            sessionIdentifier?: string;
+        };
+        /** @description Stored inbound amb.imessage_app_response content. */
+        InboundMessageContentAmbImessageAppResponse: {
+            appIcon?: {
+                name: string | null;
+            };
+            bid: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.imessage_app_response";
+            receivedMessage?: {
+                alternateTitle?: string;
+                imageDescription?: string;
+                /** @description Image identifier for this bubble. */
+                imageIdentifier?: string;
+                imageSubtitle?: string;
+                imageTitle?: string;
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                subtitle?: string;
+                tertiarySubtitle?: string;
+                title: string;
+            };
+            replyMessage?: {
+                alternateTitle?: string;
+                imageDescription?: string;
+                /** @description Image identifier for this bubble. */
+                imageIdentifier?: string;
+                imageSubtitle?: string;
+                imageTitle?: string;
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                subtitle?: string;
+                tertiarySubtitle?: string;
+                title: string;
+            };
+            sessionIdentifier?: string;
+            URL?: string;
+        };
+        /** @description Stored inbound amb.invitation_response content. */
+        InboundMessageContentAmbInvitationResponse: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.invitation_response";
+            requestIdentifier: string;
+            /** @enum {string} */
+            result: "accepted";
+            sessionIdentifier: string | null;
+        };
+        /** @description Stored inbound amb.list_picker_response content. */
+        InboundMessageContentAmbListPickerResponse: {
+            data: {
+                images?: {
+                    description?: string | null;
+                    identifier: string;
+                    name: string | null;
+                }[];
+                listPicker: {
+                    sections: {
+                        items: {
+                            /** @description List picker item identifier. */
+                            identifier: string;
+                            /** @description Identifier of an item in data.images. */
+                            imageIdentifier?: string;
+                            order?: number;
+                            style?: string;
+                            subtitle?: string;
+                            title?: string;
+                        }[];
+                        title?: string;
+                    }[];
+                };
+                receivedMessage?: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    /** @description Image identifier for this bubble. */
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title: string;
+                };
+                replyMessage?: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    /** @description Image identifier for this bubble. */
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title: string;
+                };
+                requestIdentifier?: string;
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.list_picker_response";
+            sessionIdentifier?: string;
+        };
+        /** @description Stored inbound amb.quick_reply_response content. */
+        InboundMessageContentAmbQuickReplyResponse: {
+            data: {
+                images?: {
+                    description?: string | null;
+                    identifier: string;
+                    name: string | null;
+                }[];
+                "quick-reply": {
+                    items?: {
+                        identifier: string;
+                        title: string;
+                    }[];
+                    selectedIdentifier?: string;
+                    selectedIndex?: number;
+                };
+                receivedMessage?: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    /** @description Image identifier for this bubble. */
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title: string;
+                };
+                replyMessage?: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    /** @description Image identifier for this bubble. */
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title: string;
+                };
+                requestIdentifier?: string;
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.quick_reply_response";
+            sessionIdentifier?: string;
+        };
+        /** @description Stored inbound amb.time_picker_response content. */
+        InboundMessageContentAmbTimePickerResponse: {
+            data: {
+                event: {
+                    identifier: string;
+                    /** @description Identifier of an item in data.images. */
+                    imageIdentifier?: string;
+                    location?: {
+                        latitude?: number;
+                        longitude?: number;
+                        radius?: number;
+                        title?: string;
+                    };
+                    timeslots: {
+                        duration: number;
+                        /** @description Time slot identifier. */
+                        identifier: string;
+                        startTime: string;
+                    }[];
+                    timezoneOffset?: number;
+                    title?: string;
+                };
+                images?: {
+                    description?: string | null;
+                    identifier: string;
+                    name: string | null;
+                }[];
+                receivedMessage?: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    /** @description Image identifier for this bubble. */
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title: string;
+                };
+                replyMessage?: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    /** @description Image identifier for this bubble. */
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title: string;
+                };
+                requestIdentifier?: string;
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.time_picker_response";
+            sessionIdentifier?: string;
+        };
+        /** @description Stored inbound amb.unrecognized_interactive_response content. */
+        InboundMessageContentAmbUnrecognizedInteractiveResponse: {
+            bid: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.unrecognized_interactive_response";
+            markers: string[];
+            requestIdentifier: string | null;
+            sessionIdentifier: string | null;
+        };
+        /** @description Stored inbound opt_out content. */
+        InboundMessageContentOptOut: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "opt_out";
+        };
+        /** @description Stored inbound text content. */
+        InboundMessageContentText: {
+            body: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "text";
+            subject?: string;
         };
         /**
          * @description A freshly minted integration (`type: "api"`) access JWT plus its expiry and the integration’s display-only authorization grant (for capability discovery).
@@ -1606,11 +1420,14 @@ export interface components {
          *       }
          *     }
          */
-        IntegrationTokenResponse: {
-            /** @description ISO-8601 instant at which the token expires. */
+        IntegrationTokenResult: {
+            /**
+             * Format: date-time
+             * @description ISO-8601 instant at which this integration JWT expires.
+             */
             expiresAt: string;
             grant: components["schemas"]["ActorGrant"];
-            /** @description The short-lived business access JWT. Send it as `Authorization: Bearer <token>` and re-exchange the API key after `expiresAt`. */
+            /** @description The integration business access JWT. */
             token: string;
             /**
              * @description Token scheme. Always `Bearer` — send the token as `Authorization: Bearer <token>` on subsequent API calls.
@@ -1624,10 +1441,16 @@ export interface components {
             type: "api";
         };
         /** @description Returned when a signed read URL has been generated for a ready attachment (HTTP 200). */
-        MediaAccessUrlSuccess: {
-            /** @description The attachment identifier the access URL was minted for (echoes the request). */
+        MediaAccessUrlResult: {
+            /**
+             * Format: uuid
+             * @description The attachment identifier the access URL was minted for (echoes the request).
+             */
             attachmentId: string;
-            /** @description ISO-8601 (UTC) timestamp at which the signed `url` stops being valid. Re-request this endpoint to obtain a fresh URL after expiry. */
+            /**
+             * Format: date-time
+             * @description ISO-8601 (UTC) timestamp at which the signed `url` stops being valid. Re-request this endpoint to obtain a fresh URL after expiry.
+             */
             expiresAt: string;
             /**
              * Format: uri
@@ -1635,15 +1458,25 @@ export interface components {
              */
             url: string;
         };
-        /** @description Returned when the media asset is ready to use. */
-        MediaUploadSuccess: {
-            /** @description Identifier of the uploaded media asset. Reference it as an `attachmentId` when sending a message (`POST /api/v0/messaging/send`) or when minting a read URL (`GET /api/v0/media/attachments/{attachmentId}/access-url`). */
+        /** @description Returned after the asset is stored successfully. */
+        MediaUploadResult: {
+            /**
+             * Format: uuid
+             * @description Identifier of the uploaded media asset. Send it in `attachmentIds` with `POST /api/v0/messaging/send`. That send creates a distinct stored message attachment; use the resulting `messages[].attachments[].id` from conversation history to mint a read URL.
+             */
             mediaAssetId: string;
         };
+        /** @description A messaging invitation and its delivery lifecycle. `status` moves from `submitting` through `submitted` to `accepted`, `declined`, `provider_rejected`, or `error`; `reasonCode` explains a rejection or error and `conversationId` is set once the recipient accepts. */
         MessagingInvitation: {
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description Identifier of the creating actor: the user id when `actorType` is `user`, the integration id when it is `integration`.
+             */
             actorId: string;
-            /** @enum {string} */
+            /**
+             * @description Kind of authenticated actor that created the invitation: `user` for a member’s business JWT, `integration` for an integration JWT.
+             * @enum {string}
+             */
             actorType: "user" | "integration";
             callerReference: string | null;
             /** @enum {string} */
@@ -1654,7 +1487,10 @@ export interface components {
             createdAt: string;
             /** @description callerReference when supplied, otherwise the messaging invitation ID. */
             effectiveReference: string;
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description Messaging invitation identifier (UUIDv7).
+             */
             id: string;
             /** @enum {string} */
             purpose: "connect";
@@ -1662,25 +1498,45 @@ export interface components {
             reasonCode: "recipient_unavailable" | "provider_rejected" | "provider_error" | "transport_error" | null;
             /** @enum {string} */
             status: "submitting" | "submitted" | "provider_rejected" | "error" | "accepted" | "declined";
-            /** @enum {string|null} */
+            /**
+             * @description Agent status applied to the conversation when the customer accepts. `null` when the request did not set one, in which case a conversation created by the acceptance starts `bot` and an existing conversation keeps its status.
+             * @enum {string|null}
+             */
             targetAgentStatus: "bot" | "live" | null;
             targetFirstName: string | null;
             targetLastName: string | null;
             /** Format: date-time */
             updatedAt: string;
         };
+        /** @description Returned with 413 when the request body exceeds the messaging-invitation size cap before it is parsed. */
         MessagingInvitationBodyCapError: {
             error: string;
         };
+        /** @description Malformed JSON or a request validation error. */
+        MessagingInvitationCreateRequestError: {
+            error: string;
+        } | components["schemas"]["MessagingInvitationRequestError"];
+        /** @description Messaging invitation acceptance result. `duplicate` is true for an idempotent replay. */
+        MessagingInvitationCreateResult: {
+            duplicate: boolean;
+            /**
+             * Format: uuid
+             * @description Messaging invitation id. Use it as `messagingInvitationId` when reading the invitation.
+             */
+            messageId: string;
+        };
+        /** @description Error envelope for a rejected messaging-invitation request. `error` is a stable reason code: request conflicts (`request_mismatch`, `request_in_progress`) return 409, validation and eligibility failures return 422, and `not_found` returns 404. */
         MessagingInvitationError: {
             /** @enum {string} */
-            error: "invalid_recipient" | "invalid_reference" | "invalid_target_name" | "request_mismatch" | "request_in_progress" | "messaging_invitation_unavailable" | "custom_branding_not_approved" | "invalid_brand_logo" | "not_found";
+            error: "invalid_recipient" | "invalid_target_name" | "request_mismatch" | "request_in_progress" | "messaging_invitation_unavailable" | "custom_branding_not_approved" | "invalid_brand_logo" | "not_found";
         };
+        /** @description A cursor-paginated page of messaging invitations, newest first. Pass `nextCursor` as `cursor` to fetch the next page; it is `null` on the final page. */
         MessagingInvitationList: {
             messagingInvitations: components["schemas"]["MessagingInvitation"][];
             /** Format: uuid */
             nextCursor: string | null;
         };
+        /** @description Request validation failure: `error` is `validation_failed` and `issues` lists each offending field path with its message. */
         MessagingInvitationRequestError: {
             /** @enum {string} */
             error: "validation_failed";
@@ -1689,15 +1545,1172 @@ export interface components {
                 path: string;
             }[];
         };
+        /** @description Returned with 502 when the invitation was recorded but the channel rejected it or the send failed. The invitation remains readable by `messageId`; `reasonCode` explains the failure. */
         MessagingInvitationSendFailure: {
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description Messaging invitation id of the recorded, undelivered invitation.
+             */
             messageId: string;
             /** @enum {string} */
             reasonCode: "recipient_unavailable" | "provider_rejected" | "provider_error" | "transport_error";
         };
-        RichAssetDeleteResult: {
-            /** @enum {boolean} */
-            deleted: true;
+        /** @description Stored outbound message content. `kind` selects the shape. */
+        OutboundMessageContent: components["schemas"]["OutboundMessageContentText"] | components["schemas"]["OutboundMessageContentAmbQuickReply"] | components["schemas"]["OutboundMessageContentAmbListPicker"] | components["schemas"]["OutboundMessageContentAmbTimePicker"] | components["schemas"]["OutboundMessageContentAmbForm"] | components["schemas"]["OutboundMessageContentAmbAuthentication"] | components["schemas"]["OutboundMessageContentAmbRichLink"] | components["schemas"]["OutboundMessageContentAmbImessageApp"] | components["schemas"]["OutboundMessageContentAmbInvitation"];
+        /** @description Stored outbound amb.authentication content. */
+        OutboundMessageContentAmbAuthentication: {
+            data: {
+                authenticate: {
+                    oauth2: {
+                        /**
+                         * Format: uri
+                         * @description Absolute HTTPS URL using printable ASCII, up to 8,192 bytes.
+                         */
+                        redirectURI: string;
+                        /** @enum {string} */
+                        responseType: "code";
+                        scope: string[];
+                    };
+                };
+                images?: {
+                    description?: string | null;
+                    /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                    identifier: string;
+                    name: string | null;
+                }[];
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.authentication";
+            receivedMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+            replyMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+        };
+        /** @description Stored outbound amb.form content. */
+        OutboundMessageContentAmbForm: {
+            data: {
+                dynamic: {
+                    data: {
+                        pages: ({
+                            items: {
+                                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                                identifier: string;
+                                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                                imageIdentifier?: string;
+                                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                                nextPageIdentifier?: string;
+                                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                                title: string;
+                                /** @description Well-formed machine value. */
+                                value: string;
+                            }[];
+                            multipleSelection?: boolean;
+                            /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                            nextPageIdentifier?: string;
+                            /** @description Non-blank form page identifier up to 19 UTF-16 code units without controls, ../, or straight quotes. */
+                            pageIdentifier: string;
+                            submitForm?: boolean;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            subtitle: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            title?: string;
+                            /** @enum {string} */
+                            type: "select";
+                        } | {
+                            items: {
+                                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                                identifier: string;
+                                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                                title: string;
+                                /** @description Well-formed machine value. */
+                                value: string;
+                            }[];
+                            /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                            nextPageIdentifier?: string;
+                            /** @description Non-blank form page identifier up to 19 UTF-16 code units without controls, ../, or straight quotes. */
+                            pageIdentifier: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            pickerTitle?: string;
+                            selectedItemIndex?: number;
+                            submitForm?: boolean;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            subtitle: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            title?: string;
+                            /** @enum {string} */
+                            type: "picker";
+                        } | {
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            hintText?: string;
+                            /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                            nextPageIdentifier?: string;
+                            options?: {
+                                dateFormat?: string;
+                                labelText?: string;
+                                maximumDate?: string;
+                                minimumDate?: string;
+                                startDate?: string;
+                            };
+                            /** @description Non-blank form page identifier up to 19 UTF-16 code units without controls, ../, or straight quotes. */
+                            pageIdentifier: string;
+                            submitForm?: boolean;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            subtitle: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            title?: string;
+                            /** @enum {string} */
+                            type: "datePicker";
+                        } | {
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            hintText?: string;
+                            /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                            nextPageIdentifier?: string;
+                            options?: {
+                                /** @enum {string} */
+                                inputType?: "singleline" | "multiline";
+                                /** @enum {string} */
+                                keyboardType?: "default" | "asciiCapable" | "numbersAndPunctuation" | "URL" | "numberPad" | "phonePad" | "namePhonePad" | "emailAddress" | "decimalPad" | "webSearch";
+                                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                                labelText?: string;
+                                maximumCharacterCount?: number;
+                                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                                placeholder?: string;
+                                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                                prefixText?: string;
+                                regex?: string;
+                                required?: boolean;
+                                /** @enum {string} */
+                                textContentType?: "name" | "namePrefix" | "givenName" | "middleName" | "familyName" | "nameSuffix" | "nickname" | "jobTitle" | "organizationName" | "location" | "fullStreetAddress" | "streetAddressLine1" | "streetAddressLine2" | "addressCity" | "addressState" | "addressCityAndState" | "sublocality" | "countryName" | "postalCode" | "telephoneNumber" | "emailAddress" | "URL" | "creditCardNumber" | "username" | "password" | "newPassword" | "oneTimeCode";
+                            };
+                            /** @description Non-blank form page identifier up to 19 UTF-16 code units without controls, ../, or straight quotes. */
+                            pageIdentifier: string;
+                            submitForm?: boolean;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            subtitle: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            title?: string;
+                            /** @enum {string} */
+                            type: "input";
+                        })[];
+                        private?: boolean;
+                        showSummary?: boolean;
+                        splash?: {
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            buttonTitle: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            header?: string;
+                            /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                            imageIdentifier?: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            splashtext?: string;
+                        };
+                        /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                        startPageIdentifier: string;
+                    };
+                    /** @enum {string} */
+                    template: "messageForms";
+                    /** @enum {string} */
+                    version: "1.2";
+                };
+                images?: {
+                    description?: string | null;
+                    /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                    identifier: string;
+                    name: string | null;
+                }[];
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.form";
+            receivedMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+            replyMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+        };
+        /** @description Stored outbound amb.imessage_app content. */
+        OutboundMessageContentAmbImessageApp: {
+            appIcon?: {
+                name: string | null;
+            };
+            appId: string;
+            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+            appName: string;
+            bid: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.imessage_app";
+            receivedMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+            replyMessage?: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+            /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+            sessionIdentifier?: string;
+            /**
+             * Format: uri
+             * @description Absolute HTTPS URL using printable ASCII, up to 8,192 bytes.
+             */
+            URL: string;
+            useLiveLayout: boolean;
+        };
+        /** @description Stored outbound amb.invitation content. */
+        OutboundMessageContentAmbInvitation: {
+            data: {
+                notification: {
+                    locale?: string;
+                    parameters: {
+                        brandLogo: {
+                            name: string | null;
+                        };
+                        brandName: string;
+                    };
+                    /** @description Non-blank invitation reference up to 1,000 Unicode code points without lone surrogates, controls, ../, or straight quotes. */
+                    referenceId: string;
+                    /** @enum {string} */
+                    templateId: "binaryChoice.engage.withImage";
+                };
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.invitation";
+            useLiveLayout: boolean;
+        };
+        /** @description Stored outbound amb.list_picker content. List item identifiers must be unique across all sections. */
+        OutboundMessageContentAmbListPicker: {
+            data: {
+                images?: {
+                    description?: string | null;
+                    /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                    identifier: string;
+                    name: string | null;
+                }[];
+                listPicker: {
+                    sections: {
+                        items: {
+                            /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                            identifier: string;
+                            /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                            imageIdentifier?: string;
+                            order?: number;
+                            style?: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            subtitle?: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            title: string;
+                        }[];
+                        multipleSelection?: boolean;
+                        order?: number;
+                        /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                        title: string;
+                    }[];
+                };
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.list_picker";
+            receivedMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+            replyMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+        };
+        /** @description Stored outbound amb.quick_reply content. */
+        OutboundMessageContentAmbQuickReply: {
+            data: {
+                "quick-reply": {
+                    items: {
+                        /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                        identifier: string;
+                        /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                        title: string;
+                    }[];
+                    /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                    summaryText: string;
+                };
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.quick_reply";
+        };
+        /** @description Stored outbound amb.rich_link content. */
+        OutboundMessageContentAmbRichLink: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.rich_link";
+            richLinkData?: {
+                assets: {
+                    image: {
+                        data: {
+                            name: string | null;
+                        };
+                        /** @enum {string} */
+                        mimeType: "image/png";
+                    };
+                    video?: {
+                        mimeType: string;
+                        /**
+                         * Format: uri
+                         * @description Absolute HTTPS URL using printable ASCII, up to 8,192 bytes.
+                         */
+                        url: string;
+                    };
+                };
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+                /**
+                 * Format: uri
+                 * @description Absolute HTTPS URL using printable ASCII, up to 8,192 bytes.
+                 */
+                url: string;
+            };
+            richLinkDataRef?: {
+                title?: string;
+                /**
+                 * Format: uri
+                 * @description Absolute HTTPS URL using printable ASCII, up to 8,192 bytes.
+                 */
+                url: string;
+            };
+        } & (unknown | unknown);
+        /** @description Stored outbound amb.time_picker content. Time-slot identifiers must be unique within this event. */
+        OutboundMessageContentAmbTimePicker: {
+            data: {
+                event: {
+                    /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                    identifier: string;
+                    /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                    imageIdentifier?: string;
+                    location?: {
+                        latitude?: number;
+                        longitude?: number;
+                        radius?: number;
+                        /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                        title?: string;
+                    };
+                    timeslots: {
+                        duration: number;
+                        /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                        identifier: string;
+                        startTime: string;
+                    }[];
+                    timezoneOffset?: number;
+                    /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                    title?: string;
+                };
+                images?: {
+                    description?: string | null;
+                    /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                    identifier: string;
+                    name: string | null;
+                }[];
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.time_picker";
+            receivedMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+            replyMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+        };
+        /** @description Stored outbound text content. */
+        OutboundMessageContentText: {
+            body: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "text";
+            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+            subject?: string;
+        };
+        /** @description Channel-native content for raw channel sends. `kind` selects the exact payload shape. */
+        RawMessageContent: components["schemas"]["RawMessageContentText"] | components["schemas"]["RawMessageContentAmbQuickReply"] | components["schemas"]["RawMessageContentAmbListPicker"] | components["schemas"]["RawMessageContentAmbTimePicker"] | components["schemas"]["RawMessageContentAmbForm"] | components["schemas"]["RawMessageContentAmbAuthentication"] | components["schemas"]["RawMessageContentAmbRichLink"] | components["schemas"]["RawMessageContentAmbImessageApp"];
+        /** @description Channel-native amb.authentication content. */
+        RawMessageContentAmbAuthentication: {
+            data: {
+                authenticate: {
+                    oauth2: {
+                        additionalParameters?: string;
+                        /**
+                         * Format: uri
+                         * @description Absolute HTTPS URL using printable ASCII, up to 8,192 bytes.
+                         */
+                        redirectURI: string;
+                        /** @enum {string} */
+                        responseType: "code";
+                        scope: string[];
+                        /** @description Printable ASCII authentication state up to 1,024 bytes. */
+                        state: string;
+                    };
+                };
+                images?: {
+                    /** @description PNG image Base64; callers enforce the 200,000-byte image limit. */
+                    data: string;
+                    /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                    description?: string;
+                    /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                    identifier: string;
+                }[];
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.authentication";
+            receivedMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+            replyMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+        };
+        /** @description Channel-native amb.form content. */
+        RawMessageContentAmbForm: {
+            data: {
+                dynamic: {
+                    data: {
+                        pages: ({
+                            items: {
+                                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                                identifier: string;
+                                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                                imageIdentifier?: string;
+                                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                                nextPageIdentifier?: string;
+                                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                                title: string;
+                                /** @description Well-formed machine value. */
+                                value: string;
+                            }[];
+                            multipleSelection?: boolean;
+                            /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                            nextPageIdentifier?: string;
+                            /** @description Non-blank form page identifier up to 19 UTF-16 code units without controls, ../, or straight quotes. */
+                            pageIdentifier: string;
+                            submitForm?: boolean;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            subtitle: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            title?: string;
+                            /** @enum {string} */
+                            type: "select";
+                        } | {
+                            items: {
+                                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                                identifier: string;
+                                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                                title: string;
+                                /** @description Well-formed machine value. */
+                                value: string;
+                            }[];
+                            /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                            nextPageIdentifier?: string;
+                            /** @description Non-blank form page identifier up to 19 UTF-16 code units without controls, ../, or straight quotes. */
+                            pageIdentifier: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            pickerTitle?: string;
+                            selectedItemIndex?: number;
+                            submitForm?: boolean;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            subtitle: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            title?: string;
+                            /** @enum {string} */
+                            type: "picker";
+                        } | {
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            hintText?: string;
+                            /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                            nextPageIdentifier?: string;
+                            options?: {
+                                dateFormat?: string;
+                                labelText?: string;
+                                maximumDate?: string;
+                                minimumDate?: string;
+                                startDate?: string;
+                            };
+                            /** @description Non-blank form page identifier up to 19 UTF-16 code units without controls, ../, or straight quotes. */
+                            pageIdentifier: string;
+                            submitForm?: boolean;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            subtitle: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            title?: string;
+                            /** @enum {string} */
+                            type: "datePicker";
+                        } | {
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            hintText?: string;
+                            /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                            nextPageIdentifier?: string;
+                            options?: {
+                                /** @enum {string} */
+                                inputType?: "singleline" | "multiline";
+                                /** @enum {string} */
+                                keyboardType?: "default" | "asciiCapable" | "numbersAndPunctuation" | "URL" | "numberPad" | "phonePad" | "namePhonePad" | "emailAddress" | "decimalPad" | "webSearch";
+                                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                                labelText?: string;
+                                maximumCharacterCount?: number;
+                                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                                placeholder?: string;
+                                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                                prefixText?: string;
+                                regex?: string;
+                                required?: boolean;
+                                /** @enum {string} */
+                                textContentType?: "name" | "namePrefix" | "givenName" | "middleName" | "familyName" | "nameSuffix" | "nickname" | "jobTitle" | "organizationName" | "location" | "fullStreetAddress" | "streetAddressLine1" | "streetAddressLine2" | "addressCity" | "addressState" | "addressCityAndState" | "sublocality" | "countryName" | "postalCode" | "telephoneNumber" | "emailAddress" | "URL" | "creditCardNumber" | "username" | "password" | "newPassword" | "oneTimeCode";
+                            };
+                            /** @description Non-blank form page identifier up to 19 UTF-16 code units without controls, ../, or straight quotes. */
+                            pageIdentifier: string;
+                            submitForm?: boolean;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            subtitle: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            title?: string;
+                            /** @enum {string} */
+                            type: "input";
+                        })[];
+                        private?: boolean;
+                        showSummary?: boolean;
+                        splash?: {
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            buttonTitle: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            header?: string;
+                            /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                            imageIdentifier?: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            splashtext?: string;
+                        };
+                        /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                        startPageIdentifier: string;
+                    };
+                    /** @enum {string} */
+                    template: "messageForms";
+                    /** @enum {string} */
+                    version: "1.2";
+                };
+                images?: {
+                    /** @description PNG image Base64; callers enforce the 200,000-byte image limit. */
+                    data: string;
+                    /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                    description?: string;
+                    /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                    identifier: string;
+                }[];
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.form";
+            receivedMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+            replyMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+        };
+        /** @description Channel-native amb.imessage_app content. */
+        RawMessageContentAmbImessageApp: {
+            /** @description PNG image Base64 smaller than 15,360 bytes. */
+            appIcon?: string;
+            appId: string;
+            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+            appName: string;
+            bid: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.imessage_app";
+            receivedMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+            replyMessage?: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+            /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+            sessionIdentifier?: string;
+            /**
+             * Format: uri
+             * @description Absolute HTTPS URL using printable ASCII, up to 8,192 bytes.
+             */
+            URL: string;
+            useLiveLayout: boolean;
+        };
+        /** @description Channel-native amb.list_picker content. List item identifiers must be unique across all sections. */
+        RawMessageContentAmbListPicker: {
+            data: {
+                images?: {
+                    /** @description PNG image Base64; callers enforce the 200,000-byte image limit. */
+                    data: string;
+                    /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                    description?: string;
+                    /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                    identifier: string;
+                }[];
+                listPicker: {
+                    sections: {
+                        items: {
+                            /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                            identifier: string;
+                            /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                            imageIdentifier?: string;
+                            order?: number;
+                            style?: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            subtitle?: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            title: string;
+                        }[];
+                        multipleSelection?: boolean;
+                        order?: number;
+                        /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                        title: string;
+                    }[];
+                };
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.list_picker";
+            receivedMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+            replyMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+        };
+        /** @description Channel-native amb.quick_reply content. */
+        RawMessageContentAmbQuickReply: {
+            data: {
+                "quick-reply": {
+                    items: {
+                        /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                        identifier: string;
+                        /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                        title: string;
+                    }[];
+                    /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                    summaryText: string;
+                };
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.quick_reply";
+        };
+        /** @description Channel-native amb.rich_link content. */
+        RawMessageContentAmbRichLink: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.rich_link";
+            richLinkData?: {
+                assets: {
+                    image: {
+                        /** @description PNG image Base64; callers enforce the 200,000-byte image limit. */
+                        data: string;
+                        /** @enum {string} */
+                        mimeType: "image/png";
+                    };
+                    video?: {
+                        mimeType: string;
+                        /**
+                         * Format: uri
+                         * @description Absolute HTTPS URL using printable ASCII, up to 8,192 bytes.
+                         */
+                        url: string;
+                    };
+                };
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+                /**
+                 * Format: uri
+                 * @description Absolute HTTPS URL using printable ASCII, up to 8,192 bytes.
+                 */
+                url: string;
+            };
+            richLinkDataRef?: {
+                bid?: string;
+                dataRefSig?: string;
+                key: string;
+                owner: string;
+                "signature-base64": string;
+                size: number;
+                title?: string;
+                /**
+                 * Format: uri
+                 * @description Absolute HTTPS URL using printable ASCII, up to 8,192 bytes.
+                 */
+                url: string;
+            };
+        } & (unknown | unknown);
+        /** @description Channel-native amb.time_picker content. Time-slot identifiers must be unique within this event. */
+        RawMessageContentAmbTimePicker: {
+            data: {
+                event: {
+                    /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                    identifier: string;
+                    /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                    imageIdentifier?: string;
+                    location?: {
+                        latitude?: number;
+                        longitude?: number;
+                        radius?: number;
+                        /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                        title?: string;
+                    };
+                    timeslots: {
+                        duration: number;
+                        /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                        identifier: string;
+                        startTime: string;
+                    }[];
+                    timezoneOffset?: number;
+                    /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                    title?: string;
+                };
+                images?: {
+                    /** @description PNG image Base64; callers enforce the 200,000-byte image limit. */
+                    data: string;
+                    /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                    description?: string;
+                    /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                    identifier: string;
+                }[];
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.time_picker";
+            receivedMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+            replyMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style?: "icon" | "small" | "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+        };
+        /** @description Channel-native text content. */
+        RawMessageContentText: {
+            body: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "text";
+            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+            subject?: string;
         };
         /** @description One immutable channel+usage-scoped library asset. */
         RichAssetItem: {
@@ -1711,34 +2724,64 @@ export interface components {
              * @description ISO-8601 timestamp when the signed access URL expires.
              */
             accessUrlExpiresAt: string;
-            /** @enum {string} */
+            /**
+             * @description Channel the asset was uploaded for.
+             * @enum {string}
+             */
             channel: "amb";
+            /**
+             * Format: date-time
+             * @description ISO-8601 upload timestamp.
+             */
             createdAt: string;
+            /** @description Library display name. */
             displayName: string;
+            /** @description Image height in pixels. */
             height: number | null;
+            /**
+             * Format: uuid
+             * @description Asset id (UUIDv7).
+             */
             id: string;
+            /** @description Verified MIME type of the stored bytes. */
             mimeType: string;
+            /** @description Size of the stored bytes. */
             sizeBytes: number;
-            /** @enum {string} */
+            /**
+             * @description Size class: `rich_image_200` for image slots, `rich_icon_15` for the iMessage app icon slot.
+             * @enum {string}
+             */
             usage: "rich_image_200" | "rich_icon_15";
+            /** @description Image width in pixels. */
             width: number | null;
         };
         /** @description One keyset page of library assets, newest first. */
         RichAssetList: {
             assets: components["schemas"]["RichAssetItem"][];
-            /** @description Pass as `before` to fetch the next page. Null when this is the last page. */
+            /**
+             * Format: uuid
+             * @description Pass as `before` to fetch the next page. Null when this is the last page.
+             */
             nextCursor: string | null;
         };
+        /** @description Per-channel authoring feedback derived on every read. `ready` identifies a matching native channel with every declared slot bound; `blocked` lists the fields to complete. Publication performs the full rendered-content validation. */
         RichChannelReadiness: {
-            /** @enum {string} */
+            /**
+             * @description The channel this entry describes. One entry per channel with rich-messaging support.
+             * @enum {string}
+             */
             channel: "amb";
+            /** @description Empty when `ready`; otherwise every reason the template cannot send here. */
             reasons: components["schemas"]["RichReason"][];
             /**
-             * @description What this template renders as on the channel (deterministic, pre-send).
+             * @description What this template renders as on the channel (deterministic, pre-send): a canonical block resolves to its own kind, native content resolves to itself, and `null` means the channel cannot render the template (a native template authored for another channel).
              * @enum {string|null}
              */
             resolvedNativeType: "text" | "quick_reply" | "list_picker" | "rich_link" | "time_picker" | "form" | "imessage_app" | "app_clip_rich_link" | "authentication" | null;
-            /** @enum {string} */
+            /**
+             * @description `ready` when the template can send on this channel; otherwise `blocked`.
+             * @enum {string}
+             */
             status: "ready" | "blocked";
         };
         /** @description One machine-readable reason from the stable rich-messaging reason-code set. */
@@ -1747,7 +2790,7 @@ export interface components {
              * @description Stable machine-readable reason code.
              * @enum {string}
              */
-            code: "duplicate_template_name" | "template_not_found" | "template_not_published" | "template_archived" | "template_delete_forbidden" | "invalid_template_definition" | "undeclared_variable_reference" | "unsatisfiable_variable_type" | "block_type_unsupported" | "block_field_unsupported" | "missing_asset" | "payload_limit_exceeded" | "template_type_mismatch" | "conversation_not_eligible" | "capability_not_supported" | "missing_variable_value" | "invalid_variable_value" | "asset_load_failed" | "construct_payload_failed" | "wire_constraint_violated" | "channel_gateway_failed" | "duplicate_request_conflict" | "asset_format_unsupported" | "asset_format_mismatch" | "asset_too_large" | "asset_invalid_dimensions" | "asset_in_use";
+            code: "duplicate_template_name" | "template_not_found" | "template_not_published" | "template_archived" | "template_delete_forbidden" | "invalid_template_definition" | "undeclared_variable_reference" | "unsatisfiable_variable_type" | "block_type_unsupported" | "missing_asset" | "payload_limit_exceeded" | "missing_variable_value" | "invalid_variable_value" | "asset_load_failed" | "asset_format_unsupported" | "asset_format_mismatch" | "asset_too_large" | "asset_invalid_dimensions" | "asset_in_use";
             constraint?: string;
             message: string;
             /** @enum {string} */
@@ -1761,7 +2804,12 @@ export interface components {
             error: string;
             reasons: components["schemas"]["RichReason"][];
         };
-        /** @description The template definition: one canonical block (`text`, `quick_reply`) rendered per channel, or one channel-native content object bound to a single channel. */
+        /** @description Either a plain `error` message (malformed input) or a `reasons` list (definition or validity problems). */
+        RichRequestError: {
+            /** @description Human-readable explanation of why the request failed. */
+            error: string;
+        } | components["schemas"]["RichReasonsError"];
+        /** @description One canonical block or channel-native content object with its declared template variables. */
         RichTemplateDefinition: {
             block: {
                 body: string;
@@ -1967,10 +3015,10 @@ export interface components {
                     secondarySubtitle: string | null;
                     subtitle: string | null;
                     tertiarySubtitle: string | null;
-                    title: string | null;
+                    title: string;
                 };
                 teamId: string;
-                url: string | null;
+                url: string;
                 useLiveLayout: boolean;
             } | {
                 imageSlot: string;
@@ -2010,57 +3058,102 @@ export interface components {
                 type: "text" | "url" | "datetime" | "collection";
             }[];
         };
-        RichTemplateDeleteResult: {
-            /** @enum {boolean} */
-            deleted: true;
-        };
+        /** @description A rich template with its summary fields, full definition, slot → library-asset bindings, and per-channel readiness. Returned by every read and write operation on a template. */
         RichTemplateDetail: components["schemas"]["RichTemplateSummary"] & {
             definition: components["schemas"]["RichTemplateDefinition"];
+            /** @description Per-channel readiness, one entry per channel with rich-messaging support. */
             readiness: components["schemas"]["RichChannelReadiness"][];
+            /** @description Slot → library-asset bindings. Channel and usage are read from the bound asset. */
             slotBindings: {
+                /**
+                 * Format: uuid
+                 * @description Bound library asset id (UUIDv7).
+                 */
                 assetId: string;
-                /** @enum {string} */
+                /**
+                 * @description Channel of the bound asset.
+                 * @enum {string}
+                 */
                 channel: "amb";
+                /** @description Image slot named in the definition. */
                 slotName: string;
-                /** @enum {string} */
+                /**
+                 * @description Size class of the bound asset; matches the slot’s usage.
+                 * @enum {string}
+                 */
                 usage: "rich_image_200" | "rich_icon_15";
             }[];
         };
         /** @description One keyset page of template summaries, newest first. */
         RichTemplateList: {
-            /** @description Pass as `before` to fetch the next page. Null when this is the last page. */
+            /**
+             * Format: uuid
+             * @description Pass as `before` to fetch the next page. Null when this is the last page.
+             */
             nextCursor: string | null;
             templates: components["schemas"]["RichTemplateSummary"][];
         };
+        /** @description One rich template as listed in the business’s catalog: identity, authored kind and mode, lifecycle status, and timestamps. Lists are keyset-paginated newest first. */
         RichTemplateSummary: {
+            /**
+             * Format: date-time
+             * @description ISO-8601 creation timestamp.
+             */
             createdAt: string;
+            /**
+             * Format: uuid
+             * @description Template id (UUIDv7).
+             */
             id: string;
-            /** @enum {string} */
+            /**
+             * @description Authoring mode, fixed at creation. `canonical` templates hold one channel-agnostic block rendered per channel; `native` templates hold one channel-native content object bound to a single channel.
+             * @enum {string}
+             */
             mode: "canonical" | "native";
+            /** @description Display name, unique within the business. */
             name: string;
-            /** @enum {string|null} */
+            /**
+             * @description The one channel a `native` template can send on; `null` for `canonical` templates.
+             * @enum {string|null}
+             */
             nativeChannel: "amb" | null;
-            /** @enum {string|null} */
+            /**
+             * @description The authored channel-native content kind of a `native` template; `null` for `canonical` templates. Differs from `resolvedNativeType` in `readiness`, which is what the template renders as on each channel: canonical blocks resolve to `text` or `quick_reply` there, while `nativeType` never names a canonical kind.
+             * @enum {string|null}
+             */
             nativeType: "list_picker" | "rich_link" | "time_picker" | "form" | "imessage_app" | "app_clip_rich_link" | "authentication" | null;
-            /** @enum {string} */
+            /**
+             * @description Lifecycle status. Drafts are edited, published, or deleted; published templates are sendable and can be edited or archived; archived templates are read-only.
+             * @enum {string}
+             */
             status: "draft" | "published" | "archived";
-            /** @enum {string} */
+            /**
+             * @description The authored kind: the canonical block kind (`text`, `quick_reply`) or the native content kind.
+             * @enum {string}
+             */
             templateType: "text" | "quick_reply" | "list_picker" | "rich_link" | "time_picker" | "form" | "imessage_app" | "app_clip_rich_link" | "authentication";
+            /**
+             * Format: date-time
+             * @description ISO-8601 last-update timestamp.
+             */
             updatedAt: string;
         };
+        /** @description Request body for creating or replacing a rich template: the display name, the definition, and slot → library-asset bindings. The definition is publish-validity checked (structure, variable references, slot coverage). On update the authoring mode and native channel must match the existing template. */
         RichTemplateWriteBody: {
             definition: components["schemas"]["RichTemplateDefinition"];
             /**
-             * @description Display name — unique within the organization.
+             * @description Display name — unique within the business.
              * @example Appointment picker
              */
             name: string;
-            /**
-             * @description Slot → library-asset bindings. Channel and usage ride on the referenced asset.
-             * @example []
-             */
+            /** @description Slot → library-asset bindings. Channel and usage ride on the referenced asset; a binding for a slot the definition does not declare, or whose usage differs from the slot’s, is rejected. Each slot takes one asset per channel and usage. */
             slotBindings: {
+                /**
+                 * Format: uuid
+                 * @description Library asset id (UUIDv7) to bind to the slot.
+                 */
                 assetId: string;
+                /** @description An image slot named in the definition (for example `imageSlot`). */
                 slotName: string;
             }[];
         };
@@ -2068,8 +3161,12 @@ export interface components {
         SendAuthenticationMessageBody: {
             /** Format: uuid */
             conversationId: string;
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description Per-conversation idempotency key. Reusing it with identical request bytes returns the original result; differing bytes are rejected.
+             */
             requestMessageId: string;
+            /** @description Printable ASCII authentication state up to 1,024 bytes. */
             state: string;
             /** Format: uuid */
             templateId: string;
@@ -2092,384 +3189,31 @@ export interface components {
                 path: string;
             }[];
         };
-        /** @description Returned when a send has been delivered synchronously (HTTP 200). */
-        SendMessageSuccess: {
+        /** @description Returned when the request is accepted. A first acceptance records the outbound message; an idempotent replay returns that original result. */
+        SendMessageResult: {
             duplicate: boolean;
             /** Format: uuid */
             messageId: string;
         };
-        /** @description Raw channel payload send. `content` is the typed channel-native body; unknown fields are rejected. */
+        /** @description Channel-native send request. `content.kind` selects the payload shape; unknown fields are rejected. */
         SendRawMessageBody: {
-            content: {
-                body: string;
-                /** @enum {string} */
-                kind: "text";
-                subject?: string;
-            } | {
-                data: {
-                    "quick-reply": {
-                        items: {
-                            identifier: string;
-                            title: string;
-                        }[];
-                        summaryText: string;
-                    };
-                };
-                /** @enum {string} */
-                kind: "amb.quick_reply";
-            } | {
-                data: {
-                    images?: {
-                        data: string;
-                        description?: string | null;
-                        identifier: string;
-                    }[];
-                    listPicker: {
-                        sections: {
-                            items: {
-                                identifier: string;
-                                imageIdentifier?: string;
-                                order?: number;
-                                style?: string;
-                                subtitle?: string;
-                                title: string;
-                            }[];
-                            multipleSelection?: boolean;
-                            order?: number;
-                            title?: string;
-                        }[];
-                    };
-                };
-                /** @enum {string} */
-                kind: "amb.list_picker";
-                receivedMessage: {
-                    alternateTitle?: string;
-                    imageDescription?: string;
-                    imageIdentifier?: string;
-                    imageSubtitle?: string;
-                    imageTitle?: string;
-                    secondarySubtitle?: string;
-                    /** @enum {string} */
-                    style?: "icon" | "small" | "large";
-                    subtitle?: string;
-                    tertiarySubtitle?: string;
-                    title: string;
-                };
-                replyMessage: {
-                    alternateTitle?: string;
-                    imageDescription?: string;
-                    imageIdentifier?: string;
-                    imageSubtitle?: string;
-                    imageTitle?: string;
-                    secondarySubtitle?: string;
-                    /** @enum {string} */
-                    style?: "icon" | "small" | "large";
-                    subtitle?: string;
-                    tertiarySubtitle?: string;
-                    title: string;
-                };
-            } | {
-                data: {
-                    event: {
-                        identifier: string;
-                        imageIdentifier?: string;
-                        location?: {
-                            latitude?: number;
-                            longitude?: number;
-                            radius?: number;
-                            title?: string;
-                        };
-                        timeslots: {
-                            duration: number;
-                            identifier: string;
-                            startTime: string;
-                        }[];
-                        timezoneOffset?: number;
-                        title?: string;
-                    };
-                    images?: {
-                        data: string;
-                        description?: string | null;
-                        identifier: string;
-                    }[];
-                };
-                /** @enum {string} */
-                kind: "amb.time_picker";
-                receivedMessage: {
-                    alternateTitle?: string;
-                    imageDescription?: string;
-                    imageIdentifier?: string;
-                    imageSubtitle?: string;
-                    imageTitle?: string;
-                    secondarySubtitle?: string;
-                    /** @enum {string} */
-                    style?: "icon" | "small" | "large";
-                    subtitle?: string;
-                    tertiarySubtitle?: string;
-                    title: string;
-                };
-                replyMessage: {
-                    alternateTitle?: string;
-                    imageDescription?: string;
-                    imageIdentifier?: string;
-                    imageSubtitle?: string;
-                    imageTitle?: string;
-                    secondarySubtitle?: string;
-                    /** @enum {string} */
-                    style?: "icon" | "small" | "large";
-                    subtitle?: string;
-                    tertiarySubtitle?: string;
-                    title: string;
-                };
-            } | {
-                data: {
-                    dynamic: {
-                        data: {
-                            pages: ({
-                                items: {
-                                    identifier: string;
-                                    imageIdentifier?: string;
-                                    nextPageIdentifier?: string;
-                                    title: string;
-                                    value: string;
-                                }[];
-                                multipleSelection?: boolean;
-                                nextPageIdentifier?: string;
-                                pageIdentifier: string;
-                                submitForm?: boolean;
-                                subtitle: string;
-                                title?: string;
-                                /** @enum {string} */
-                                type: "select";
-                            } | {
-                                items: {
-                                    identifier: string;
-                                    title: string;
-                                    value: string;
-                                }[];
-                                nextPageIdentifier?: string;
-                                pageIdentifier: string;
-                                pickerTitle?: string;
-                                selectedItemIndex?: number;
-                                submitForm?: boolean;
-                                subtitle: string;
-                                title?: string;
-                                /** @enum {string} */
-                                type: "picker";
-                            } | {
-                                hintText?: string;
-                                nextPageIdentifier?: string;
-                                options?: {
-                                    dateFormat?: string;
-                                    labelText?: string;
-                                    maximumDate?: string;
-                                    minimumDate?: string;
-                                    startDate?: string;
-                                };
-                                pageIdentifier: string;
-                                submitForm?: boolean;
-                                subtitle: string;
-                                title?: string;
-                                /** @enum {string} */
-                                type: "datePicker";
-                            } | {
-                                hintText?: string;
-                                nextPageIdentifier?: string;
-                                options?: {
-                                    /** @enum {string} */
-                                    inputType?: "singleline" | "multiline";
-                                    /** @enum {string} */
-                                    keyboardType?: "default" | "asciiCapable" | "numbersAndPunctuation" | "URL" | "numberPad" | "phonePad" | "namePhonePad" | "emailAddress" | "decimalPad" | "webSearch";
-                                    labelText?: string;
-                                    maximumCharacterCount?: number;
-                                    placeholder?: string;
-                                    prefixText?: string;
-                                    regex?: string;
-                                    required?: boolean;
-                                    /** @enum {string} */
-                                    textContentType?: "name" | "namePrefix" | "givenName" | "middleName" | "familyName" | "nameSuffix" | "nickname" | "jobTitle" | "organizationName" | "location" | "fullStreetAddress" | "streetAddressLine1" | "streetAddressLine2" | "addressCity" | "addressState" | "addressCityAndState" | "sublocality" | "countryName" | "postalCode" | "telephoneNumber" | "emailAddress" | "URL" | "creditCardNumber" | "username" | "password" | "newPassword" | "oneTimeCode";
-                                };
-                                pageIdentifier: string;
-                                submitForm?: boolean;
-                                subtitle: string;
-                                title?: string;
-                                /** @enum {string} */
-                                type: "input";
-                            })[];
-                            private?: boolean;
-                            showSummary?: boolean;
-                            splash?: {
-                                buttonTitle: string;
-                                header?: string;
-                                imageIdentifier?: string;
-                                splashtext?: string;
-                            };
-                            startPageIdentifier: string;
-                        };
-                        /** @enum {string} */
-                        template: "messageForms";
-                        /** @enum {string} */
-                        version: "1.2";
-                    };
-                    images?: {
-                        data: string;
-                        description?: string | null;
-                        identifier: string;
-                    }[];
-                };
-                /** @enum {string} */
-                kind: "amb.form";
-                receivedMessage: {
-                    alternateTitle?: string;
-                    imageDescription?: string;
-                    imageIdentifier?: string;
-                    imageSubtitle?: string;
-                    imageTitle?: string;
-                    secondarySubtitle?: string;
-                    /** @enum {string} */
-                    style?: "icon" | "small" | "large";
-                    subtitle?: string;
-                    tertiarySubtitle?: string;
-                    title: string;
-                };
-                replyMessage: {
-                    alternateTitle?: string;
-                    imageDescription?: string;
-                    imageIdentifier?: string;
-                    imageSubtitle?: string;
-                    imageTitle?: string;
-                    secondarySubtitle?: string;
-                    /** @enum {string} */
-                    style?: "icon" | "small" | "large";
-                    subtitle?: string;
-                    tertiarySubtitle?: string;
-                    title: string;
-                };
-            } | {
-                data: {
-                    authenticate: {
-                        oauth2: {
-                            additionalParameters?: string;
-                            /** Format: uri */
-                            redirectURI: string;
-                            /** @enum {string} */
-                            responseType: "code";
-                            scope: string[];
-                            state: string;
-                        };
-                    };
-                    images?: {
-                        data: string;
-                        description?: string | null;
-                        identifier: string;
-                    }[];
-                };
-                /** @enum {string} */
-                kind: "amb.authentication";
-                receivedMessage: {
-                    alternateTitle?: string;
-                    imageDescription?: string;
-                    imageIdentifier?: string;
-                    imageSubtitle?: string;
-                    imageTitle?: string;
-                    secondarySubtitle?: string;
-                    /** @enum {string} */
-                    style?: "icon" | "small" | "large";
-                    subtitle?: string;
-                    tertiarySubtitle?: string;
-                    title: string;
-                };
-                replyMessage: {
-                    alternateTitle?: string;
-                    imageDescription?: string;
-                    imageIdentifier?: string;
-                    imageSubtitle?: string;
-                    imageTitle?: string;
-                    secondarySubtitle?: string;
-                    /** @enum {string} */
-                    style?: "icon" | "small" | "large";
-                    subtitle?: string;
-                    tertiarySubtitle?: string;
-                    title: string;
-                };
-            } | {
-                /** @enum {string} */
-                kind: "amb.rich_link";
-                richLinkData?: {
-                    assets: {
-                        image: {
-                            data: string;
-                            /** @enum {string} */
-                            mimeType: "image/png";
-                        };
-                        video?: {
-                            mimeType: string;
-                            /** Format: uri */
-                            url: string;
-                        };
-                    };
-                    title: string;
-                    /** Format: uri */
-                    url: string;
-                };
-                richLinkDataRef?: {
-                    bid?: string;
-                    dataRefSig?: string;
-                    key: string;
-                    owner: string;
-                    "signature-base64": string;
-                    size: number;
-                    title?: string;
-                    /** Format: uri */
-                    url: string;
-                };
-            } | {
-                appIcon?: string;
-                appId: string;
-                appName: string;
-                bid: string;
-                /** @enum {string} */
-                kind: "amb.imessage_app";
-                receivedMessage: {
-                    alternateTitle?: string;
-                    imageDescription?: string;
-                    imageIdentifier?: string;
-                    imageSubtitle?: string;
-                    imageTitle?: string;
-                    secondarySubtitle?: string;
-                    /** @enum {string} */
-                    style?: "icon" | "small" | "large";
-                    subtitle?: string;
-                    tertiarySubtitle?: string;
-                    title: string;
-                };
-                replyMessage?: {
-                    alternateTitle?: string;
-                    imageDescription?: string;
-                    imageIdentifier?: string;
-                    imageSubtitle?: string;
-                    imageTitle?: string;
-                    secondarySubtitle?: string;
-                    /** @enum {string} */
-                    style?: "icon" | "small" | "large";
-                    subtitle?: string;
-                    tertiarySubtitle?: string;
-                    title: string;
-                };
-                sessionIdentifier?: string;
-                URL: string;
-                useLiveLayout: boolean;
-            };
+            content: components["schemas"]["RawMessageContent"];
             /** Format: uuid */
             conversationId: string;
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description Per-conversation idempotency key. Reusing it with identical request bytes returns the original result; differing bytes are rejected.
+             */
             requestMessageId: string;
         };
         /** @description Send a message from a published template. */
         SendTemplateMessageBody: {
             /** Format: uuid */
             conversationId: string;
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description Per-conversation idempotency key. Reusing it with identical request bytes returns the original result; differing bytes are rejected.
+             */
             requestMessageId: string;
             /** Format: uuid */
             templateId: string;
@@ -2488,14 +3232,22 @@ export interface components {
             body: string;
             /** Format: uuid */
             conversationId: string;
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description Per-conversation idempotency key. Reusing it with identical request bytes returns the original result; differing bytes are rejected.
+             */
             requestMessageId: string;
+            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
             subject?: string;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "text";
+        } | {
+            body?: unknown;
+        } | {
+            attachmentIds: unknown;
         };
         /** @description The connected TikTok channel, or `null` if none is connected. */
         TikTokChannel: {
@@ -2511,7 +3263,7 @@ export interface components {
              * @description Channel platform. Always `tiktok` for this route.
              * @enum {string}
              */
-            platform: "amb" | "tiktok" | "whatsapp";
+            platform: "tiktok";
         } | null;
         /** @description Connection and OAuth status of the TikTok channel for a business. No access or refresh tokens are ever included — only their presence and expiry are surfaced. */
         TikTokChannelStatus: {
@@ -2521,7 +3273,7 @@ export interface components {
              */
             authStatus: "pending_oauth" | "connected" | "expired" | "disconnected" | null;
             channel: components["schemas"]["TikTokChannel"];
-            /** @description Whether an OAuth state token is currently pending (a connect URL was issued and the callback has not yet been received). */
+            /** @description Whether an OAuth state token is currently pending — `true` exactly when `authStatus` is `pending_oauth`. */
             oauthStatePending: boolean;
             /** @description ISO-8601 expiry of the refresh token, or `null`. */
             refreshTokenExpiresAt: string | null;
@@ -2543,6 +3295,117 @@ export interface components {
              */
             lastName: string | null;
         };
+        /** @description Common webhook delivery fields. Concrete event schemas repeat these fields. */
+        WebhookEventBase: {
+            /** Format: uuid */
+            eventId: string;
+            /** Format: uuid */
+            organizationId: string;
+            /** @enum {number} */
+            v: 0;
+        };
+        /** @description An inbound message delivered as visible or redacted according to integration access. */
+        WebhookInboundMessage: components["schemas"]["WebhookInboundMessageVisible"] | components["schemas"]["WebhookInboundMessageRedacted"];
+        /** @description Common stored inbound-message fields. Concrete message schemas repeat these fields. */
+        WebhookInboundMessageBase: {
+            actor: {
+                /** @enum {string} */
+                type: "customer";
+            };
+            attachments: {
+                /** Format: uri */
+                accessUrl: string | null;
+                /** Format: date-time */
+                accessUrlExpiresAt: string | null;
+                /** Format: uuid */
+                id: string;
+                mimeType: string | null;
+                originalFileName: string | null;
+                sizeBytes: number | null;
+                sortOrder: number;
+                /** @enum {string} */
+                status: "pending" | "ready" | "failed";
+            }[];
+            /** @enum {string} */
+            channel: "amb";
+            /**
+             * Format: date-time
+             * @description Time the system persisted this inbound message.
+             */
+            createdAt: string;
+            externalId: string;
+            /** Format: uuid */
+            id: string;
+        };
+        /** @description Redacted inbound message; attachment metadata remains available. */
+        WebhookInboundMessageRedacted: {
+            actor: {
+                /** @enum {string} */
+                type: "customer";
+            };
+            attachments: {
+                /** Format: uri */
+                accessUrl: string | null;
+                /** Format: date-time */
+                accessUrlExpiresAt: string | null;
+                /** Format: uuid */
+                id: string;
+                mimeType: string | null;
+                originalFileName: string | null;
+                sizeBytes: number | null;
+                sortOrder: number;
+                /** @enum {string} */
+                status: "pending" | "ready" | "failed";
+            }[];
+            /** @enum {string} */
+            channel: "amb";
+            content: null;
+            /**
+             * Format: date-time
+             * @description Time the system persisted this inbound message.
+             */
+            createdAt: string;
+            externalId: string;
+            /** Format: uuid */
+            id: string;
+            /** @enum {boolean} */
+            redacted: true;
+        } & WithRequired<components["schemas"]["WebhookInboundMessageBase"], "id" | "channel" | "externalId" | "createdAt" | "attachments" | "actor">;
+        /** @description Visible stored inbound message content for an integration webhook. */
+        WebhookInboundMessageVisible: {
+            actor: {
+                /** @enum {string} */
+                type: "customer";
+            };
+            attachments: {
+                /** Format: uri */
+                accessUrl: string | null;
+                /** Format: date-time */
+                accessUrlExpiresAt: string | null;
+                /** Format: uuid */
+                id: string;
+                mimeType: string | null;
+                originalFileName: string | null;
+                sizeBytes: number | null;
+                sortOrder: number;
+                /** @enum {string} */
+                status: "pending" | "ready" | "failed";
+            }[];
+            /** @enum {string} */
+            channel: "amb";
+            content: components["schemas"]["InboundMessageContent"];
+            /**
+             * Format: date-time
+             * @description Time the system persisted this inbound message.
+             */
+            createdAt: string;
+            externalId: string;
+            /** Format: uuid */
+            id: string;
+            /** @enum {boolean} */
+            redacted: false;
+        } & WithRequired<components["schemas"]["WebhookInboundMessageBase"], "id" | "channel" | "externalId" | "createdAt" | "attachments" | "actor">;
+        /** @description Delivered after a customer message is persisted; carries the post-update conversation routing values and the message, visible or redacted according to integration access. */
         WebhookMessageReceivedEvent: {
             /** @description Post-update conversation capabilities: null when unknown, [] when stored empty. */
             capabilityList: ("QUICK" | "LIST" | "TIME" | "AUTH" | "AUTH2" | "FORM")[] | null;
@@ -2558,387 +3421,15 @@ export interface components {
             intentId: string | null;
             /** @description Post-update conversation locale; null when unknown. */
             locale: string | null;
-            message: {
-                actor: {
-                    /** @enum {string} */
-                    type: "customer";
-                };
-                attachments: {
-                    /** Format: uri */
-                    accessUrl: string | null;
-                    /** Format: date-time */
-                    accessUrlExpiresAt: string | null;
-                    /** Format: uuid */
-                    id: string;
-                    mimeType: string | null;
-                    originalFileName: string | null;
-                    sizeBytes: number | null;
-                    sortOrder: number;
-                    /** @enum {string} */
-                    status: "pending" | "ready" | "failed";
-                }[];
-                /** @enum {string} */
-                channel: "amb";
-                content: {
-                    body: string;
-                    /** @enum {string} */
-                    kind: "text";
-                    subject?: string;
-                } | {
-                    /** @enum {string} */
-                    kind: "opt_out";
-                } | {
-                    data: {
-                        images?: {
-                            description?: string | null;
-                            identifier: string;
-                            name: string | null;
-                        }[];
-                        "quick-reply": {
-                            items?: {
-                                identifier: string;
-                                title: string;
-                            }[];
-                            selectedIdentifier?: string;
-                            selectedIndex?: number;
-                        };
-                        receivedMessage?: {
-                            alternateTitle?: string;
-                            imageDescription?: string;
-                            imageIdentifier?: string;
-                            imageSubtitle?: string;
-                            imageTitle?: string;
-                            secondarySubtitle?: string;
-                            /** @enum {string} */
-                            style?: "icon" | "small" | "large";
-                            subtitle?: string;
-                            tertiarySubtitle?: string;
-                            title: string;
-                        };
-                        replyMessage?: {
-                            alternateTitle?: string;
-                            imageDescription?: string;
-                            imageIdentifier?: string;
-                            imageSubtitle?: string;
-                            imageTitle?: string;
-                            secondarySubtitle?: string;
-                            /** @enum {string} */
-                            style?: "icon" | "small" | "large";
-                            subtitle?: string;
-                            tertiarySubtitle?: string;
-                            title: string;
-                        };
-                        requestIdentifier?: string;
-                    };
-                    /** @enum {string} */
-                    kind: "amb.quick_reply_response";
-                    sessionIdentifier?: string;
-                } | {
-                    data: {
-                        images?: {
-                            description?: string | null;
-                            identifier: string;
-                            name: string | null;
-                        }[];
-                        listPicker: {
-                            sections: {
-                                items: {
-                                    identifier: string;
-                                    imageIdentifier?: string;
-                                    order?: number;
-                                    style?: string;
-                                    subtitle?: string;
-                                    title?: string;
-                                }[];
-                                title?: string;
-                            }[];
-                        };
-                        receivedMessage?: {
-                            alternateTitle?: string;
-                            imageDescription?: string;
-                            imageIdentifier?: string;
-                            imageSubtitle?: string;
-                            imageTitle?: string;
-                            secondarySubtitle?: string;
-                            /** @enum {string} */
-                            style?: "icon" | "small" | "large";
-                            subtitle?: string;
-                            tertiarySubtitle?: string;
-                            title: string;
-                        };
-                        replyMessage?: {
-                            alternateTitle?: string;
-                            imageDescription?: string;
-                            imageIdentifier?: string;
-                            imageSubtitle?: string;
-                            imageTitle?: string;
-                            secondarySubtitle?: string;
-                            /** @enum {string} */
-                            style?: "icon" | "small" | "large";
-                            subtitle?: string;
-                            tertiarySubtitle?: string;
-                            title: string;
-                        };
-                        requestIdentifier?: string;
-                    };
-                    /** @enum {string} */
-                    kind: "amb.list_picker_response";
-                    sessionIdentifier?: string;
-                } | {
-                    data: {
-                        event: {
-                            identifier: string;
-                            imageIdentifier?: string;
-                            location?: {
-                                latitude?: number;
-                                longitude?: number;
-                                radius?: number;
-                                title?: string;
-                            };
-                            timeslots: {
-                                duration: number;
-                                identifier: string;
-                                startTime: string;
-                            }[];
-                            timezoneOffset?: number;
-                            title?: string;
-                        };
-                        images?: {
-                            description?: string | null;
-                            identifier: string;
-                            name: string | null;
-                        }[];
-                        receivedMessage?: {
-                            alternateTitle?: string;
-                            imageDescription?: string;
-                            imageIdentifier?: string;
-                            imageSubtitle?: string;
-                            imageTitle?: string;
-                            secondarySubtitle?: string;
-                            /** @enum {string} */
-                            style?: "icon" | "small" | "large";
-                            subtitle?: string;
-                            tertiarySubtitle?: string;
-                            title: string;
-                        };
-                        replyMessage?: {
-                            alternateTitle?: string;
-                            imageDescription?: string;
-                            imageIdentifier?: string;
-                            imageSubtitle?: string;
-                            imageTitle?: string;
-                            secondarySubtitle?: string;
-                            /** @enum {string} */
-                            style?: "icon" | "small" | "large";
-                            subtitle?: string;
-                            tertiarySubtitle?: string;
-                            title: string;
-                        };
-                        requestIdentifier?: string;
-                    };
-                    /** @enum {string} */
-                    kind: "amb.time_picker_response";
-                    sessionIdentifier?: string;
-                } | {
-                    data: {
-                        dynamic: {
-                            private?: boolean;
-                            selections: {
-                                items: {
-                                    identifier: string;
-                                    title?: string;
-                                    /** @enum {string} */
-                                    type?: "select" | "picker" | "datePicker" | "input";
-                                    value?: string;
-                                }[];
-                                pageIdentifier: string;
-                                subtitle?: string;
-                                title?: string;
-                            }[];
-                            /** @enum {string} */
-                            template: "messageForms";
-                            /** @enum {string} */
-                            version: "1.2";
-                        };
-                        images?: {
-                            description?: string | null;
-                            identifier: string;
-                            name: string | null;
-                        }[];
-                        receivedMessage?: {
-                            alternateTitle?: string;
-                            imageDescription?: string;
-                            imageIdentifier?: string;
-                            imageSubtitle?: string;
-                            imageTitle?: string;
-                            secondarySubtitle?: string;
-                            /** @enum {string} */
-                            style?: "icon" | "small" | "large";
-                            subtitle?: string;
-                            tertiarySubtitle?: string;
-                            title: string;
-                        };
-                        replyMessage?: {
-                            alternateTitle?: string;
-                            imageDescription?: string;
-                            imageIdentifier?: string;
-                            imageSubtitle?: string;
-                            imageTitle?: string;
-                            secondarySubtitle?: string;
-                            /** @enum {string} */
-                            style?: "icon" | "small" | "large";
-                            subtitle?: string;
-                            tertiarySubtitle?: string;
-                            title: string;
-                        };
-                        requestIdentifier?: string;
-                    };
-                    /** @enum {string} */
-                    kind: "amb.form_response";
-                    sessionIdentifier?: string;
-                } | {
-                    data: {
-                        authenticate: {
-                            error_code?: string;
-                            /** @enum {string} */
-                            status: "success" | "failure" | "cancel" | "unknown";
-                        };
-                        images?: {
-                            description?: string | null;
-                            identifier: string;
-                            name: string | null;
-                        }[];
-                        receivedMessage?: {
-                            alternateTitle?: string;
-                            imageDescription?: string;
-                            imageIdentifier?: string;
-                            imageSubtitle?: string;
-                            imageTitle?: string;
-                            secondarySubtitle?: string;
-                            /** @enum {string} */
-                            style?: "icon" | "small" | "large";
-                            subtitle?: string;
-                            tertiarySubtitle?: string;
-                            title: string;
-                        };
-                        replyMessage?: {
-                            alternateTitle?: string;
-                            imageDescription?: string;
-                            imageIdentifier?: string;
-                            imageSubtitle?: string;
-                            imageTitle?: string;
-                            secondarySubtitle?: string;
-                            /** @enum {string} */
-                            style?: "icon" | "small" | "large";
-                            subtitle?: string;
-                            tertiarySubtitle?: string;
-                            title: string;
-                        };
-                        requestIdentifier?: string;
-                    };
-                    /** @enum {string} */
-                    kind: "amb.authentication_response";
-                    sessionIdentifier?: string;
-                } | {
-                    appIcon?: {
-                        name: string | null;
-                    };
-                    bid: string;
-                    /** @enum {string} */
-                    kind: "amb.imessage_app_response";
-                    receivedMessage?: {
-                        alternateTitle?: string;
-                        imageDescription?: string;
-                        imageIdentifier?: string;
-                        imageSubtitle?: string;
-                        imageTitle?: string;
-                        secondarySubtitle?: string;
-                        /** @enum {string} */
-                        style?: "icon" | "small" | "large";
-                        subtitle?: string;
-                        tertiarySubtitle?: string;
-                        title: string;
-                    };
-                    replyMessage?: {
-                        alternateTitle?: string;
-                        imageDescription?: string;
-                        imageIdentifier?: string;
-                        imageSubtitle?: string;
-                        imageTitle?: string;
-                        secondarySubtitle?: string;
-                        /** @enum {string} */
-                        style?: "icon" | "small" | "large";
-                        subtitle?: string;
-                        tertiarySubtitle?: string;
-                        title: string;
-                    };
-                    sessionIdentifier?: string;
-                    URL?: string;
-                } | {
-                    /** @enum {string} */
-                    kind: "amb.invitation_response";
-                    requestIdentifier: string;
-                    /** @enum {string} */
-                    result: "accepted";
-                    sessionIdentifier: string | null;
-                } | {
-                    bid: string | null;
-                    /** @enum {string} */
-                    kind: "amb.unrecognized_interactive_response";
-                    markers: string[];
-                    requestIdentifier: string | null;
-                    sessionIdentifier: string | null;
-                };
-                /**
-                 * Format: date-time
-                 * @description Time the system persisted this inbound message.
-                 */
-                createdAt: string;
-                externalId: string;
-                /** Format: uuid */
-                id: string;
-                /** @enum {boolean} */
-                redacted: false;
-            } | {
-                actor: {
-                    /** @enum {string} */
-                    type: "customer";
-                };
-                attachments: {
-                    /** Format: uri */
-                    accessUrl: string | null;
-                    /** Format: date-time */
-                    accessUrlExpiresAt: string | null;
-                    /** Format: uuid */
-                    id: string;
-                    mimeType: string | null;
-                    originalFileName: string | null;
-                    sizeBytes: number | null;
-                    sortOrder: number;
-                    /** @enum {string} */
-                    status: "pending" | "ready" | "failed";
-                }[];
-                /** @enum {string} */
-                channel: "amb";
-                content: null;
-                /**
-                 * Format: date-time
-                 * @description Time the system persisted this inbound message.
-                 */
-                createdAt: string;
-                externalId: string;
-                /** Format: uuid */
-                id: string;
-                /** @enum {boolean} */
-                redacted: true;
-            };
+            message: components["schemas"]["WebhookInboundMessage"];
             /** Format: uuid */
             organizationId: string;
             /** @enum {string} */
             type: "message.received";
             /** @enum {number} */
             v: 0;
-        };
+        } & WithRequired<components["schemas"]["WebhookEventBase"], "eventId" | "v" | "organizationId">;
+        /** @description Delivered after a messaging invitation changes status; carries the post-update invitation values and the conversation id once a conversation exists. */
         WebhookMessagingInvitationUpdatedEvent: {
             /** Format: uuid */
             conversationId: string | null;
@@ -2947,7 +3438,7 @@ export interface components {
             messagingInvitation: {
                 callerReference: string | null;
                 /** @enum {string} */
-                channel: "amb" | "tiktok" | "whatsapp" | "rcs" | "sms" | "instagram" | "facebook_messenger" | "telegram" | "line" | "wechat" | "email" | "custom";
+                channel: "amb";
                 /** @description callerReference when supplied, otherwise the messaging invitation ID. */
                 effectiveReference: string;
                 /** Format: uuid */
@@ -2973,7 +3464,7 @@ export interface components {
             type: "messaging_invitation.updated";
             /** @enum {number} */
             v: 0;
-        };
+        } & WithRequired<components["schemas"]["WebhookEventBase"], "eventId" | "v" | "organizationId">;
     };
     responses: never;
     parameters: never;
@@ -2984,31 +3475,65 @@ export interface components {
 export type SchemaActorGrant = components['schemas']['ActorGrant'];
 export type SchemaAdminBusinessChannel = components['schemas']['AdminBusinessChannel'];
 export type SchemaAdminBusinessChannelList = components['schemas']['AdminBusinessChannelList'];
+export type SchemaApiError = components['schemas']['ApiError'];
 export type SchemaBusinessSettings = components['schemas']['BusinessSettings'];
 export type SchemaChannel = components['schemas']['Channel'];
-export type SchemaChannelListResponse = components['schemas']['ChannelListResponse'];
-export type SchemaConversationDetailResponse = components['schemas']['ConversationDetailResponse'];
-export type SchemaConversationListItem = components['schemas']['ConversationListItem'];
-export type SchemaConversationListResponse = components['schemas']['ConversationListResponse'];
-export type SchemaCreateMessagingInvitation = components['schemas']['CreateMessagingInvitation'];
-export type SchemaErrorResponse = components['schemas']['ErrorResponse'];
-export type SchemaIntegrationTokenResponse = components['schemas']['IntegrationTokenResponse'];
-export type SchemaMediaAccessUrlSuccess = components['schemas']['MediaAccessUrlSuccess'];
-export type SchemaMediaUploadSuccess = components['schemas']['MediaUploadSuccess'];
+export type SchemaChannelList = components['schemas']['ChannelList'];
+export type SchemaConversation = components['schemas']['Conversation'];
+export type SchemaConversationDetail = components['schemas']['ConversationDetail'];
+export type SchemaConversationList = components['schemas']['ConversationList'];
+export type SchemaConversationMessage = components['schemas']['ConversationMessage'];
+export type SchemaConversationMessageAttachment = components['schemas']['ConversationMessageAttachment'];
+export type SchemaCreateMessagingInvitationBody = components['schemas']['CreateMessagingInvitationBody'];
+export type SchemaDeleteResult = components['schemas']['DeleteResult'];
+export type SchemaInboundMessageContent = components['schemas']['InboundMessageContent'];
+export type SchemaInboundMessageContentAmbAuthenticationResponse = components['schemas']['InboundMessageContentAmbAuthenticationResponse'];
+export type SchemaInboundMessageContentAmbFormResponse = components['schemas']['InboundMessageContentAmbFormResponse'];
+export type SchemaInboundMessageContentAmbImessageAppResponse = components['schemas']['InboundMessageContentAmbImessageAppResponse'];
+export type SchemaInboundMessageContentAmbInvitationResponse = components['schemas']['InboundMessageContentAmbInvitationResponse'];
+export type SchemaInboundMessageContentAmbListPickerResponse = components['schemas']['InboundMessageContentAmbListPickerResponse'];
+export type SchemaInboundMessageContentAmbQuickReplyResponse = components['schemas']['InboundMessageContentAmbQuickReplyResponse'];
+export type SchemaInboundMessageContentAmbTimePickerResponse = components['schemas']['InboundMessageContentAmbTimePickerResponse'];
+export type SchemaInboundMessageContentAmbUnrecognizedInteractiveResponse = components['schemas']['InboundMessageContentAmbUnrecognizedInteractiveResponse'];
+export type SchemaInboundMessageContentOptOut = components['schemas']['InboundMessageContentOptOut'];
+export type SchemaInboundMessageContentText = components['schemas']['InboundMessageContentText'];
+export type SchemaIntegrationTokenResult = components['schemas']['IntegrationTokenResult'];
+export type SchemaMediaAccessUrlResult = components['schemas']['MediaAccessUrlResult'];
+export type SchemaMediaUploadResult = components['schemas']['MediaUploadResult'];
 export type SchemaMessagingInvitation = components['schemas']['MessagingInvitation'];
 export type SchemaMessagingInvitationBodyCapError = components['schemas']['MessagingInvitationBodyCapError'];
+export type SchemaMessagingInvitationCreateRequestError = components['schemas']['MessagingInvitationCreateRequestError'];
+export type SchemaMessagingInvitationCreateResult = components['schemas']['MessagingInvitationCreateResult'];
 export type SchemaMessagingInvitationError = components['schemas']['MessagingInvitationError'];
 export type SchemaMessagingInvitationList = components['schemas']['MessagingInvitationList'];
 export type SchemaMessagingInvitationRequestError = components['schemas']['MessagingInvitationRequestError'];
 export type SchemaMessagingInvitationSendFailure = components['schemas']['MessagingInvitationSendFailure'];
-export type SchemaRichAssetDeleteResult = components['schemas']['RichAssetDeleteResult'];
+export type SchemaOutboundMessageContent = components['schemas']['OutboundMessageContent'];
+export type SchemaOutboundMessageContentAmbAuthentication = components['schemas']['OutboundMessageContentAmbAuthentication'];
+export type SchemaOutboundMessageContentAmbForm = components['schemas']['OutboundMessageContentAmbForm'];
+export type SchemaOutboundMessageContentAmbImessageApp = components['schemas']['OutboundMessageContentAmbImessageApp'];
+export type SchemaOutboundMessageContentAmbInvitation = components['schemas']['OutboundMessageContentAmbInvitation'];
+export type SchemaOutboundMessageContentAmbListPicker = components['schemas']['OutboundMessageContentAmbListPicker'];
+export type SchemaOutboundMessageContentAmbQuickReply = components['schemas']['OutboundMessageContentAmbQuickReply'];
+export type SchemaOutboundMessageContentAmbRichLink = components['schemas']['OutboundMessageContentAmbRichLink'];
+export type SchemaOutboundMessageContentAmbTimePicker = components['schemas']['OutboundMessageContentAmbTimePicker'];
+export type SchemaOutboundMessageContentText = components['schemas']['OutboundMessageContentText'];
+export type SchemaRawMessageContent = components['schemas']['RawMessageContent'];
+export type SchemaRawMessageContentAmbAuthentication = components['schemas']['RawMessageContentAmbAuthentication'];
+export type SchemaRawMessageContentAmbForm = components['schemas']['RawMessageContentAmbForm'];
+export type SchemaRawMessageContentAmbImessageApp = components['schemas']['RawMessageContentAmbImessageApp'];
+export type SchemaRawMessageContentAmbListPicker = components['schemas']['RawMessageContentAmbListPicker'];
+export type SchemaRawMessageContentAmbQuickReply = components['schemas']['RawMessageContentAmbQuickReply'];
+export type SchemaRawMessageContentAmbRichLink = components['schemas']['RawMessageContentAmbRichLink'];
+export type SchemaRawMessageContentAmbTimePicker = components['schemas']['RawMessageContentAmbTimePicker'];
+export type SchemaRawMessageContentText = components['schemas']['RawMessageContentText'];
 export type SchemaRichAssetItem = components['schemas']['RichAssetItem'];
 export type SchemaRichAssetList = components['schemas']['RichAssetList'];
 export type SchemaRichChannelReadiness = components['schemas']['RichChannelReadiness'];
 export type SchemaRichReason = components['schemas']['RichReason'];
 export type SchemaRichReasonsError = components['schemas']['RichReasonsError'];
+export type SchemaRichRequestError = components['schemas']['RichRequestError'];
 export type SchemaRichTemplateDefinition = components['schemas']['RichTemplateDefinition'];
-export type SchemaRichTemplateDeleteResult = components['schemas']['RichTemplateDeleteResult'];
 export type SchemaRichTemplateDetail = components['schemas']['RichTemplateDetail'];
 export type SchemaRichTemplateList = components['schemas']['RichTemplateList'];
 export type SchemaRichTemplateSummary = components['schemas']['RichTemplateSummary'];
@@ -3016,13 +3541,18 @@ export type SchemaRichTemplateWriteBody = components['schemas']['RichTemplateWri
 export type SchemaSendAuthenticationMessageBody = components['schemas']['SendAuthenticationMessageBody'];
 export type SchemaSendMessageBody = components['schemas']['SendMessageBody'];
 export type SchemaSendMessageError = components['schemas']['SendMessageError'];
-export type SchemaSendMessageSuccess = components['schemas']['SendMessageSuccess'];
+export type SchemaSendMessageResult = components['schemas']['SendMessageResult'];
 export type SchemaSendRawMessageBody = components['schemas']['SendRawMessageBody'];
 export type SchemaSendTemplateMessageBody = components['schemas']['SendTemplateMessageBody'];
 export type SchemaSendTextMessageBody = components['schemas']['SendTextMessageBody'];
 export type SchemaTikTokChannel = components['schemas']['TikTokChannel'];
 export type SchemaTikTokChannelStatus = components['schemas']['TikTokChannelStatus'];
 export type SchemaUpdateConversationNameBody = components['schemas']['UpdateConversationNameBody'];
+export type SchemaWebhookEventBase = components['schemas']['WebhookEventBase'];
+export type SchemaWebhookInboundMessage = components['schemas']['WebhookInboundMessage'];
+export type SchemaWebhookInboundMessageBase = components['schemas']['WebhookInboundMessageBase'];
+export type SchemaWebhookInboundMessageRedacted = components['schemas']['WebhookInboundMessageRedacted'];
+export type SchemaWebhookInboundMessageVisible = components['schemas']['WebhookInboundMessageVisible'];
 export type SchemaWebhookMessageReceivedEvent = components['schemas']['WebhookMessageReceivedEvent'];
 export type SchemaWebhookMessagingInvitationUpdatedEvent = components['schemas']['WebhookMessagingInvitationUpdatedEvent'];
 export type $defs = Record<string, never>;
@@ -3059,31 +3589,53 @@ export interface operations {
                     "application/json": components["schemas"]["AdminBusinessChannelList"];
                 };
             };
-            /** @description count out of range (1-100). */
+            /** @description Invalid request parameters or body. */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Missing or invalid access token. */
+            /** @description Missing or invalid authentication credentials. */
             401: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Authenticated, but the member lacks the required tier or the `ViewChannels` permission. */
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -3122,22 +3674,44 @@ export interface operations {
                     "application/json": components["schemas"]["TikTokChannelStatus"];
                 };
             };
-            /** @description Missing or invalid access token. */
+            /** @description Missing or invalid authentication credentials. */
             401: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Authenticated but lacks the required tier/permission (`admin` + `ViewChannels`). */
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -3160,13 +3734,22 @@ export interface operations {
                     "application/json": components["schemas"]["BusinessSettings"];
                 };
             };
-            /** @description Forbidden — the actor lacks the `admin` tier or the `ViewBusiness` permission. */
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
             /** @description Business not found. */
@@ -3175,12 +3758,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
     };
-    adminListRichTemplates: {
+    listAdminRichTemplates: {
         parameters: {
             query?: {
                 /** @description Keyset cursor: the `id` of the last row from the previous page (returned as `nextCursor`). Omit to fetch the first page. */
@@ -3204,21 +3809,79 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "templates": [
+                     *         {
+                     *           "id": "0190f3f0-0000-7000-8000-000000000030",
+                     *           "name": "Service picker",
+                     *           "templateType": "list_picker",
+                     *           "mode": "native",
+                     *           "nativeChannel": "amb",
+                     *           "nativeType": "list_picker",
+                     *           "status": "published",
+                     *           "createdAt": "2026-09-08T12:00:00.000Z",
+                     *           "updatedAt": "2026-09-08T12:05:00.000Z"
+                     *         }
+                     *       ],
+                     *       "nextCursor": "0190f3f0-0000-7000-8000-000000000030"
+                     *     }
+                     */
                     "application/json": components["schemas"]["RichTemplateList"];
                 };
             };
-            /** @description Forbidden — the actor lacks the `admin` tier or the `ManageTemplates` permission. */
+            /** @description Invalid request parameters or body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
     };
-    adminCreateRichTemplate: {
+    createAdminRichTemplate: {
         parameters: {
             query?: never;
             header?: never;
@@ -3228,6 +3891,58 @@ export interface operations {
         /** @description Template name, definition, and slot bindings. */
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "name": "Service picker",
+                 *       "definition": {
+                 *         "mode": "native",
+                 *         "channel": "amb",
+                 *         "content": {
+                 *           "kind": "list_picker",
+                 *           "receivedBubble": {
+                 *             "style": "large",
+                 *             "title": "Hi {{firstName}}, which service do you need?",
+                 *             "subtitle": "Tap to choose one",
+                 *             "imageSlot": "hero"
+                 *           },
+                 *           "replyBubble": {
+                 *             "style": "icon",
+                 *             "title": "Service selected",
+                 *             "subtitle": null,
+                 *             "imageSlot": null
+                 *           },
+                 *           "sections": [
+                 *             {
+                 *               "title": "Available services",
+                 *               "multipleSelection": false,
+                 *               "items": null,
+                 *               "itemsVariable": "services"
+                 *             }
+                 *           ]
+                 *         },
+                 *         "variables": [
+                 *           {
+                 *             "name": "firstName",
+                 *             "type": "text",
+                 *             "required": true,
+                 *             "itemSchema": null
+                 *           },
+                 *           {
+                 *             "name": "services",
+                 *             "type": "collection",
+                 *             "required": true,
+                 *             "itemSchema": "list_picker_item"
+                 *           }
+                 *         ]
+                 *       },
+                 *       "slotBindings": [
+                 *         {
+                 *           "slotName": "hero",
+                 *           "assetId": "0190f3f0-0000-7000-8000-000000000031"
+                 *         }
+                 *       ]
+                 *     }
+                 */
                 "application/json": components["schemas"]["RichTemplateWriteBody"];
             };
         };
@@ -3238,28 +3953,107 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "0190f3f0-0000-7000-8000-000000000030",
+                     *       "name": "Service picker",
+                     *       "templateType": "list_picker",
+                     *       "mode": "native",
+                     *       "nativeChannel": "amb",
+                     *       "nativeType": "list_picker",
+                     *       "status": "draft",
+                     *       "createdAt": "2026-09-08T12:00:00.000Z",
+                     *       "updatedAt": "2026-09-08T12:00:00.000Z",
+                     *       "definition": {
+                     *         "mode": "native",
+                     *         "channel": "amb",
+                     *         "content": {
+                     *           "kind": "list_picker",
+                     *           "receivedBubble": {
+                     *             "style": "large",
+                     *             "title": "Hi {{firstName}}, which service do you need?",
+                     *             "subtitle": "Tap to choose one",
+                     *             "imageSlot": "hero"
+                     *           },
+                     *           "replyBubble": {
+                     *             "style": "icon",
+                     *             "title": "Service selected",
+                     *             "subtitle": null,
+                     *             "imageSlot": null
+                     *           },
+                     *           "sections": [
+                     *             {
+                     *               "title": "Available services",
+                     *               "multipleSelection": false,
+                     *               "items": null,
+                     *               "itemsVariable": "services"
+                     *             }
+                     *           ]
+                     *         },
+                     *         "variables": [
+                     *           {
+                     *             "name": "firstName",
+                     *             "type": "text",
+                     *             "required": true,
+                     *             "itemSchema": null
+                     *           },
+                     *           {
+                     *             "name": "services",
+                     *             "type": "collection",
+                     *             "required": true,
+                     *             "itemSchema": "list_picker_item"
+                     *           }
+                     *         ]
+                     *       },
+                     *       "slotBindings": [
+                     *         {
+                     *           "slotName": "hero",
+                     *           "channel": "amb",
+                     *           "usage": "rich_image_200",
+                     *           "assetId": "0190f3f0-0000-7000-8000-000000000031"
+                     *         }
+                     *       ],
+                     *       "readiness": [
+                     *         {
+                     *           "channel": "amb",
+                     *           "resolvedNativeType": "list_picker",
+                     *           "status": "ready",
+                     *           "reasons": []
+                     *         }
+                     *       ]
+                     *     }
+                     */
                     "application/json": components["schemas"]["RichTemplateDetail"];
                 };
             };
-            /** @description Bad request — publish-validity or definition problems; the body carries machine-readable `reasons`. */
+            /** @description Bad request — malformed input or publish-validity problems; service failures carry machine-readable `reasons`. */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["RichRequestError"];
                 };
             };
-            /** @description Forbidden — the actor lacks the `admin` tier or the `ManageTemplates` permission. */
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description A template with this name already exists in the organization. */
+            /** @description A template with this name already exists in the business. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -3268,13 +4062,36 @@ export interface operations {
                     "application/json": components["schemas"]["RichReasonsError"];
                 };
             };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
         };
     };
-    adminGetRichTemplate: {
+    getAdminRichTemplate: {
         parameters: {
             query?: never;
             header?: never;
             path: {
+                /** @description Identifier of the template (UUIDv7). Unknown or malformed ids return 404. */
                 templateId: string;
             };
             cookie?: never;
@@ -3287,34 +4104,145 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "0190f3f0-0000-7000-8000-000000000030",
+                     *       "name": "Service picker",
+                     *       "templateType": "list_picker",
+                     *       "mode": "native",
+                     *       "nativeChannel": "amb",
+                     *       "nativeType": "list_picker",
+                     *       "status": "published",
+                     *       "createdAt": "2026-09-08T12:00:00.000Z",
+                     *       "updatedAt": "2026-09-08T12:05:00.000Z",
+                     *       "definition": {
+                     *         "mode": "native",
+                     *         "channel": "amb",
+                     *         "content": {
+                     *           "kind": "list_picker",
+                     *           "receivedBubble": {
+                     *             "style": "large",
+                     *             "title": "Hi {{firstName}}, which service do you need?",
+                     *             "subtitle": "Tap to choose one",
+                     *             "imageSlot": "hero"
+                     *           },
+                     *           "replyBubble": {
+                     *             "style": "icon",
+                     *             "title": "Service selected",
+                     *             "subtitle": null,
+                     *             "imageSlot": null
+                     *           },
+                     *           "sections": [
+                     *             {
+                     *               "title": "Available services",
+                     *               "multipleSelection": false,
+                     *               "items": null,
+                     *               "itemsVariable": "services"
+                     *             }
+                     *           ]
+                     *         },
+                     *         "variables": [
+                     *           {
+                     *             "name": "firstName",
+                     *             "type": "text",
+                     *             "required": true,
+                     *             "itemSchema": null
+                     *           },
+                     *           {
+                     *             "name": "services",
+                     *             "type": "collection",
+                     *             "required": true,
+                     *             "itemSchema": "list_picker_item"
+                     *           }
+                     *         ]
+                     *       },
+                     *       "slotBindings": [
+                     *         {
+                     *           "slotName": "hero",
+                     *           "channel": "amb",
+                     *           "usage": "rich_image_200",
+                     *           "assetId": "0190f3f0-0000-7000-8000-000000000031"
+                     *         }
+                     *       ],
+                     *       "readiness": [
+                     *         {
+                     *           "channel": "amb",
+                     *           "resolvedNativeType": "list_picker",
+                     *           "status": "ready",
+                     *           "reasons": []
+                     *         }
+                     *       ]
+                     *     }
+                     */
                     "application/json": components["schemas"]["RichTemplateDetail"];
                 };
             };
-            /** @description Forbidden — the actor lacks the `admin` tier or the `ManageTemplates` permission. */
+            /** @description Invalid request parameters or body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Template not found for this organization. */
+            /** @description Template not found for this business. */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["RichReasonsError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
     };
-    adminEditRichTemplate: {
+    updateAdminRichTemplate: {
         parameters: {
             query?: never;
             header?: never;
             path: {
+                /** @description Identifier of the template (UUIDv7). Unknown or malformed ids return 404. */
                 templateId: string;
             };
             cookie?: never;
@@ -3322,6 +4250,58 @@ export interface operations {
         /** @description Replacement name, definition, and slot bindings. */
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "name": "Service picker",
+                 *       "definition": {
+                 *         "mode": "native",
+                 *         "channel": "amb",
+                 *         "content": {
+                 *           "kind": "list_picker",
+                 *           "receivedBubble": {
+                 *             "style": "large",
+                 *             "title": "Hi {{firstName}}, which service do you need?",
+                 *             "subtitle": "Tap to choose one",
+                 *             "imageSlot": "hero"
+                 *           },
+                 *           "replyBubble": {
+                 *             "style": "icon",
+                 *             "title": "Service selected",
+                 *             "subtitle": null,
+                 *             "imageSlot": null
+                 *           },
+                 *           "sections": [
+                 *             {
+                 *               "title": "Available services",
+                 *               "multipleSelection": false,
+                 *               "items": null,
+                 *               "itemsVariable": "services"
+                 *             }
+                 *           ]
+                 *         },
+                 *         "variables": [
+                 *           {
+                 *             "name": "firstName",
+                 *             "type": "text",
+                 *             "required": true,
+                 *             "itemSchema": null
+                 *           },
+                 *           {
+                 *             "name": "services",
+                 *             "type": "collection",
+                 *             "required": true,
+                 *             "itemSchema": "list_picker_item"
+                 *           }
+                 *         ]
+                 *       },
+                 *       "slotBindings": [
+                 *         {
+                 *           "slotName": "hero",
+                 *           "assetId": "0190f3f0-0000-7000-8000-000000000031"
+                 *         }
+                 *       ]
+                 *     }
+                 */
                 "application/json": components["schemas"]["RichTemplateWriteBody"];
             };
         };
@@ -3332,34 +4312,113 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "0190f3f0-0000-7000-8000-000000000030",
+                     *       "name": "Service picker",
+                     *       "templateType": "list_picker",
+                     *       "mode": "native",
+                     *       "nativeChannel": "amb",
+                     *       "nativeType": "list_picker",
+                     *       "status": "draft",
+                     *       "createdAt": "2026-09-08T12:00:00.000Z",
+                     *       "updatedAt": "2026-09-08T12:00:00.000Z",
+                     *       "definition": {
+                     *         "mode": "native",
+                     *         "channel": "amb",
+                     *         "content": {
+                     *           "kind": "list_picker",
+                     *           "receivedBubble": {
+                     *             "style": "large",
+                     *             "title": "Hi {{firstName}}, which service do you need?",
+                     *             "subtitle": "Tap to choose one",
+                     *             "imageSlot": "hero"
+                     *           },
+                     *           "replyBubble": {
+                     *             "style": "icon",
+                     *             "title": "Service selected",
+                     *             "subtitle": null,
+                     *             "imageSlot": null
+                     *           },
+                     *           "sections": [
+                     *             {
+                     *               "title": "Available services",
+                     *               "multipleSelection": false,
+                     *               "items": null,
+                     *               "itemsVariable": "services"
+                     *             }
+                     *           ]
+                     *         },
+                     *         "variables": [
+                     *           {
+                     *             "name": "firstName",
+                     *             "type": "text",
+                     *             "required": true,
+                     *             "itemSchema": null
+                     *           },
+                     *           {
+                     *             "name": "services",
+                     *             "type": "collection",
+                     *             "required": true,
+                     *             "itemSchema": "list_picker_item"
+                     *           }
+                     *         ]
+                     *       },
+                     *       "slotBindings": [
+                     *         {
+                     *           "slotName": "hero",
+                     *           "channel": "amb",
+                     *           "usage": "rich_image_200",
+                     *           "assetId": "0190f3f0-0000-7000-8000-000000000031"
+                     *         }
+                     *       ],
+                     *       "readiness": [
+                     *         {
+                     *           "channel": "amb",
+                     *           "resolvedNativeType": "list_picker",
+                     *           "status": "ready",
+                     *           "reasons": []
+                     *         }
+                     *       ]
+                     *     }
+                     */
                     "application/json": components["schemas"]["RichTemplateDetail"];
                 };
             };
-            /** @description Bad request — publish-validity or definition problems; the body carries machine-readable `reasons`. */
+            /** @description Bad request — malformed input or definition problems; service failures carry machine-readable `reasons`. */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["RichRequestError"];
                 };
             };
-            /** @description Forbidden — the actor lacks the `admin` tier or the `ManageTemplates` permission. */
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Template not found for this organization. */
+            /** @description Template not found for this business. */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["RichReasonsError"];
                 };
             };
             /** @description Duplicate name, or the template is archived. */
@@ -3371,13 +4430,36 @@ export interface operations {
                     "application/json": components["schemas"]["RichReasonsError"];
                 };
             };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
         };
     };
-    adminDeleteRichTemplate: {
+    deleteAdminRichTemplate: {
         parameters: {
             query?: never;
             header?: never;
             path: {
+                /** @description Identifier of the template (UUIDv7). Unknown or malformed ids return 404. */
                 templateId: string;
             };
             cookie?: never;
@@ -3390,25 +4472,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RichTemplateDeleteResult"];
+                    "application/json": components["schemas"]["DeleteResult"];
                 };
             };
-            /** @description Forbidden — the actor lacks the `admin` tier or the `ManageTemplates` permission. */
+            /** @description Invalid request parameters or body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Template not found for this organization. */
+            /** @description Template not found for this business. */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["RichReasonsError"];
                 };
             };
             /** @description Only never-published drafts can be deleted. */
@@ -3420,13 +4520,36 @@ export interface operations {
                     "application/json": components["schemas"]["RichReasonsError"];
                 };
             };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
         };
     };
-    adminArchiveRichTemplate: {
+    archiveAdminRichTemplate: {
         parameters: {
             query?: never;
             header?: never;
             path: {
+                /** @description Identifier of the template (UUIDv7). Unknown or malformed ids return 404. */
                 templateId: string;
             };
             cookie?: never;
@@ -3442,40 +4565,72 @@ export interface operations {
                     "application/json": components["schemas"]["RichTemplateDetail"];
                 };
             };
-            /** @description Bad request — drafts must be deleted rather than archived. */
+            /** @description Bad request — drafts must be deleted rather than archived; service failures carry machine-readable `reasons`. */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["RichReasonsError"];
                 };
             };
-            /** @description Forbidden — the actor lacks the `admin` tier or the `ManageTemplates` permission. */
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Template not found for this organization. */
+            /** @description Template not found for this business. */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["RichReasonsError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
     };
-    adminPublishRichTemplate: {
+    publishAdminRichTemplate: {
         parameters: {
             query?: never;
             header?: never;
             path: {
+                /** @description Identifier of the template (UUIDv7). Unknown or malformed ids return 404. */
                 templateId: string;
             };
             cookie?: never;
@@ -3491,31 +4646,40 @@ export interface operations {
                     "application/json": components["schemas"]["RichTemplateDetail"];
                 };
             };
-            /** @description Bad request — publish-validity or definition problems; the body carries machine-readable `reasons`. */
+            /** @description Template validation failed. Structured reasons identify the problems. */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["RichReasonsError"];
                 };
             };
-            /** @description Forbidden — the actor lacks the `admin` tier or the `ManageTemplates` permission. */
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Template not found for this organization. */
+            /** @description Template not found for this business. */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["RichReasonsError"];
                 };
             };
             /** @description Archived templates cannot be published. */
@@ -3527,16 +4691,40 @@ export interface operations {
                     "application/json": components["schemas"]["RichReasonsError"];
                 };
             };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
         };
     };
-    adminListRichAssets: {
+    listAdminRichAssets: {
         parameters: {
             query?: {
                 /** @description Keyset cursor: the `id` of the last row from the previous page (returned as `nextCursor`). Omit to fetch the first page. */
                 before?: string;
+                /** @description Only assets uploaded for this channel. */
                 channel?: "amb";
                 /** @description Page size. Defaults to 25; hard cap 100. */
                 count?: number;
+                /** @description Only assets of this size class: `rich_image_200` (image slots) or `rich_icon_15` (the iMessage app icon slot). */
                 usage?: "rich_image_200" | "rich_icon_15";
             };
             header?: never;
@@ -3551,21 +4739,94 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "assets": [
+                     *         {
+                     *           "id": "0190f3f0-0000-7000-8000-000000000031",
+                     *           "channel": "amb",
+                     *           "usage": "rich_image_200",
+                     *           "displayName": "Hero image",
+                     *           "mimeType": "image/png",
+                     *           "sizeBytes": 48213,
+                     *           "width": 600,
+                     *           "height": 400,
+                     *           "createdAt": "2026-09-08T11:55:00.000Z",
+                     *           "accessUrl": "https://storage.example.com/rich-assets/0190f3f0-0000-7000-8000-000000000031?signature=example",
+                     *           "accessUrlExpiresAt": "2026-09-15T11:55:00.000Z"
+                     *         },
+                     *         {
+                     *           "id": "0190f3f0-0000-7000-8000-000000000032",
+                     *           "channel": "amb",
+                     *           "usage": "rich_icon_15",
+                     *           "displayName": "App icon",
+                     *           "mimeType": "image/png",
+                     *           "sizeBytes": 9312,
+                     *           "width": 120,
+                     *           "height": 120,
+                     *           "createdAt": "2026-09-08T11:50:00.000Z",
+                     *           "accessUrl": "https://storage.example.com/rich-assets/0190f3f0-0000-7000-8000-000000000032?signature=example",
+                     *           "accessUrlExpiresAt": "2026-09-15T11:50:00.000Z"
+                     *         }
+                     *       ],
+                     *       "nextCursor": "0190f3f0-0000-7000-8000-000000000032"
+                     *     }
+                     */
                     "application/json": components["schemas"]["RichAssetList"];
                 };
             };
-            /** @description Forbidden — the actor lacks the `admin` tier or the `ManageTemplates` permission. */
+            /** @description Invalid request parameters or body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
     };
-    adminUploadRichAsset: {
+    uploadAdminRichAsset: {
         parameters: {
             query?: never;
             header?: never;
@@ -3575,18 +4836,29 @@ export interface operations {
         /** @description The asset metadata fields plus the image bytes. */
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "channel": "amb",
+                 *       "usage": "rich_image_200",
+                 *       "displayName": "Hero image",
+                 *       "file": "(binary PNG bytes)"
+                 *     }
+                 */
                 "multipart/form-data": {
-                    /** @description Channel slug the asset belongs to. */
-                    channel: string;
-                    /** @description Library display name, 1–200 chars. */
+                    /**
+                     * @description Channel the asset is uploaded for.
+                     * @enum {string}
+                     */
+                    channel: "amb";
+                    /** @description Library display name. */
                     displayName: string;
                     /**
                      * Format: binary
-                     * @description PNG image bytes.
+                     * @description PNG image file. `rich_image_200`: PNG <= 200,000 Base64 bytes. `rich_icon_15`: PNG < 15,360 Base64 bytes.
                      */
                     file: string;
                     /**
-                     * @description Rich-message size class for the asset.
+                     * @description Size class: `rich_image_200` (PNG <= 200,000 Base64 bytes) or `rich_icon_15` (PNG < 15,360 Base64 bytes).
                      * @enum {string}
                      */
                     usage: "rich_image_200" | "rich_icon_15";
@@ -3600,53 +4872,90 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "0190f3f0-0000-7000-8000-000000000031",
+                     *       "channel": "amb",
+                     *       "usage": "rich_image_200",
+                     *       "displayName": "Hero image",
+                     *       "mimeType": "image/png",
+                     *       "sizeBytes": 48213,
+                     *       "width": 600,
+                     *       "height": 400,
+                     *       "createdAt": "2026-09-08T11:55:00.000Z",
+                     *       "accessUrl": "https://storage.example.com/rich-assets/0190f3f0-0000-7000-8000-000000000031?signature=example",
+                     *       "accessUrlExpiresAt": "2026-09-15T11:55:00.000Z"
+                     *     }
+                     */
                     "application/json": components["schemas"]["RichAssetItem"];
                 };
             };
-            /** @description Bad request — missing/invalid fields, non-PNG bytes, declared-MIME mismatch, or invalid dimensions. */
+            /** @description Bad request — missing/invalid fields, non-PNG bytes, declared-MIME mismatch, or an image with zero width or height. */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "asset_format_unsupported: AMB rich-message images must be PNG files (magic-byte check failed)."
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["RichRequestError"];
                 };
             };
-            /** @description Forbidden — the actor lacks the `admin` tier or the `ManageTemplates` permission. */
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The upload exceeds the hard byte cap. */
+            /** @description Payload too large — PNG must be <= 200,000 Base64 bytes for `rich_image_200` or < 15,360 Base64 bytes for `rich_icon_15`. */
             413: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "error": "Upload exceeds the 204800-byte limit"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["RichRequestError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
     };
-    adminDeleteRichAsset: {
+    deleteAdminRichAsset: {
         parameters: {
             query?: never;
             header?: never;
             path: {
+                /** @description Identifier of the asset (UUIDv7). Unknown or malformed ids return 404. */
                 assetId: string;
             };
             cookie?: never;
@@ -3659,25 +4968,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RichAssetDeleteResult"];
+                    "application/json": components["schemas"]["DeleteResult"];
                 };
             };
-            /** @description Forbidden — the actor lacks the `admin` tier or the `ManageTemplates` permission. */
+            /** @description Invalid request parameters or body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Asset not found for this organization. */
+            /** @description Asset not found for this business. */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
             /** @description The asset is bound to a template. */
@@ -3687,6 +5014,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RichReasonsError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -3700,16 +5049,16 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description A business access JWT scoped to the integration’s organization. */
+            /** @description A business access JWT scoped to the integration’s business. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IntegrationTokenResponse"];
+                    "application/json": components["schemas"]["IntegrationTokenResult"];
                 };
             };
-            /** @description Unauthorized — the API key is missing, malformed, unknown, revoked, expired, or disabled, or its integration or owning organization is inactive. */
+            /** @description Unauthorized — the API key is missing, malformed, unknown, revoked, expired, or disabled, or its integration or owning business is inactive. */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -3720,7 +5069,18 @@ export interface operations {
                      *       "error": "Invalid or expired integration API key"
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -3734,7 +5094,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The active channels for the authenticated org. */
+            /** @description The active channels for the authenticated business. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3756,7 +5116,47 @@ export interface operations {
                      *       ]
                      *     }
                      */
-                    "application/json": components["schemas"]["ChannelListResponse"];
+                    "application/json": components["schemas"]["ChannelList"];
+                };
+            };
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -3768,6 +5168,7 @@ export interface operations {
                 count?: number;
                 /** @description Forward cursor from the preceding page. */
                 cursor?: string;
+                /** @description Return only conversations in this status. Omit to include conversations in every status. */
                 status?: "active" | "closed" | "opted_out";
             };
             header?: never;
@@ -3782,7 +5183,56 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConversationListResponse"];
+                    "application/json": components["schemas"]["ConversationList"];
+                };
+            };
+            /** @description Invalid request parameters or body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -3790,12 +5240,14 @@ export interface operations {
     getConversation: {
         parameters: {
             query?: {
+                /** @description Message id to page backwards from: only messages strictly older than it are returned. Omit for the newest window. */
                 before?: string;
+                /** @description Message-window size. Defaults to 25; hard cap 100. */
                 count?: number;
             };
             header?: never;
             path: {
-                /** @description UUIDv7 identifier of the conversation to fetch. */
+                /** @description Identifier of the conversation (UUIDv7). Unknown or malformed values return 404. */
                 conversationId: string;
             };
             cookie?: never;
@@ -3808,7 +5260,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConversationDetailResponse"];
+                    "application/json": components["schemas"]["ConversationDetail"];
+                };
+            };
+            /** @description Invalid request parameters or body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
             /** @description Conversation not found for this business. */
@@ -3817,7 +5296,29 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -3827,7 +5328,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description UUIDv7 identifier of the conversation to fetch. */
+                /** @description Identifier of the conversation (UUIDv7). Unknown or malformed values return 404. */
                 conversationId: string;
             };
             cookie?: never;
@@ -3869,7 +5370,34 @@ export interface operations {
                      *       "updatedAt": "2026-06-11T14:32:00.000Z"
                      *     }
                      */
-                    "application/json": components["schemas"]["ConversationListItem"];
+                    "application/json": components["schemas"]["Conversation"];
+                };
+            };
+            /** @description Invalid request parameters or body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
             /** @description Conversation not found for this business. */
@@ -3878,7 +5406,29 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -3888,7 +5438,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Identifier of the attachment to mint a read URL for, as returned by the media upload endpoint (`POST /api/v0/media/upload`, the `mediaAssetId` field) or referenced on a message attachment. Must belong to the authenticated business. */
+                /** @description Identifier of the stored message attachment (UUIDv7) to mint a read URL for. Obtain it from `messages[].attachments[].id` in conversation history; it is distinct from the `mediaAssetId` returned by upload. Unknown or malformed values, and attachments of another business, return 404. */
                 attachmentId: string;
             };
             cookie?: never;
@@ -3903,12 +5453,39 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "attachmentId": "018f1a2b-0000-7000-8000-00000000aaaa",
-                     *       "url": "https://media.example.com/attachments/018f1a2b-0000-7000-8000-00000000aaaa?signature=example",
+                     *       "attachmentId": "018f1a2b-0000-7000-8000-00000000b201",
+                     *       "url": "https://media.example.com/attachments/018f1a2b-0000-7000-8000-00000000b201?signature=example",
                      *       "expiresAt": "2026-06-11T18:30:00.000Z"
                      *     }
                      */
-                    "application/json": components["schemas"]["MediaAccessUrlSuccess"];
+                    "application/json": components["schemas"]["MediaAccessUrlResult"];
+                };
+            };
+            /** @description Invalid request parameters or body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
             /** @description Attachment not found for this business. */
@@ -3917,10 +5494,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Conflict — the attachment exists but is not in a readable (`ready`) state yet. */
+            /** @description Conflict — the attachment exists but is not in a readable (`ready`) state. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -3931,7 +5508,18 @@ export interface operations {
                      *       "error": "Attachment is not ready"
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
             /** @description Internal error while generating the signed access URL. */
@@ -3945,7 +5533,18 @@ export interface operations {
                      *       "error": "Failed to create attachment access URL"
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -3954,11 +5553,11 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                /** @description Declared body size in bytes. Optional; when present it is validated against the 100 MiB size ceiling before upload. The actual body size is always enforced regardless of this header. */
-                "content-length"?: string;
-                /** @description MIME type of the uploaded bytes. Optional; unknown MIME type remains null. */
+                /** @description Declared body size in bytes. Optional; blank is treated as absent. When present it must be a nonnegative integer no larger than 100 MiB (104857600 bytes). The actual body size is always enforced regardless of this header. */
+                "content-length"?: number;
+                /** @description MIME type of the uploaded bytes, for example `image/jpeg`. Optional; blank or absent values are stored as null. */
                 "content-type"?: string;
-                /** @description Original file name of the asset (required). Sanitized server-side: path separators and control characters are stripped and the value is truncated to 255 characters. Used for the download filename when the asset is later served. */
+                /** @description Original file name of the asset (required). Path separators and C0/DEL control characters are stripped, then the name is trimmed and truncated to 255 characters. Sanitized empty names, `.` and `..` are rejected; `...` is accepted unchanged. Used for the download filename when the asset is later served. */
                 "x-original-filename": string;
                 /** @description Optional messaging channel. AMB is the registered messaging channel. */
                 "x-target-channel"?: "amb";
@@ -3966,14 +5565,14 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        /** @description Raw binary bytes of the media asset, sent as `application/octet-stream`. Not JSON; the body is read as a stream and is not schema-validated. */
+        /** @description Raw binary bytes of the media asset, read as a stream and not schema-validated. Send the asset’s actual MIME type in `content-type`; `application/octet-stream` is the fallback for binary data without a more specific type. */
         requestBody: {
             content: {
-                "application/octet-stream": string;
+                "*/*": string;
             };
         };
         responses: {
-            /** @description The asset is ready to use. */
+            /** @description The asset was stored successfully. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3981,10 +5580,10 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "mediaAssetId": "018f1a2b-0000-7000-8000-00000000aaaa"
+                     *       "mediaAssetId": "018f1a2b-0000-7000-8000-00000000a101"
                      *     }
                      */
-                    "application/json": components["schemas"]["MediaUploadSuccess"];
+                    "application/json": components["schemas"]["MediaUploadResult"];
                 };
             };
             /** @description Bad request — invalid/missing metadata, an oversized body, an unsupported target channel. */
@@ -3998,7 +5597,36 @@ export interface operations {
                      *       "error": "File is too large for the intended channel"
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
             /** @description Internal error while uploading the asset. */
@@ -4012,7 +5640,18 @@ export interface operations {
                      *       "error": "Media upload failed"
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -4020,8 +5659,11 @@ export interface operations {
     listMessagingInvitations: {
         parameters: {
             query?: {
+                /** @description Maximum invitations to return. Defaults to 25; maximum 100. */
                 count?: number;
+                /** @description Pagination cursor from `nextCursor` in the previous response. */
                 cursor?: string;
+                /** @description Optional invitation status filter. */
                 status?: "submitting" | "submitted" | "provider_rejected" | "error" | "accepted" | "declined";
             };
             header?: never;
@@ -4030,13 +5672,62 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Organization-scoped messaging invitations, newest first. */
+            /** @description The business’s messaging invitations, newest first. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["MessagingInvitationList"];
+                };
+            };
+            /** @description Invalid request parameters. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessagingInvitationRequestError"];
+                };
+            };
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -4050,7 +5741,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateMessagingInvitation"];
+                "application/json": components["schemas"]["CreateMessagingInvitationBody"];
             };
         };
         responses: {
@@ -4060,20 +5751,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        duplicate: boolean;
-                        /** Format: uuid */
-                        messageId: string;
-                    };
+                    "application/json": components["schemas"]["MessagingInvitationCreateResult"];
                 };
             };
-            /** @description Malformed JSON or invalid request shape or branding syntax. */
+            /** @description Malformed JSON, or a request that fails validation (including branding syntax). */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MessagingInvitationRequestError"];
+                    "application/json": components["schemas"]["MessagingInvitationCreateRequestError"];
+                };
+            };
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
             /** @description Request ID is already submitting or is reused with different request bytes. */
@@ -4094,13 +5799,24 @@ export interface operations {
                     "application/json": components["schemas"]["MessagingInvitationBodyCapError"];
                 };
             };
-            /** @description Invalid recipient/reference/name/logo, messaging invitation unavailable, or custom branding not approved. */
+            /** @description Invalid recipient/name/logo, messaging invitation unavailable, or custom branding not approved. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["MessagingInvitationError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
             /** @description The request was recorded but the channel rejected or could not send it. */
@@ -4112,6 +5828,17 @@ export interface operations {
                     "application/json": components["schemas"]["MessagingInvitationSendFailure"];
                 };
             };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
         };
     };
     getMessagingInvitation: {
@@ -4119,13 +5846,14 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Identifier of the messaging invitation within the authenticated business. Malformed values return 400; unknown ids return 404. */
                 messagingInvitationId: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Organization-scoped messaging invitation. */
+            /** @description The requested messaging invitation. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -4134,13 +5862,62 @@ export interface operations {
                     "application/json": components["schemas"]["MessagingInvitation"];
                 };
             };
-            /** @description Messaging invitation not found for the authenticated organization. */
+            /** @description Invalid request parameters. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessagingInvitationRequestError"];
+                };
+            };
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Messaging invitation not found for the authenticated business. */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["MessagingInvitationError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -4164,7 +5941,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SendMessageSuccess"];
+                    "application/json": components["schemas"]["SendMessageResult"];
                 };
             };
             /** @description Invalid request. */
@@ -4176,7 +5953,25 @@ export interface operations {
                     "application/json": components["schemas"]["SendMessageError"];
                 };
             };
-            /** @description Conversation or template not found. */
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conversation, template, or conversation channel not found or unavailable. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -4203,7 +5998,7 @@ export interface operations {
                     "application/json": components["schemas"]["SendMessageError"];
                 };
             };
-            /** @description Request body exceeds 5 MiB. */
+            /** @description Request body exceeds the size limit. */
             413: {
                 headers: {
                     [name: string]: unknown;
@@ -4212,13 +6007,29 @@ export interface operations {
                     "application/json": components["schemas"]["SendMessageError"];
                 };
             };
-            /** @description The content is unsupported for this conversation. */
+            /** @description Content or dynamic values are invalid for this conversation, or the serialized AMB payload exceeds 5,000,000 bytes. Rejected before delivery. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "error": "Required variable \"options\" was not supplied."
+                     *     }
+                     */
                     "application/json": components["schemas"]["SendMessageError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
             /** @description The channel did not accept the message. */
@@ -4228,6 +6039,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SendMessageError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -4251,7 +6073,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SendMessageSuccess"];
+                    "application/json": components["schemas"]["SendMessageResult"];
                 };
             };
             /** @description Invalid request. */
@@ -4263,7 +6085,25 @@ export interface operations {
                     "application/json": components["schemas"]["SendMessageError"];
                 };
             };
-            /** @description Conversation not found. */
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conversation or conversation channel not found or unavailable. */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -4290,7 +6130,7 @@ export interface operations {
                     "application/json": components["schemas"]["SendMessageError"];
                 };
             };
-            /** @description Request body exceeds 5 MiB. */
+            /** @description Request body exceeds the size limit. */
             413: {
                 headers: {
                     [name: string]: unknown;
@@ -4299,13 +6139,24 @@ export interface operations {
                     "application/json": components["schemas"]["SendMessageError"];
                 };
             };
-            /** @description Content does not match the conversation channel. */
+            /** @description Content is unsupported for this conversation or the serialized AMB payload exceeds 5,000,000 bytes. Rejected before delivery. */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["SendMessageError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
             /** @description The channel did not accept the message. */
@@ -4315,6 +6166,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SendMessageError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -4344,6 +6206,55 @@ export interface operations {
                     "application/json": components["schemas"]["RichTemplateList"];
                 };
             };
+            /** @description Invalid request parameters or body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
         };
     };
     getRichTemplate: {
@@ -4351,6 +6262,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Identifier of the template (UUIDv7). Unknown, malformed, or unpublished ids return 404. */
                 templateId: string;
             };
             cookie?: never;
@@ -4366,13 +6278,62 @@ export interface operations {
                     "application/json": components["schemas"]["RichTemplateDetail"];
                 };
             };
-            /** @description Template not found (or not published) for this organization. */
+            /** @description Invalid request parameters or body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Template not found (or not published) for this business. */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -4398,7 +6359,7 @@ export interface operations {
         };
         responses: {
             /** @description Acknowledged. Return any 2xx to stop retries. */
-            200: {
+            "2XX": {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4427,7 +6388,7 @@ export interface operations {
         };
         responses: {
             /** @description Acknowledged. Return any 2xx to stop retries. */
-            200: {
+            "2XX": {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4436,3 +6397,6 @@ export interface operations {
         };
     };
 }
+type WithRequired<T, K extends keyof T> = T & {
+    [P in K]-?: T[P];
+};

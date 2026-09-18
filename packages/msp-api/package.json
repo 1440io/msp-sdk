@@ -1,6 +1,6 @@
 {
   "name": "@1440io/msp-api",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Typed client for the 1440 Apple Messages for Business MSP API — auto JWT exchange, cursor pagination, typed errors.",
   "license": "MIT",
   "type": "module",
@@ -40,7 +40,7 @@
     "api-client"
   ],
   "dependencies": {
-    "@1440io/msp-types": "0.2.0"
+    "@1440io/msp-types": "0.3.0"
   },
   "devDependencies": {
     "tsup": "^8.5.1",
