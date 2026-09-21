@@ -53,9 +53,13 @@ export interface SendRawParams extends RequestOverrides {
   /** Conversation to send into. */
   conversationId: string;
   /**
-   * The channel-native content, tagged by `kind` — `text`, `amb.quick_reply`,
+   * The content to send, tagged by `kind` — `text`, `amb.quick_reply`,
    * `amb.list_picker`, and the rest. The platform validates documented hard
    * constraints only, so the shape is yours to get right.
+   *
+   * `amb.url_payload` is the exception: you supply an Apple Music, Apple Maps,
+   * or App Clip URL and Apple builds the rich link at send time, so no template
+   * and no asset bindings are involved. Apple decides which URLs it supports.
    */
   content: SendRawMessageBody['content'];
   /** Idempotency key. Generated as a UUIDv7 when omitted. */
@@ -65,9 +69,19 @@ export interface SendRawParams extends RequestOverrides {
 /**
  * Outbound messaging.
  *
- * Every send carries a `requestMessageId` idempotency key, so retrying a send
- * that may already have landed returns the original result (`duplicate: true`)
- * rather than delivering a second message.
+ * Every send carries a `requestMessageId` request key, scoped to the
+ * conversation. Replaying it with identical bytes returns the persisted result
+ * with `duplicate: true` rather than sending again, and differing bytes are
+ * rejected with 409.
+ *
+ * Duplicate prevention is best effort, not a guarantee. Concurrent requests can
+ * both reach Apple before either is persisted, and a provider timeout or a
+ * persistence failure (502, or 500 on the send routes) leaves the outcome
+ * genuinely unknown — the channel may already have accepted the message. The
+ * documented recovery is to retry the identical bytes under the same
+ * `requestMessageId`, which this client does automatically, accepting that a
+ * retry can deliver another copy. Pass your own `requestMessageId` to keep that
+ * collapse working across process restarts.
  */
 export class MessagingResource extends Resource {
   /** Send a text message, with an optional subject and attachments. */
@@ -125,7 +139,7 @@ export class MessagingResource extends Resource {
       method: 'POST',
       path: '/api/v0/messaging/send',
       body,
-      idempotent: true, // requestMessageId makes a retry safe.
+      idempotent: true, // Same requestMessageId on retry; dedup is best effort.
       headers: options.headers,
       signal: options.signal,
       timeoutMs: options.timeoutMs,
@@ -133,10 +147,16 @@ export class MessagingResource extends Resource {
   }
 
   /**
-   * Send a channel-native payload straight through, bypassing templates.
+   * Send channel content straight through, bypassing templates.
    *
    * Idempotency hashes the canonical content after identifier injection: an
    * identical replay returns the original result, a changed payload conflicts.
+   * As with every send, that collapse is best effort — see the class docs.
+   *
+   * Pass `{ kind: 'amb.url_payload', url }` to have Apple construct a rich link
+   * from an Apple Music, Apple Maps, or App Clip URL. A 502 on that kind means
+   * either construction failed, in which case nothing was sent, or the send
+   * itself failed, in which case acceptance is unknown.
    */
   async sendRaw(params: SendRawParams): Promise<SendMessageSuccess> {
     const body: SendRawMessageBody = {

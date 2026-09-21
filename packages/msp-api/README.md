@@ -118,6 +118,13 @@ await client.messaging.sendRaw({
   },
 });
 
+// Hand Apple a URL and let it build the rich link at send time — Apple Music,
+// Apple Maps, or an App Clip. No template, no asset bindings.
+await client.messaging.sendRaw({
+  conversationId,
+  content: { kind: 'amb.url_payload', url: 'https://maps.apple.com/?q=coffee' },
+});
+
 // Start an OAuth flow on the device. The outcome arrives as an
 // `amb.authentication_response` on the message.received webhook.
 await client.messaging.sendAuthentication({
@@ -128,6 +135,8 @@ await client.messaging.sendAuthentication({
 ```
 
 Supply your own `requestMessageId` when a retry might span a process restart — store it with the work item, and a redelivery collapses onto the original send.
+
+That collapse is best effort, not a guarantee. Concurrent sends can both reach Apple before either is persisted, and a `502` (channel preparation or sending failed) or a `500` (persistence not confirmed) leaves the outcome genuinely unknown — the message may already have been delivered. The client retries those automatically under the same `requestMessageId`, which is the documented recovery, but a retry can deliver a second copy. If a duplicate would be costly, catch `MspServerError` and reconcile against conversation history instead of retrying blind.
 
 ## Messaging invitations
 

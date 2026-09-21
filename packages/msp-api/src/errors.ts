@@ -82,7 +82,16 @@ export class MspApiError extends MspError {
     this.issues = init.issues;
   }
 
-  /** True when retrying the identical request could plausibly succeed. */
+  /**
+   * True when retrying the identical request could plausibly succeed.
+   *
+   * On the send routes this is not the same as "nothing was delivered". A 502
+   * can mean the channel never accepted the message or that acceptance is
+   * unknown, and a 500 means persistence could not be confirmed after the
+   * channel may already have accepted it. The spec's guidance is still to retry
+   * the identical bytes under the same `requestMessageId`, accepting that the
+   * retry can deliver a second copy.
+   */
   get retryable(): boolean {
     return this.status === 408 || this.status === 429 || this.status >= 500;
   }
@@ -122,7 +131,15 @@ export class MspPayloadTooLargeError extends MspApiError {}
 /** 429 — the caller is being rate limited. See {@link MspApiError.retryAfterMs}. */
 export class MspRateLimitError extends MspApiError {}
 
-/** 5xx — the platform or a downstream channel failed. */
+/**
+ * 5xx — the platform or a downstream channel failed.
+ *
+ * On `POST /api/v0/messaging/send` and `/send-raw`, 500 means the send was not
+ * confirmed as persisted and the channel may already have accepted it; 502
+ * means channel preparation or sending failed, which for `amb.url_payload` is
+ * either a construction failure (nothing sent) or a send failure (acceptance
+ * unknown). Neither status proves the customer did not receive the message.
+ */
 export class MspServerError extends MspApiError {}
 
 /**

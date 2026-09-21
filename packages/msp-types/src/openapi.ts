@@ -205,7 +205,7 @@ export interface paths {
         put?: never;
         /**
          * Publish a rich template
-         * @description Publish a draft after validating its fixed content, bound assets, and rendered payload. Invalid templates remain drafts.
+         * @description Validate fixed content, bound assets, and the rendered payload, then publish. App Clip templates validate construction inputs only; Apple builds the payload at send time. Invalid templates remain drafts.
          *
          *     **Authentication:** Requires a business JWT.
          *
@@ -537,13 +537,13 @@ export interface paths {
          * Send a message
          * @description Send an outbound message to a conversation owned by the authenticated business. `type` selects one of three variants: `text` (a free-form body, media attachments, or both), `template` (a published rich template rendered with `variables`), or `authentication` (an AMB Authentication Message from a published authentication template).
          *
-         *     **Text variant:** `body` is required and must contain non-whitespace text unless `attachmentIds` is non-empty, in which case it may be an empty string. `attachmentIds` holds at most 10 `mediaAssetId` values returned by upload. Sending creates a separate stored attachment per id; read its `messages[].attachments[].id` from conversation history before minting a read URL.
+         *     **Text variant:** `body` is required and must contain non-whitespace text unless `attachmentIds` is non-empty, in which case it may be an empty string. `attachmentIds` holds at most 10 `mediaAssetId` values returned by upload. Sending creates a separate stored attachment per id; read its `messages[].attachments[].id` from conversation history before minting a read URL. Attachment sends share a request budget: media transfers and the final Apple send must finish within 17 seconds of route entry, with a 19-second response target including persistence and best-effort realtime publication. Waiting for transfer capacity counts toward this budget. A timeout cannot undo provider acceptance or an already-issued database operation.
          *
          *     **Template variants:** `variables` must satisfy the published template’s variable declaration; invalid dynamic values are rejected with `422`. Publication validates fixed content and assets.
          *
          *     Request bodies are limited to 5,000,000 bytes.
          *
-         *     **Idempotency:** `requestMessageId` is scoped to the conversation. Replaying it with identical request bytes returns the original result with `duplicate: true`; different bytes are rejected with `409`.
+         *     **Idempotency:** `requestMessageId` is scoped to the conversation. Replaying it with identical request bytes returns the persisted result with `duplicate: true`, even after opt-out; different bytes are rejected with `409`. Duplicate prevention is best effort: concurrent requests can both reach Apple before one is persisted, including conflicting requests. Provider timeouts and persistence failures can leave the send outcome uncertain. Retry the identical bytes and request ID; a retry may send another copy.
          *
          *     **Authentication:** Requires a business JWT.
          *
@@ -569,7 +569,13 @@ export interface paths {
         put?: never;
         /**
          * Send channel content
-         * @description Send a channel-native payload to a conversation owned by the authenticated business. `content.kind` selects the payload shape; unknown fields are rejected. Request bodies are limited to 5,000,000 bytes. AMB images must be PNG and at most 200,000 bytes Base64-encoded. Callers must verify image-size compliance and device rendering. Provider acceptance does not prove device rendering.
+         * @description Send channel content to a conversation owned by the authenticated business. `content.kind` selects the input; unknown fields are rejected.
+         *
+         *     Use `amb.url_payload` for an Apple Music, Apple Maps, or App Clip URL without a template. Apple constructs the payload at send time and determines URL support.
+         *
+         *     Request bodies are limited to 5,000,000 bytes. Caller-supplied AMB images must be PNG and at most 200,000 bytes Base64-encoded. Verify image sizes and device rendering; provider acceptance does not guarantee rendering.
+         *
+         *     Retry with identical bytes and the same per-conversation requestMessageId. Already-persisted requests return their original result even after opt-out. Concurrent sends and retries after an uncertain provider or persistence failure may send multiple copies; even conflicting requests can both reach Apple before one returns 409.
          *
          *     **Authentication:** Requires a business JWT.
          *
@@ -651,7 +657,7 @@ export interface webhooks {
         put?: never;
         /**
          * A customer message was received
-         * @description Fired after the inbound message is persisted. `message.createdAt` is that persistence time. `intentId`, `groupId`, `locale`, and `capabilityList` are the post-update conversation values. When a channel omits a routing update, the event retains the post-update stored value. Nullable routing values remain `null` when unknown, and `capabilityList: []` means the stored capability set is empty. A manual replay creates a new event with the current routing values and capabilities while retaining the original `message.createdAt`. Sensitive content is delivered only when the integration currently has `ViewSensitiveResponses`; otherwise `message.content` is `null` and `message.redacted` is `true`. Attachment metadata and access URLs are unchanged.
+         * @description Fired after the inbound message is persisted. `eventId` and `Webhook-Id` equal `message.id` and remain stable across retries and manual replay. `message.createdAt` is the original persistence time. `intentId`, `groupId`, `locale`, and `capabilityList` are the post-update conversation values. When a channel omits a routing update, the event retains the post-update stored value. Nullable routing values remain `null` when unknown, and `capabilityList: []` means the stored capability set is empty. A manual replay uses current conversation routing values and capabilities while retaining the original event identity and `message.createdAt`. Automatic retries retain their queued conversation context. Sensitive content is delivered only when the integration currently has `ViewSensitiveResponses`; otherwise `message.content` is `null` and `message.redacted` is `true`. Attachment metadata and access URLs are unchanged.
          *
          *     We deliver this event as an HTTP POST to the configured webhook URL. Success is any 2xx; network errors and non-2xx responses retry with exponential backoff, while 410 disables outbound delivery. Automatic retries reuse the event id and queued source snapshot. Every request carries Webhook-Id, Webhook-Timestamp, and Webhook-Signature. Verify v1,<base64(HMAC-SHA256)> over Webhook-Id.Webhook-Timestamp.rawBody using the exact bytes, never re-serialized JSON. Webhook-Id is the event id and is reused for retries.
          */
@@ -2036,13 +2042,14 @@ export interface components {
                  */
                 url: string;
             };
+            /** @description Rich-link summary. The URL is the original destination when known; provider content URLs are omitted. */
             richLinkDataRef?: {
                 title?: string;
                 /**
                  * Format: uri
                  * @description Absolute HTTPS URL using printable ASCII, up to 8,192 bytes.
                  */
-                url: string;
+                url?: string;
             };
         } & (unknown | unknown);
         /** @description Stored outbound amb.time_picker content. Time-slot identifiers must be unique within this event. */
@@ -2138,9 +2145,9 @@ export interface components {
             /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
             subject?: string;
         };
-        /** @description Channel-native content for raw channel sends. `kind` selects the exact payload shape. */
-        RawMessageContent: components["schemas"]["RawMessageContentText"] | components["schemas"]["RawMessageContentAmbQuickReply"] | components["schemas"]["RawMessageContentAmbListPicker"] | components["schemas"]["RawMessageContentAmbTimePicker"] | components["schemas"]["RawMessageContentAmbForm"] | components["schemas"]["RawMessageContentAmbAuthentication"] | components["schemas"]["RawMessageContentAmbRichLink"] | components["schemas"]["RawMessageContentAmbImessageApp"];
-        /** @description Channel-native amb.authentication content. */
+        /** @description Channel-native content or a URL to construct for raw channel sends. `kind` selects the input shape. */
+        RawMessageContent: components["schemas"]["RawMessageContentText"] | components["schemas"]["RawMessageContentAmbQuickReply"] | components["schemas"]["RawMessageContentAmbListPicker"] | components["schemas"]["RawMessageContentAmbTimePicker"] | components["schemas"]["RawMessageContentAmbForm"] | components["schemas"]["RawMessageContentAmbAuthentication"] | components["schemas"]["RawMessageContentAmbRichLink"] | components["schemas"]["RawMessageContentAmbImessageApp"] | components["schemas"]["RawMessageContentAmbUrlPayload"];
+        /** @description Channel send input amb.authentication content. */
         RawMessageContentAmbAuthentication: {
             data: {
                 authenticate: {
@@ -2217,7 +2224,7 @@ export interface components {
                 title: string;
             };
         };
-        /** @description Channel-native amb.form content. */
+        /** @description Channel send input amb.form content. */
         RawMessageContentAmbForm: {
             data: {
                 dynamic: {
@@ -2402,7 +2409,7 @@ export interface components {
                 title: string;
             };
         };
-        /** @description Channel-native amb.imessage_app content. */
+        /** @description Channel send input amb.imessage_app content. */
         RawMessageContentAmbImessageApp: {
             /** @description PNG image Base64 smaller than 15,360 bytes. */
             appIcon?: string;
@@ -2468,7 +2475,7 @@ export interface components {
             URL: string;
             useLiveLayout: boolean;
         };
-        /** @description Channel-native amb.list_picker content. List item identifiers must be unique across all sections. */
+        /** @description Channel send input amb.list_picker content. List item identifiers must be unique across all sections. */
         RawMessageContentAmbListPicker: {
             data: {
                 images?: {
@@ -2550,7 +2557,7 @@ export interface components {
                 title: string;
             };
         };
-        /** @description Channel-native amb.quick_reply content. */
+        /** @description Channel send input amb.quick_reply content. */
         RawMessageContentAmbQuickReply: {
             data: {
                 "quick-reply": {
@@ -2570,7 +2577,7 @@ export interface components {
              */
             kind: "amb.quick_reply";
         };
-        /** @description Channel-native amb.rich_link content. */
+        /** @description Channel send input amb.rich_link content. */
         RawMessageContentAmbRichLink: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -2602,6 +2609,7 @@ export interface components {
                  */
                 url: string;
             };
+            /** @description Apple payload reference. Its URL locates provider content, not the destination, and is omitted from message history. */
             richLinkDataRef?: {
                 bid?: string;
                 dataRefSig?: string;
@@ -2617,7 +2625,7 @@ export interface components {
                 url: string;
             };
         } & (unknown | unknown);
-        /** @description Channel-native amb.time_picker content. Time-slot identifiers must be unique within this event. */
+        /** @description Channel send input amb.time_picker content. Time-slot identifiers must be unique within this event. */
         RawMessageContentAmbTimePicker: {
             data: {
                 event: {
@@ -2701,7 +2709,22 @@ export interface components {
                 title: string;
             };
         };
-        /** @description Channel-native text content. */
+        /** @description Channel send input amb.url_payload content. Apple constructs a rich link from an Apple Music, Apple Maps, or App Clip URL at send time. No template is required. */
+        RawMessageContentAmbUrlPayload: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.url_payload";
+            /** @description Two-character App Store region for App Clips. Omit to use Apple’s default (US). */
+            storeRegion?: string;
+            /**
+             * Format: uri
+             * @description Absolute HTTPS URL using printable ASCII, up to 8,192 bytes.
+             */
+            url: string;
+        };
+        /** @description Channel send input text content. */
         RawMessageContentText: {
             body: string;
             /**
@@ -2764,7 +2787,7 @@ export interface components {
              */
             nextCursor: string | null;
         };
-        /** @description Per-channel authoring feedback derived on every read. `ready` identifies a matching native channel with every declared slot bound; `blocked` lists the fields to complete. Publication performs the full rendered-content validation. */
+        /** @description Per-channel authoring feedback derived on every read. `ready` identifies a matching native channel with every declared slot bound; `blocked` lists the fields to complete. Publication validates rendered content, or construction inputs for App Clips. */
         RichChannelReadiness: {
             /**
              * @description The channel this entry describes. One entry per channel with rich-messaging support.
@@ -3021,11 +3044,11 @@ export interface components {
                 url: string;
                 useLiveLayout: boolean;
             } | {
-                imageSlot: string;
                 /** @enum {string} */
                 kind: "app_clip_rich_link";
+                /** @description Two-character App Store region, validated on publication. Null uses Apple’s default (US). */
                 storeRegion: string | null;
-                title: string;
+                /** @description App Clip URL with optional template variables; must resolve to an absolute HTTPS URL. */
                 url: string;
             } | {
                 /** @enum {string} */
@@ -3163,7 +3186,7 @@ export interface components {
             conversationId: string;
             /**
              * Format: uuid
-             * @description Per-conversation idempotency key. Reusing it with identical request bytes returns the original result; differing bytes are rejected.
+             * @description Per-conversation request key. Identical bytes return an already-persisted result; differing bytes conflict. Concurrent requests or retries after an uncertain send can reach the provider more than once.
              */
             requestMessageId: string;
             /** @description Printable ASCII authentication state up to 1,024 bytes. */
@@ -3189,20 +3212,20 @@ export interface components {
                 path: string;
             }[];
         };
-        /** @description Returned when the request is accepted. A first acceptance records the outbound message; an idempotent replay returns that original result. */
+        /** @description Returned after channel acceptance and persistence. Replaying an already-persisted request returns its original result; provider duplicate prevention is best effort. */
         SendMessageResult: {
             duplicate: boolean;
             /** Format: uuid */
             messageId: string;
         };
-        /** @description Channel-native send request. `content.kind` selects the payload shape; unknown fields are rejected. */
+        /** @description Channel send request. `content.kind` selects native content or AMB URL construction. */
         SendRawMessageBody: {
             content: components["schemas"]["RawMessageContent"];
             /** Format: uuid */
             conversationId: string;
             /**
              * Format: uuid
-             * @description Per-conversation idempotency key. Reusing it with identical request bytes returns the original result; differing bytes are rejected.
+             * @description Per-conversation request key. Identical bytes return an already-persisted result; differing bytes conflict. Concurrent requests or retries after an uncertain send can reach the provider more than once.
              */
             requestMessageId: string;
         };
@@ -3212,7 +3235,7 @@ export interface components {
             conversationId: string;
             /**
              * Format: uuid
-             * @description Per-conversation idempotency key. Reusing it with identical request bytes returns the original result; differing bytes are rejected.
+             * @description Per-conversation request key. Identical bytes return an already-persisted result; differing bytes conflict. Concurrent requests or retries after an uncertain send can reach the provider more than once.
              */
             requestMessageId: string;
             /** Format: uuid */
@@ -3234,7 +3257,7 @@ export interface components {
             conversationId: string;
             /**
              * Format: uuid
-             * @description Per-conversation idempotency key. Reusing it with identical request bytes returns the original result; differing bytes are rejected.
+             * @description Per-conversation request key. Identical bytes return an already-persisted result; differing bytes conflict. Concurrent requests or retries after an uncertain send can reach the provider more than once.
              */
             requestMessageId: string;
             /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
@@ -3526,6 +3549,7 @@ export type SchemaRawMessageContentAmbListPicker = components['schemas']['RawMes
 export type SchemaRawMessageContentAmbQuickReply = components['schemas']['RawMessageContentAmbQuickReply'];
 export type SchemaRawMessageContentAmbRichLink = components['schemas']['RawMessageContentAmbRichLink'];
 export type SchemaRawMessageContentAmbTimePicker = components['schemas']['RawMessageContentAmbTimePicker'];
+export type SchemaRawMessageContentAmbUrlPayload = components['schemas']['RawMessageContentAmbUrlPayload'];
 export type SchemaRawMessageContentText = components['schemas']['RawMessageContentText'];
 export type SchemaRichAssetItem = components['schemas']['RichAssetItem'];
 export type SchemaRichAssetList = components['schemas']['RichAssetList'];
@@ -5935,7 +5959,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Accepted by the channel. */
+            /** @description Accepted by the channel and persisted, or an already-persisted request replay. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -6032,7 +6056,16 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The channel did not accept the message. */
+            /** @description Persistence could not be confirmed. The channel may already have accepted the message. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendMessageError"];
+                };
+            };
+            /** @description Channel preparation or sending failed. A timeout or connection failure may leave acceptance unknown. */
             502: {
                 headers: {
                     [name: string]: unknown;
@@ -6067,7 +6100,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Accepted by the channel. */
+            /** @description Accepted by the channel and persisted, or an already-persisted request replay. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -6159,7 +6192,16 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The channel did not accept the message. */
+            /** @description Persistence could not be confirmed. The channel may already have accepted the message. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendMessageError"];
+                };
+            };
+            /** @description Apple construction failed (nothing sent), or channel sending failed (acceptance may be unknown). */
             502: {
                 headers: {
                     [name: string]: unknown;

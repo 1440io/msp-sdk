@@ -51,6 +51,10 @@ type OptOut = InboundContentOfKind<'opt_out'>;
 by whether its body was delivered; `redacted` and `content` move together, so
 narrowing on one settles the other.
 
+`RawContentOfKind` does the same job for the raw send union — including
+`RawContentOfKind<'amb.url_payload'>`, the Apple Music / Apple Maps / App Clip
+URL that Apple turns into a rich link at send time.
+
 ## Raw generated surface
 
 Everything the spec declares, unmodified:

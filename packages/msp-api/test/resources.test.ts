@@ -159,6 +159,41 @@ describe('messaging', () => {
     expect(body.requestMessageId).toBeTruthy();
   });
 
+  it('sends an amb.url_payload for Apple to construct', async () => {
+    const { client: c, requests } = client([{ body: { messageId: 'm3u', duplicate: false } }]);
+
+    await c.messaging.sendRaw({
+      conversationId: 'conv-1',
+      content: {
+        kind: 'amb.url_payload',
+        url: 'https://maps.apple.com/?q=coffee',
+        storeRegion: 'US',
+      },
+    });
+
+    const body = JSON.parse(requests[0]!.body!) as Record<string, any>;
+    expect(body.content).toEqual({
+      kind: 'amb.url_payload',
+      url: 'https://maps.apple.com/?q=coffee',
+      storeRegion: 'US',
+    });
+    expect(body.requestMessageId).toBeTruthy();
+  });
+
+  it('accepts an amb.url_payload without a store region', async () => {
+    const { client: c, requests } = client([{ body: { messageId: 'm3v', duplicate: false } }]);
+
+    // storeRegion is optional — Apple defaults to US.
+    await c.messaging.sendRaw({
+      conversationId: 'conv-1',
+      content: { kind: 'amb.url_payload', url: 'https://music.apple.com/us/album/x/1' },
+    });
+
+    const body = JSON.parse(requests[0]!.body!) as Record<string, any>;
+    expect(body.content.storeRegion).toBeUndefined();
+    expect(body.content.url).toBe('https://music.apple.com/us/album/x/1');
+  });
+
   it('builds an authentication send carrying its state', async () => {
     const { client: c, requests } = client([{ body: { messageId: 'm4', duplicate: false } }]);
 
