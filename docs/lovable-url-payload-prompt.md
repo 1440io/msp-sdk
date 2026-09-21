@@ -1,9 +1,12 @@
-# Lovable prompt — Apple URL payloads
+# Lovable prompt — Apple URL payloads (retrofit)
 
-A follow-up prompt for a project already built from `lovable-template-prompt.md`.
-Paste everything below the rule as a new message in that Lovable project.
+**For existing projects only.** `lovable-template-prompt.md` now builds URL
+payloads in from the start, so a project cloned from it today needs none of
+this. Use this document to retrofit a project generated before 0.4.0.
 
-Requires `@1440io/msp-api@0.4.0` or newer.
+Paste everything below the rule as a new message in that Lovable project, and
+bump the pinned SDK versions to `@0.4.0` first — the SDK call below does not
+exist in `0.2.0` or `0.3.0`.
 
 ---
 

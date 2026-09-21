@@ -57,13 +57,13 @@ Roles: `admin` sees Setup and can invite members; `agent` sees the inbox and can
 The official SDK, imported with `npm:` specifiers (verified working on Deno — no Node built-ins, Web Crypto only):
 
 ```ts
-import { MspClient, uuidv7, isMspApiError } from "npm:@1440io/msp-api@0.2.0";
+import { MspClient, uuidv7, isMspApiError } from "npm:@1440io/msp-api@0.4.0";
 import {
   WebhookReceiver, textBody, isInteractiveResponse, isKind, isRedacted,
   selectedIds, selectedTitles, selectedTimeslot, formAnswers,
   authenticationStatus, respondsTo, parseAppleTimestamp,
   type ReplayCache,
-} from "npm:@1440io/msp-webhooks@0.2.0";
+} from "npm:@1440io/msp-webhooks@0.4.0";
 ```
 
 Read the key explicitly — `MspClient.fromEnv()` reads `process.env` and does nothing under Deno:
@@ -84,7 +84,7 @@ Postgres, RLS on every table. Reads require a `portal_users` row for `auth.uid()
 
 **webhook_events** — `id` uuid pk (the `Webhook-Id` header, equal to the envelope's `eventId`), `event_type`, `payload` jsonb, `received_at`. Doubles as the replay cache: retries reuse the id, so a primary-key conflict *is* "already handled".
 
-**outbound_log** — `request_message_id` uuid pk, `conversation_id`, `kind` (`text`|`template`|`raw`), `status`, `error_code`, `issues` jsonb, `sent_by` uuid (the `portal_users.user_id` who sent it), `created_at`. Lets the UI explain a rejected send, and says which agent sent what — the audit trail an internal console handling customer conversations needs.
+**outbound_log** — `request_message_id` uuid pk, `conversation_id`, `kind` (`text`|`template`|`raw`|`url_payload`), `target_url` text null (the link an agent sent, see the URL-payload quirk below), `status`, `error_code`, `issues` jsonb, `sent_by` uuid (the `portal_users.user_id` who sent it), `created_at`. Lets the UI explain a rejected send, and says which agent sent what — the audit trail an internal console handling customer conversations needs.
 
 **portal_users** — as defined above. The allowlist every read policy checks.
 
@@ -130,9 +130,21 @@ Two things to get right:
 
 ### `msp-send` — sends on behalf of a signed-in agent
 
-Keep `verify_jwt` on, then **authorize** the caller: read the user id from the JWT, confirm a `portal_users` row exists for it, and return 403 if not. A valid JWT alone only proves the token came from some Supabase project. Record the sender in `outbound_log.sent_by`. Accepts `{ conversationId, body?, attachmentIds?, templateId?, variables? }` and calls `sendText` or `sendTemplate`.
+Keep `verify_jwt` on, then **authorize** the caller: read the user id from the JWT, confirm a `portal_users` row exists for it, and return 403 if not. A valid JWT alone only proves the token came from some Supabase project. Record the sender in `outbound_log.sent_by`. Accepts `{ conversationId, body?, attachmentIds?, templateId?, variables?, url?, storeRegion? }` and calls `sendText`, `sendTemplate`, or — for `url` — `sendRaw`:
 
-Mint the `requestMessageId` with `uuidv7()` and write it to `outbound_log` **before** sending; reuse it on retry. That key is what makes a retry safe rather than a double-send — the API returns the original result with `duplicate: true`.
+```ts
+await client.messaging.sendRaw({
+  conversationId,
+  requestMessageId,
+  content: { kind: "amb.url_payload", url, ...(storeRegion ? { storeRegion } : {}) },
+});
+```
+
+Apple builds a rich link card from the URL at send time, for the services it knows: Apple Music, Apple Maps, and App Clips. No template to author, no image to upload, nothing to publish first. `storeRegion` is a two-character App Store region for App Clips — omit the key entirely rather than sending `""` or `null`, and Apple defaults to US.
+
+**The raw route needs a second permission.** `sendText` and `sendTemplate` need only `SendMessages`; `sendRaw` additionally requires **`SendRawChannelPayloads`**. A key without it fails every link send with a `403` carrying `code: "PERMISSION_DENIED"` and the missing key in `missingPermission` — nothing that mentions links. Check it at Setup rather than mid-conversation.
+
+Mint the `requestMessageId` with `uuidv7()` and write it to `outbound_log` **before** sending; reuse it on retry. That key is what collapses a retry rather than double-sending — the API returns the original result with `duplicate: true`. Treat that as best effort rather than a guarantee: concurrent sends can both reach Apple before either is persisted, so a retry after an uncertain failure can still deliver a second copy.
 
 Catch `isMspApiError(error)` and return `{ status, code, reasons }` so the UI can say *why* a rich send was refused instead of failing blankly.
 
@@ -158,6 +170,7 @@ Triggered from Setup, and once automatically after secrets are first configured.
 - `amb.time_picker_response` → the booked slot from `selectedTimeslot(content)`, which returns `{ id, startsAt: Date, durationSeconds }`
 - `amb.form_response` → a definition list from `formAnswers(content)`, keyed by page identifier; hide the values when `isPrivateForm(content)`
 - `amb.authentication_response` → the outcome from `authenticationStatus(content)` (`success` / `failure` / `cancel` / `unknown`)
+- `amb.rich_link` → a link card. This is also what a sent URL payload comes back as (see the quirks below), so render it from `outbound_log.target_url` when `richLinkDataRef` is empty
 - `opt_out` → a persistent banner, and the composer disabled
 - `isRedacted(message)` → say the body was withheld rather than rendering an empty bubble
 - attachments → thumbnails; each carries `status` (`pending` / `ready` / `failed`), `accessUrl`, and `accessUrlExpiresAt`
@@ -168,9 +181,24 @@ Outbound messages show delivery state from `outbound_log`, including the reject 
 
 Also check the conversation's stored `capability_list` before offering a rich template: a device that never advertised `LIST` cannot render a list picker, and sending one anyway is a reject you could have predicted.
 
+A third **Link** tab sends a URL for Apple to render: one URL field, an optional region selector shown only when the URL looks like an App Clip, and a line naming what Apple supports. Validate `https` only, printable ASCII, and at most 8,192 **bytes** — measure bytes, not characters, since a pasted em dash or smart quote is both longer than it looks and not ASCII. Validate on blur, not per keystroke.
+
+Do not gate the Link tab on `capability_list`. That list covers interactive types (`QUICK`, `LIST`, `TIME`, `AUTH`, `AUTH2`, `FORM`); rich links are not in it, and applying the capability rule here would hide the feature from every device that never advertised one. Gate it on the `SendRawChannelPayloads` permission instead.
+
+No preview card. We do not know what Apple will build until it builds it, and a mock that does not match what the customer sees is worse than showing nothing.
+
 **Templates** — gallery of published templates with per-channel readiness badges, filterable by `templateType` (`text`, `quick_reply`, `list_picker`, `time_picker`, `form`, `rich_link`, `imessage_app`, `app_clip_rich_link`, `authentication`). Empty state matters: a new org has none, so say so and link to where they are authored.
 
-**Setup** (admin only) — the screen that makes this a template. Non-admins get a clear "ask an admin" message rather than a blank page. A checklist showing: whether public sign-up is disabled and how many portal members exist; whether `MSP_API_KEY` and `MSP_WEBHOOK_SECRET` are set; the exact webhook URL to paste into the 1440 console (this project's deployed `msp-webhook` URL, with a copy button); a "Run backfill" button; a live tail of recent `webhook_events` so someone can watch a delivery land and know it works; and an invite form that adds a `portal_users` row for a colleague.
+`app_clip_rich_link` templates are now `{ kind, url, storeRegion }` only — the `title` and `imageSlot` fields were removed, because Apple constructs the card rather than rendering authored content. If all you want is to send an App Clip link, the Link tab does it with no template at all.
+
+**Setup** (admin only) — the screen that makes this a template. Non-admins get a clear "ask an admin" message rather than a blank page. A checklist showing: whether public sign-up is disabled and how many portal members exist; whether `MSP_API_KEY` and `MSP_WEBHOOK_SECRET` are set; whether the key carries `SendRawChannelPayloads`, without which link sending is unavailable; the exact webhook URL to paste into the 1440 console (this project's deployed `msp-webhook` URL, with a copy button); a "Run backfill" button; a live tail of recent `webhook_events` so someone can watch a delivery land and know it works; and an invite form that adds a `portal_users` row for a colleague.
+
+The permission row needs its own call — the client caches its token internally and never hands the grant back. Cache the answer rather than checking per render, because this mints a token:
+
+```ts
+const { grant } = await client.auth.exchangeIntegrationToken(Deno.env.get("MSP_API_KEY")!);
+const canSendRaw = grant.permissionKeys.includes("SendRawChannelPayloads");
+```
 
 ## Demo mode
 
@@ -187,6 +215,10 @@ Each of these produces a confusing failure if ignored:
 - **Correlate replies with `respondsTo(content)`**, which may be null — custom iMessage apps carry no correlation promise.
 - **Opt-out is binding.** Once `opted_out` is true, block sending in the UI, not just at the API.
 - **`mediaAssetId` is not an `attachmentId`.** Uploading returns a media asset id; attaching it to a message mints a *separate* attachment with its own id. Read URLs (`media.getAccessUrl`) take that second id, from message history or an inbound webhook. Passing the upload's id is a `404`, despite what the API docs say.
+- **A sent URL payload comes back as a different kind.** You send `kind: 'amb.url_payload'`, but there is no such *stored* kind — history records it as `amb.rich_link`. A renderer case for `amb.url_payload` is dead code that will never match.
+- **You cannot rely on reading your own link back.** Stored rich-link content carries `richLinkDataRef`, whose `title` and `url` are both optional; the reference describes Apple's constructed payload, and provider content URLs are omitted rather than echoed. Persist the URL you sent in `outbound_log.target_url` and render outbound link bubbles from that, falling back to `richLinkDataRef` when it is populated.
+- **A link Apple cannot render is a `422`, not a `400`.** Nothing local can predict it — a perfectly well-formed URL to a service Apple has no rich treatment for is rejected before delivery. Say "Apple could not build a preview for this link" and do not retry; the answer will not change.
+- **`502` and `500` on a send do not mean the message was not delivered.** `502` is either construction failing, where nothing was sent, or sending failing, where acceptance is unknown. `500` means persistence could not be confirmed after the channel may already have accepted. Mark these `uncertain` rather than `failed`, say "may have been delivered — check before resending", and do not offer a one-click resend. The SDK already retries both under the same `requestMessageId`; do not wrap it in a retry loop of your own.
 - **Unknown fields are rejected on a request body but ignored inside `content`.** A typo in a raw Apple payload renders wrong rather than erroring, so validate your own content shapes.
 
 ## Design
@@ -203,4 +235,8 @@ A calm, dense agent console — a tool, not a landing page. Two panes: conversat
 - A tampered or unsigned delivery is rejected with 400; a delivery sent twice is stored once.
 - Sending a message shows it in the thread, and a customer's reply arrives live with no refresh.
 - A blocked rich template cannot be sent, and the UI says why.
+- With a key lacking `SendRawChannelPayloads`, the Link tab is disabled with that exact reason and Setup says the same thing before a conversation is ever opened.
+- A non-HTTPS link, a non-ASCII link, and a 9,000-byte link are each refused in the composer with a specific message and no network round trip.
+- A sent link renders in the thread from `outbound_log.target_url`, and still renders when `richLinkDataRef` comes back empty.
+- Nothing in the message renderer switches on `amb.url_payload`; stored link messages are `amb.rich_link`.
 - A clone with no secrets still renders demo data and a Setup checklist that explains exactly what to do next.
