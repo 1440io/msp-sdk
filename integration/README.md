@@ -99,6 +99,27 @@ Discrepancies the suite now records as assertions rather than drift entries, bec
 - Template-variable rejections are prose-only 422s with no machine-readable code.
 - Access tokens last 24 hours, not the ~15 minutes the spec describes.
 
+## Apple Pay readiness
+
+```bash
+npm run payment:readiness
+```
+
+Sends one structurally valid payment request carrying a deliberately bogus
+merchant session, and reports which rung of the platform's check order it
+reaches:
+
+```
+apple_pay_unavailable → apple_pay_session_expired
+  → apple_pay_merchant_mismatch → apple_pay_gateway_mismatch
+```
+
+It cannot create a payable bubble — the merchant will not match and the
+signature is not Apple's — so it is safe to run against a real conversation
+after each configuration change. `apple_pay_merchant_mismatch` is the furthest
+a probe can get and means configuration is complete; from there a real merchant
+session is needed.
+
 ## After a crash
 
 Everything the suite creates is named `msp-it-*`. If a run dies before its cleanup:

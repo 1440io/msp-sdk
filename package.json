@@ -29,7 +29,8 @@
     "integration:preflight": "npm run build && node --experimental-strip-types integration/scripts/preflight.ts",
     "integration:cleanup": "npm run build && node --experimental-strip-types integration/scripts/cleanup.ts",
     "webhook:listen": "npm run build && node --experimental-strip-types integration/scripts/webhook-listen.ts",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "payment:readiness": "npm run build && node --experimental-strip-types integration/scripts/payment-readiness.ts"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.7",
