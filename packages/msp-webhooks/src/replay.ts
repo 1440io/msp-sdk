@@ -17,16 +17,20 @@ export interface ReplayCache {
 export class MemoryReplayCache implements ReplayCache {
   readonly #ttlMs: number;
   readonly #maxEntries: number;
+  readonly #now: () => number;
   readonly #entries = new Map<string, number>();
 
-  constructor(options: { ttlMs?: number; maxEntries?: number } = {}) {
+  constructor(options: { ttlMs?: number; maxEntries?: number; now?: () => number } = {}) {
     // Retries run over several minutes; an hour covers them comfortably.
     this.#ttlMs = options.ttlMs ?? 60 * 60 * 1000;
     this.#maxEntries = options.maxEntries ?? 10_000;
+    // Clock injection point, so expiry can be tested without sleeping on a
+    // real timer — which is a race on a slow machine.
+    this.#now = options.now ?? (() => Date.now());
   }
 
   seen(id: string): boolean {
-    const now = Date.now();
+    const now = this.#now();
     const expiresAt = this.#entries.get(id);
     if (expiresAt !== undefined && expiresAt > now) {
       return true;

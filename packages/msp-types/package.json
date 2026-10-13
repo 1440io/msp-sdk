@@ -1,6 +1,6 @@
 {
   "name": "@1440io/msp-types",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "TypeScript types generated from the 1440 Apple Messages for Business MSP API OpenAPI spec, plus curated aliases and enum vocabularies.",
   "license": "MIT",
   "type": "module",

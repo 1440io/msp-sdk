@@ -219,12 +219,19 @@ describe('verifyWebhook', () => {
 });
 
 describe('MemoryReplayCache', () => {
-  it('forgets entries once their TTL passes', async () => {
-    const cache = new MemoryReplayCache({ ttlMs: 1 });
+  it('forgets entries once their TTL passes', () => {
+    // Driven by an injected clock rather than a real sleep: a 1ms TTL raced
+    // the wall clock and failed intermittently on slower runners.
+    let now = 1_000_000;
+    const cache = new MemoryReplayCache({ ttlMs: 60_000, now: () => now });
 
     expect(cache.seen('a')).toBe(false);
     expect(cache.seen('a')).toBe(true);
-    await new Promise((resolve) => setTimeout(resolve, 5));
+
+    now += 59_000; // still inside the TTL
+    expect(cache.seen('a')).toBe(true);
+
+    now += 2_000; // now past it
     expect(cache.seen('a')).toBe(false);
   });
 

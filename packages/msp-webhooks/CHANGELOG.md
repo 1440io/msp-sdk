@@ -1,5 +1,12 @@
 # @1440io/msp-webhooks
 
+## 0.5.1
+
+### Patch Changes
+
+- `MemoryReplayCache` accepts an injectable `now` clock, so expiry can be tested without sleeping on a real timer. The existing TTL test used a 1ms TTL and raced the wall clock, which failed intermittently on slower CI runners.
+  - @1440io/msp-types@0.5.1
+
 ## 0.5.0
 
 ### Minor Changes
