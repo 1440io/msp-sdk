@@ -33,10 +33,14 @@ export function stubFetch(responses: StubResponse[]): {
     if (!next) throw new Error(`stubFetch ran out of responses at request ${requests.length}`);
 
     const status = next.status ?? 200;
-    const body = next.body === undefined ? '' : JSON.stringify(next.body);
+    // A 204/205 cannot carry a body — the Response constructor throws on one.
+    const bodyless = status === 204 || status === 205;
+    const body = bodyless || next.body === undefined ? null : JSON.stringify(next.body);
     return new Response(body, {
       status,
-      headers: { 'content-type': 'application/json', ...next.headers },
+      headers: bodyless
+        ? { ...next.headers }
+        : { 'content-type': 'application/json', ...next.headers },
     });
   };
 

@@ -25,33 +25,30 @@ async function sign(id: string, timestamp: number, body: string, secret: string)
 }
 
 const EVENT = {
-  id: '0196f1f8-4a2b-7a31-8f5c-0d9e7b6a1234',
+  eventId: '0196f1f8-4a2b-7a31-8f5c-0d9e7b6a1234',
+  v: 0,
   type: 'message.received',
-  specVersion: 1,
-  dataVersion: '2026-07-20',
-  occurredAt: '2026-07-20T14:30:00.000Z',
-  organizationId: 'org_123',
-  clientId: 'client_123',
+  organizationId: '0196f1f8-4a2b-7a31-8f5c-0d9e7b6a0001',
   conversationId: '0196f1f8-4a2b-7a31-8f5c-0d9e7b6a5678',
-  data: {
-    message: {
-      id: '0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9012',
-      conversationId: '0196f1f8-4a2b-7a31-8f5c-0d9e7b6a5678',
-      channelPlatform: 'amb',
-      messageType: 'text',
-      content: { body: 'Hello, I need help with my order.' },
-      timestamp: '2026-07-20T14:30:00.000Z',
-      intentId: null,
-      groupId: null,
-      locale: 'en-US',
-      richRequestIdentifier: null,
-      attachments: [],
-    },
+  channelAddress: 'urn:mbid:AQAAY',
+  intentId: null,
+  groupId: null,
+  locale: 'en-US',
+  capabilityList: null,
+  message: {
+    id: '0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9012',
+    channel: 'amb',
+    externalId: 'urn:mbid:AQAAY',
+    createdAt: '2026-07-20T14:30:00.000Z',
+    attachments: [],
+    actor: { type: 'customer' },
+    redacted: false,
+    content: { kind: 'text', body: 'Hello, I need help with my order.' },
   },
 };
 
 async function delivery(secret: string, overrides: { id?: string; timestamp?: number } = {}) {
-  const id = overrides.id ?? EVENT.id;
+  const id = overrides.id ?? EVENT.eventId;
   const timestamp = overrides.timestamp ?? Math.floor(Date.now() / 1000);
   const body = JSON.stringify(EVENT);
   return {
@@ -79,7 +76,7 @@ describeWebhookSecret('webhooks: the real signing secret', () => {
 
     const { event, id } = await verifier.verify(await delivery(env.webhookSecret!));
 
-    expect(id).toBe(EVENT.id);
+    expect(id).toBe(EVENT.eventId);
     expect(event.type).toBe('message.received');
     // The fixture must itself match the spec, or the test proves nothing.
     assertMatchesSchema('WebhookMessageReceivedEvent', event, 'signed fixture');

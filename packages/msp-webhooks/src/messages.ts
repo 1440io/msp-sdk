@@ -1,6 +1,7 @@
 import type {
   AuthenticationStatus,
   InboundContent,
+  InboundPaymentResponse,
   InboundContentOfKind,
   InboundMessage,
   InboundMessageRedacted,
@@ -123,6 +124,29 @@ export function formAnswers(
 /** True when a form response was marked private, so its values are restricted. */
 export function isPrivateForm(content: InboundContent | null | undefined): boolean {
   return isKind(content, 'amb.form_response') && content.data?.dynamic?.private === true;
+}
+
+/**
+ * The opaque `state` echoed back on an Apple Pay response, or null for other
+ * content.
+ *
+ * This is the correlation key for a payment: you supply it on the request, and
+ * it comes back here so you can tie the customer's response to the order it
+ * belongs to. The Apple Pay token itself goes to your payment gateway rather
+ * than through 1440, so a response arriving here means the customer acted —
+ * not that funds moved. Confirm settlement with your gateway.
+ */
+export function paymentState(content: InboundContent | null | undefined): string | null {
+  if (!isKind(content, 'amb.payment_response')) return null;
+  return content.data?.payment?.state ?? null;
+}
+
+/** The payment a customer was asked to approve, echoed on their response. */
+export function paymentRequestOf(
+  content: InboundContent | null | undefined,
+): InboundPaymentResponse['data']['payment']['paymentRequest'] | null {
+  if (!isKind(content, 'amb.payment_response')) return null;
+  return content.data?.payment?.paymentRequest ?? null;
 }
 
 /** The outcome of an authentication (OAuth) request, or null for other content. */

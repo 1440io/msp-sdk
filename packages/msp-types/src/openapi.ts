@@ -483,7 +483,7 @@ export interface paths {
         put?: never;
         /**
          * Create a messaging invitation
-         * @description Create a messaging invitation for the authenticated business. `requestMessageId` makes the request idempotent: identical request bytes replay the recorded outcome. The request body is limited to 256 KiB.
+         * @description Create a messaging invitation for the authenticated business. `requestMessageId` makes the request idempotent: identical request bytes replay a successfully persisted invitation. Failed attempts do not reserve the request ID. The request body is limited to 256 KiB.
          *
          *     **Authentication:** Requires a business JWT.
          *
@@ -518,6 +518,32 @@ export interface paths {
         get: operations["getMessagingInvitation"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v0/messaging/request-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request an Apple Pay payment
+         * @description Request an Apple Pay payment in an existing AMB conversation. Requires platform approval and business configuration/enablement. Exact persisted replays return their original result. Uncertain sends can create multiple payable bubbles; the customer gateway must deduplicate processing by requestMessageId.
+         *
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `member`
+         *
+         *     **Required Permissions:** `SendMessages`, `RequestPayments`
+         */
+        post: operations["requestPayment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -573,7 +599,7 @@ export interface paths {
          *
          *     Use `amb.url_payload` for an Apple Music, Apple Maps, or App Clip URL without a template. Apple constructs the payload at send time and determines URL support.
          *
-         *     Request bodies are limited to 5,000,000 bytes. Caller-supplied AMB images must be PNG and at most 200,000 bytes Base64-encoded. Verify image sizes and device rendering; provider acceptance does not guarantee rendering.
+         *     Request bodies are limited to 5,000,000 bytes. Caller-supplied AMB images must be PNG and at most 200,000 decoded bytes. Verify image sizes and device rendering; provider acceptance does not guarantee rendering.
          *
          *     Retry with identical bytes and the same per-conversation requestMessageId. Already-persisted requests return their original result even after opt-out. Concurrent sends and retries after an uncertain provider or persistence failure may send multiple copies; even conflicting requests can both reach Apple before one returns 409.
          *
@@ -584,6 +610,32 @@ export interface paths {
          *     **Required Permissions:** `SendMessages`, `SendRawChannelPayloads`
          */
         post: operations["sendRawChannelPayload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v0/messaging/typing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a typing indicator
+         * @description Send a transient typing start or end to an owned conversation. One provider attempt with a two-second timeout; no persistence, retries, or idempotency. Manual typing is independent of automatic typing settings. Provider failure is logged and has no effect on subsequent message requests.
+         *
+         *     **Authentication:** Requires a business JWT.
+         *
+         *     **Required Tier:** `member`
+         *
+         *     **Required Permissions:** `SendMessages`
+         */
+        post: operations["sendConversationTyping"];
         delete?: never;
         options?: never;
         head?: never;
@@ -679,7 +731,7 @@ export interface webhooks {
         put?: never;
         /**
          * A messaging invitation changed status
-         * @description Fired after a messaging invitation status update. `messagingInvitation` contains the post-update transition values; `conversationId` is null until a conversation exists.
+         * @description Fired when an invitation is persisted as `submitted` or subsequently changes to `declined` or `accepted`. Acceptance supersedes a previous decline. Failed send attempts do not create an invitation or emit this event. `messagingInvitation` contains the post-update transition values; `conversationId` is null until a conversation exists.
          *
          *     Uses the signing and retry contract documented by `message.received`.
          */
@@ -696,7 +748,7 @@ export interface components {
         /** @description The actor’s resolved authorization grant (tier + permission keys). Display only — the server remains the sole authority and re-gates every request. */
         ActorGrant: {
             /** @description Granted fine-grained permission keys. */
-            permissionKeys: ("ViewBusiness" | "ManageBusiness" | "ViewMembers" | "ManageMembers" | "ViewChannels" | "ManageChannels" | "SendMessagingInvitations" | "SendMessages" | "ViewMessages" | "ViewConversations" | "ManageConversations" | "ViewTemplates" | "ManageTemplates" | "ViewCustomers" | "ManageCustomers" | "ViewAudit" | "ViewPermissionSets" | "CreatePermissionSets" | "DeletePermissionSets" | "ViewSandboxes" | "ManageSandboxes" | "SyncSandbox" | "ViewIntegrations" | "ManageIntegrations" | "ManagePermissions" | "ViewSensitiveResponses" | "SendRawChannelPayloads")[];
+            permissionKeys: ("ViewBusiness" | "ManageBusiness" | "ViewMembers" | "ManageMembers" | "ViewChannels" | "ManageChannels" | "SendMessagingInvitations" | "SendMessages" | "ViewMessages" | "ViewConversations" | "ManageConversations" | "ViewTemplates" | "ManageTemplates" | "ViewCustomers" | "ManageCustomers" | "ViewAudit" | "ViewPermissionSets" | "CreatePermissionSets" | "DeletePermissionSets" | "ViewSandboxes" | "ManageSandboxes" | "SyncSandbox" | "ViewIntegrations" | "ManageIntegrations" | "ManagePermissions" | "ViewSensitiveResponses" | "SendRawChannelPayloads" | "RequestPayments")[];
             /**
              * @description The actor’s coarse membership tier.
              * @enum {string}
@@ -742,15 +794,12 @@ export interface components {
          *       "id": "018f1a2b-0000-7000-8000-000000000001",
          *       "name": "Acme Home Services",
          *       "slug": "acme-home-services",
-         *       "logoUrl": "https://media.example.com/logos/acme.png?signature=example",
-         *       "isActive": true
+         *       "logoUrl": "https://media.example.com/logos/acme.png?signature=example"
          *     }
          */
         BusinessSettings: {
             /** @description The business identifier. */
             id: string;
-            /** @description Whether the business is currently active. */
-            isActive: boolean;
             /** @description Read-only short-lived signed URL of the current original logo, or `null` if none is set. The signature is valid for seven days. The immutable, versioned image response is privately cacheable by the browser for seven days. */
             logoUrl: string | null;
             /** @description Current display name of the business. */
@@ -1016,7 +1065,7 @@ export interface components {
             purpose: "connect";
             /**
              * Format: uuid
-             * @description Caller-generated request identifier used for idempotency. Reusing it with identical request bytes replays the accepted result.
+             * @description Caller-generated request identifier used for idempotency. After a successful submission, identical request bytes replay the persisted result. Failed attempts do not reserve this identifier.
              */
             requestMessageId: string;
             /**
@@ -1035,7 +1084,7 @@ export interface components {
             deleted: true;
         };
         /** @description Stored inbound message content. `kind` selects the persisted channel response shape. */
-        InboundMessageContent: components["schemas"]["InboundMessageContentText"] | components["schemas"]["InboundMessageContentOptOut"] | components["schemas"]["InboundMessageContentAmbQuickReplyResponse"] | components["schemas"]["InboundMessageContentAmbListPickerResponse"] | components["schemas"]["InboundMessageContentAmbTimePickerResponse"] | components["schemas"]["InboundMessageContentAmbFormResponse"] | components["schemas"]["InboundMessageContentAmbAuthenticationResponse"] | components["schemas"]["InboundMessageContentAmbImessageAppResponse"] | components["schemas"]["InboundMessageContentAmbInvitationResponse"] | components["schemas"]["InboundMessageContentAmbUnrecognizedInteractiveResponse"];
+        InboundMessageContent: components["schemas"]["InboundMessageContentText"] | components["schemas"]["InboundMessageContentOptOut"] | components["schemas"]["InboundMessageContentAmbPaymentResponse"] | components["schemas"]["InboundMessageContentAmbQuickReplyResponse"] | components["schemas"]["InboundMessageContentAmbListPickerResponse"] | components["schemas"]["InboundMessageContentAmbTimePickerResponse"] | components["schemas"]["InboundMessageContentAmbFormResponse"] | components["schemas"]["InboundMessageContentAmbAuthenticationResponse"] | components["schemas"]["InboundMessageContentAmbImessageAppResponse"] | components["schemas"]["InboundMessageContentAmbInvitationResponse"] | components["schemas"]["InboundMessageContentAmbUnrecognizedInteractiveResponse"];
         /** @description Stored inbound amb.authentication_response content. */
         InboundMessageContentAmbAuthenticationResponse: {
             data: {
@@ -1264,6 +1313,77 @@ export interface components {
             kind: "amb.list_picker_response";
             sessionIdentifier?: string;
         };
+        /** @description Stored inbound amb.payment_response content. */
+        InboundMessageContentAmbPaymentResponse: {
+            data: {
+                images?: {
+                    description?: string | null;
+                    identifier: string;
+                    name: string | null;
+                }[];
+                payment: {
+                    paymentRequest?: {
+                        countryCode?: string;
+                        currencyCode?: string;
+                        lineItems?: {
+                            amount?: string;
+                            label?: string;
+                            type?: string;
+                        }[];
+                        requiredBillingContactFields?: string[];
+                        requiredShippingContactFields?: string[];
+                        shippingMethods?: {
+                            amount?: string;
+                            detail?: string;
+                            identifier?: string;
+                            label?: string;
+                        }[];
+                        supportedCountries?: string[];
+                        total?: {
+                            amount?: string;
+                            label?: string;
+                            type?: string;
+                        };
+                    };
+                    state: string;
+                };
+                receivedMessage?: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    /** @description Image identifier for this bubble. */
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title?: string;
+                };
+                replyMessage?: {
+                    alternateTitle?: string;
+                    imageDescription?: string;
+                    /** @description Image identifier for this bubble. */
+                    imageIdentifier?: string;
+                    imageSubtitle?: string;
+                    imageTitle?: string;
+                    secondarySubtitle?: string;
+                    /** @enum {string} */
+                    style?: "icon" | "small" | "large";
+                    subtitle?: string;
+                    tertiarySubtitle?: string;
+                    title?: string;
+                };
+                requestIdentifier?: string;
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.payment_response";
+            sessionIdentifier?: string;
+        };
         /** @description Stored inbound amb.quick_reply_response content. */
         InboundMessageContentAmbQuickReplyResponse: {
             data: {
@@ -1472,7 +1592,7 @@ export interface components {
              */
             mediaAssetId: string;
         };
-        /** @description A messaging invitation and its delivery lifecycle. `status` moves from `submitting` through `submitted` to `accepted`, `declined`, `provider_rejected`, or `error`; `reasonCode` explains a rejection or error and `conversationId` is set once the recipient accepts. */
+        /** @description A messaging invitation persisted after Apple accepts its submission. The current lifecycle is `submitted`, `declined`, or `accepted`; acceptance can supersede a decline. `reasonCode` is null for these records and `conversationId` is set once the recipient accepts. */
         MessagingInvitation: {
             /**
              * Format: uuid
@@ -1522,7 +1642,7 @@ export interface components {
         MessagingInvitationCreateRequestError: {
             error: string;
         } | components["schemas"]["MessagingInvitationRequestError"];
-        /** @description Messaging invitation acceptance result. `duplicate` is true for an idempotent replay. */
+        /** @description Apple accepted the submission and the invitation was persisted. `duplicate` is true for an idempotent replay of a persisted invitation; this does not mean the customer accepted it. */
         MessagingInvitationCreateResult: {
             duplicate: boolean;
             /**
@@ -1531,16 +1651,28 @@ export interface components {
              */
             messageId: string;
         };
-        /** @description Error envelope for a rejected messaging-invitation request. `error` is a stable reason code: request conflicts (`request_mismatch`, `request_in_progress`) return 409, validation and eligibility failures return 422, and `not_found` returns 404. */
+        /** @description A stable `code` and readable `error`. Request conflicts return 409, validation and eligibility failures return 422, and missing invitations return 404. */
         MessagingInvitationError: {
             /** @enum {string} */
-            error: "invalid_recipient" | "invalid_target_name" | "request_mismatch" | "request_in_progress" | "messaging_invitation_unavailable" | "custom_branding_not_approved" | "invalid_brand_logo" | "not_found";
+            code: "invalid_recipient" | "invalid_target_name" | "request_mismatch" | "messaging_invitation_unavailable" | "custom_branding_not_approved" | "invalid_brand_logo" | "not_found";
+            error: string;
         };
         /** @description A cursor-paginated page of messaging invitations, newest first. Pass `nextCursor` as `cursor` to fetch the next page; it is `null` on the final page. */
         MessagingInvitationList: {
             messagingInvitations: components["schemas"]["MessagingInvitation"][];
             /** Format: uuid */
             nextCursor: string | null;
+        };
+        /** @description Returned with 500 when the channel accepted the submission but the invitation could not be confirmed as persisted. The recipient may already have the invitation. */
+        MessagingInvitationPersistenceUnconfirmed: {
+            /** @enum {string} */
+            code: "persistence_unconfirmed";
+            error: string;
+            /**
+             * Format: uuid
+             * @description Identifier of this send attempt.
+             */
+            messageId: string;
         };
         /** @description Request validation failure: `error` is `validation_failed` and `issues` lists each offending field path with its message. */
         MessagingInvitationRequestError: {
@@ -1551,18 +1683,18 @@ export interface components {
                 path: string;
             }[];
         };
-        /** @description Returned with 502 when the invitation was recorded but the channel rejected it or the send failed. The invitation remains readable by `messageId`; `reasonCode` explains the failure. */
+        /** @description Returned with 502 when the channel rejected or did not confirm the submission. No invitation was persisted. `messageId` identifies the attempt and `reasonCode` explains the failure. The same request ID can be retried. */
         MessagingInvitationSendFailure: {
             /**
              * Format: uuid
-             * @description Messaging invitation id of the recorded, undelivered invitation.
+             * @description Identifier of this send attempt. No invitation was persisted for this attempt, so this is not a readable invitation ID.
              */
             messageId: string;
             /** @enum {string} */
             reasonCode: "recipient_unavailable" | "provider_rejected" | "provider_error" | "transport_error";
         };
         /** @description Stored outbound message content. `kind` selects the shape. */
-        OutboundMessageContent: components["schemas"]["OutboundMessageContentText"] | components["schemas"]["OutboundMessageContentAmbQuickReply"] | components["schemas"]["OutboundMessageContentAmbListPicker"] | components["schemas"]["OutboundMessageContentAmbTimePicker"] | components["schemas"]["OutboundMessageContentAmbForm"] | components["schemas"]["OutboundMessageContentAmbAuthentication"] | components["schemas"]["OutboundMessageContentAmbRichLink"] | components["schemas"]["OutboundMessageContentAmbImessageApp"] | components["schemas"]["OutboundMessageContentAmbInvitation"];
+        OutboundMessageContent: components["schemas"]["OutboundMessageContentText"] | components["schemas"]["OutboundMessageContentAmbPayment"] | components["schemas"]["OutboundMessageContentAmbQuickReply"] | components["schemas"]["OutboundMessageContentAmbListPicker"] | components["schemas"]["OutboundMessageContentAmbTimePicker"] | components["schemas"]["OutboundMessageContentAmbForm"] | components["schemas"]["OutboundMessageContentAmbAuthentication"] | components["schemas"]["OutboundMessageContentAmbRichLink"] | components["schemas"]["OutboundMessageContentAmbImessageApp"] | components["schemas"]["OutboundMessageContentAmbInvitation"];
         /** @description Stored outbound amb.authentication content. */
         OutboundMessageContentAmbAuthentication: {
             data: {
@@ -1989,6 +2121,99 @@ export interface components {
                 title: string;
             };
         };
+        /** @description Stored outbound amb.payment content. */
+        OutboundMessageContentAmbPayment: {
+            data: {
+                images?: {
+                    description?: string | null;
+                    /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                    identifier: string;
+                    name: string | null;
+                }[];
+                payment: {
+                    expiresAt: number;
+                    paymentRequest: {
+                        countryCode: string;
+                        currencyCode: string;
+                        lineItems?: {
+                            amount: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            label: string;
+                            /** @enum {string} */
+                            type?: "final" | "pending";
+                        }[];
+                        requiredBillingContactFields?: ("email" | "name" | "phone" | "phoneticName" | "post")[];
+                        requiredShippingContactFields?: ("email" | "name" | "phone" | "phoneticName" | "post")[];
+                        shippingMethods?: {
+                            amount: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            detail: string;
+                            /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                            identifier: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            label: string;
+                        }[];
+                        supportedCountries?: string[];
+                        total: {
+                            amount: string;
+                            /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                            label: string;
+                            /** @enum {string} */
+                            type?: "final" | "pending";
+                        };
+                    };
+                };
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "amb.payment";
+            receivedMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style: "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+            replyMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style: "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+        };
         /** @description Stored outbound amb.quick_reply content. */
         OutboundMessageContentAmbQuickReply: {
             data: {
@@ -2166,7 +2391,7 @@ export interface components {
                     };
                 };
                 images?: {
-                    /** @description PNG image Base64; callers enforce the 200,000-byte image limit. */
+                    /** @description PNG image Base64, at most 200,000 decoded bytes. */
                     data: string;
                     /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
                     description?: string;
@@ -2351,7 +2576,7 @@ export interface components {
                     version: "1.2";
                 };
                 images?: {
-                    /** @description PNG image Base64; callers enforce the 200,000-byte image limit. */
+                    /** @description PNG image Base64, at most 200,000 decoded bytes. */
                     data: string;
                     /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
                     description?: string;
@@ -2479,7 +2704,7 @@ export interface components {
         RawMessageContentAmbListPicker: {
             data: {
                 images?: {
-                    /** @description PNG image Base64; callers enforce the 200,000-byte image limit. */
+                    /** @description PNG image Base64, at most 200,000 decoded bytes. */
                     data: string;
                     /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
                     description?: string;
@@ -2587,7 +2812,7 @@ export interface components {
             richLinkData?: {
                 assets: {
                     image: {
-                        /** @description PNG image Base64; callers enforce the 200,000-byte image limit. */
+                        /** @description PNG image Base64, at most 200,000 decoded bytes. */
                         data: string;
                         /** @enum {string} */
                         mimeType: "image/png";
@@ -2651,7 +2876,7 @@ export interface components {
                     title?: string;
                 };
                 images?: {
-                    /** @description PNG image Base64; callers enforce the 200,000-byte image limit. */
+                    /** @description PNG image Base64, at most 200,000 decoded bytes. */
                     data: string;
                     /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
                     description?: string;
@@ -2734,6 +2959,128 @@ export interface components {
             kind: "text";
             /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
             subject?: string;
+        };
+        /** @description An Apple Pay request using the business merchant and gateway configuration. */
+        RequestPaymentBody: {
+            /** Format: uuid */
+            conversationId: string;
+            images?: {
+                /** @description PNG image Base64, at most 200,000 decoded bytes. */
+                data: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                description?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                identifier: string;
+            }[];
+            merchantSession: {
+                displayName: string;
+                epochTimestamp: number;
+                expiresAt: number;
+                /** @enum {string} */
+                initiative: "messaging";
+                /**
+                 * Format: uri
+                 * @description Absolute HTTPS URL using printable ASCII, up to 8,192 bytes.
+                 */
+                initiativeContext: string;
+                merchantIdentifier: string;
+                merchantSessionIdentifier: string;
+                nonce: string;
+                signature: string;
+            } & {
+                [key: string]: string | number | boolean | Record<string, never> | unknown[] | null;
+            };
+            paymentRequest: {
+                currencyCode: string;
+                lineItems?: {
+                    amount: string;
+                    /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                    label: string;
+                    /** @enum {string} */
+                    type?: "final" | "pending";
+                }[];
+                requiredBillingContactFields?: ("email" | "name" | "phone" | "phoneticName" | "post")[];
+                requiredShippingContactFields?: ("email" | "name" | "phone" | "phoneticName" | "post")[];
+                shippingMethods?: {
+                    amount: string;
+                    /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                    detail: string;
+                    /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                    identifier: string;
+                    /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                    label: string;
+                }[];
+                supportedCountries?: string[];
+                total: {
+                    amount: string;
+                    /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                    label: string;
+                    /** @enum {string} */
+                    type?: "final" | "pending";
+                };
+            };
+            receivedMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style: "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+            replyMessage: {
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                alternateTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageDescription?: string;
+                /** @description Non-blank identifier up to 200 code points without controls, ../, or straight quotes. */
+                imageIdentifier?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageSubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                imageTitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                secondarySubtitle?: string;
+                /** @enum {string} */
+                style: "large";
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                subtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                tertiarySubtitle?: string;
+                /** @description Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls. */
+                title: string;
+            };
+            /**
+             * Format: uuid
+             * @description Per-conversation request key. Identical bytes return an already-persisted result; differing bytes conflict. Concurrent requests or retries after an uncertain send can reach the provider more than once.
+             */
+            requestMessageId: string;
+        };
+        /** @description A readable `error`, with a stable `code` for Apple Pay rejections, or `validation_failed` with field-level `issues`. */
+        RequestPaymentError: {
+            /** @enum {string} */
+            code?: "apple_pay_unavailable" | "apple_pay_session_expired" | "apple_pay_merchant_mismatch" | "apple_pay_gateway_mismatch";
+            error: string;
+        } | {
+            /** @enum {string} */
+            error: "validation_failed";
+            issues: {
+                message: string;
+                path: string;
+            }[];
         };
         /** @description One immutable channel+usage-scoped library asset. */
         RichAssetItem: {
@@ -3201,7 +3548,7 @@ export interface components {
         };
         /** @description Outbound message request. The `type` field discriminates between a free-form `text` message (body and/or attachments), a `template` message, and an `authentication` message sent from a published authentication template. Unknown fields are rejected. */
         SendMessageBody: components["schemas"]["SendTextMessageBody"] | components["schemas"]["SendTemplateMessageBody"] | components["schemas"]["SendAuthenticationMessageBody"];
-        /** @description Error envelope for the messaging send routes: a public `error` string, or `validation_failed` with field-level `issues`. */
+        /** @description Error envelope for the messaging send routes: a readable `error` string, or `validation_failed` with field-level `issues`. */
         SendMessageError: {
             error: string;
         } | {
@@ -3515,6 +3862,7 @@ export type SchemaInboundMessageContentAmbFormResponse = components['schemas']['
 export type SchemaInboundMessageContentAmbImessageAppResponse = components['schemas']['InboundMessageContentAmbImessageAppResponse'];
 export type SchemaInboundMessageContentAmbInvitationResponse = components['schemas']['InboundMessageContentAmbInvitationResponse'];
 export type SchemaInboundMessageContentAmbListPickerResponse = components['schemas']['InboundMessageContentAmbListPickerResponse'];
+export type SchemaInboundMessageContentAmbPaymentResponse = components['schemas']['InboundMessageContentAmbPaymentResponse'];
 export type SchemaInboundMessageContentAmbQuickReplyResponse = components['schemas']['InboundMessageContentAmbQuickReplyResponse'];
 export type SchemaInboundMessageContentAmbTimePickerResponse = components['schemas']['InboundMessageContentAmbTimePickerResponse'];
 export type SchemaInboundMessageContentAmbUnrecognizedInteractiveResponse = components['schemas']['InboundMessageContentAmbUnrecognizedInteractiveResponse'];
@@ -3529,6 +3877,7 @@ export type SchemaMessagingInvitationCreateRequestError = components['schemas'][
 export type SchemaMessagingInvitationCreateResult = components['schemas']['MessagingInvitationCreateResult'];
 export type SchemaMessagingInvitationError = components['schemas']['MessagingInvitationError'];
 export type SchemaMessagingInvitationList = components['schemas']['MessagingInvitationList'];
+export type SchemaMessagingInvitationPersistenceUnconfirmed = components['schemas']['MessagingInvitationPersistenceUnconfirmed'];
 export type SchemaMessagingInvitationRequestError = components['schemas']['MessagingInvitationRequestError'];
 export type SchemaMessagingInvitationSendFailure = components['schemas']['MessagingInvitationSendFailure'];
 export type SchemaOutboundMessageContent = components['schemas']['OutboundMessageContent'];
@@ -3537,6 +3886,7 @@ export type SchemaOutboundMessageContentAmbForm = components['schemas']['Outboun
 export type SchemaOutboundMessageContentAmbImessageApp = components['schemas']['OutboundMessageContentAmbImessageApp'];
 export type SchemaOutboundMessageContentAmbInvitation = components['schemas']['OutboundMessageContentAmbInvitation'];
 export type SchemaOutboundMessageContentAmbListPicker = components['schemas']['OutboundMessageContentAmbListPicker'];
+export type SchemaOutboundMessageContentAmbPayment = components['schemas']['OutboundMessageContentAmbPayment'];
 export type SchemaOutboundMessageContentAmbQuickReply = components['schemas']['OutboundMessageContentAmbQuickReply'];
 export type SchemaOutboundMessageContentAmbRichLink = components['schemas']['OutboundMessageContentAmbRichLink'];
 export type SchemaOutboundMessageContentAmbTimePicker = components['schemas']['OutboundMessageContentAmbTimePicker'];
@@ -3551,6 +3901,8 @@ export type SchemaRawMessageContentAmbRichLink = components['schemas']['RawMessa
 export type SchemaRawMessageContentAmbTimePicker = components['schemas']['RawMessageContentAmbTimePicker'];
 export type SchemaRawMessageContentAmbUrlPayload = components['schemas']['RawMessageContentAmbUrlPayload'];
 export type SchemaRawMessageContentText = components['schemas']['RawMessageContentText'];
+export type SchemaRequestPaymentBody = components['schemas']['RequestPaymentBody'];
+export type SchemaRequestPaymentError = components['schemas']['RequestPaymentError'];
 export type SchemaRichAssetItem = components['schemas']['RichAssetItem'];
 export type SchemaRichAssetList = components['schemas']['RichAssetList'];
 export type SchemaRichChannelReadiness = components['schemas']['RichChannelReadiness'];
@@ -4878,11 +5230,11 @@ export interface operations {
                     displayName: string;
                     /**
                      * Format: binary
-                     * @description PNG image file. `rich_image_200`: PNG <= 200,000 Base64 bytes. `rich_icon_15`: PNG < 15,360 Base64 bytes.
+                     * @description PNG image file. `rich_image_200`: PNG <= 200,000 decoded bytes. `rich_icon_15`: PNG < 15,360 Base64 bytes.
                      */
                     file: string;
                     /**
-                     * @description Size class: `rich_image_200` (PNG <= 200,000 Base64 bytes) or `rich_icon_15` (PNG < 15,360 Base64 bytes).
+                     * @description Size class: `rich_image_200` (PNG <= 200,000 decoded bytes) or `rich_icon_15` (PNG < 15,360 Base64 bytes).
                      * @enum {string}
                      */
                     usage: "rich_image_200" | "rich_icon_15";
@@ -4941,7 +5293,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Payload too large — PNG must be <= 200,000 Base64 bytes for `rich_image_200` or < 15,360 Base64 bytes for `rich_icon_15`. */
+            /** @description Payload too large — PNG must be <= 200,000 decoded bytes for `rich_image_200` or < 15,360 Base64 bytes for `rich_icon_15`. */
             413: {
                 headers: {
                     [name: string]: unknown;
@@ -5554,7 +5906,7 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "error": "Failed to create attachment access URL"
+                     *       "error": "Unexpected API error"
                      *     }
                      */
                     "application/json": components["schemas"]["ApiError"];
@@ -5769,7 +6121,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Messaging invitation accepted once, or an idempotent replay. */
+            /** @description Apple accepted the submission and the invitation was persisted, or an idempotent replay. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -5805,7 +6157,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Request ID is already submitting or is reused with different request bytes. */
+            /** @description A persisted request ID was reused with different request bytes. */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -5843,7 +6195,16 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description The request was recorded but the channel rejected or could not send it. */
+            /** @description The channel accepted the submission, but persistence could not be confirmed. The recipient may already have the invitation. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessagingInvitationPersistenceUnconfirmed"];
+                };
+            };
+            /** @description The channel rejected or did not confirm the submission. No invitation was recorded; messageId identifies this attempt. */
             502: {
                 headers: {
                     [name: string]: unknown;
@@ -5931,6 +6292,142 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    requestPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestPaymentBody"];
+            };
+        };
+        responses: {
+            /** @description Channel accepted and persisted, or an exact persisted replay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendMessageResult"];
+                };
+            };
+            /** @description Invalid request. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestPaymentError"];
+                };
+            };
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conversation or channel unavailable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestPaymentError"];
+                };
+            };
+            /** @description requestMessageId was reused with different bytes. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestPaymentError"];
+                };
+            };
+            /** @description Conversation opted out. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestPaymentError"];
+                };
+            };
+            /** @description Request body exceeds the size limit. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestPaymentError"];
+                };
+            };
+            /** @description Payment checks run in this order: apple_pay_unavailable, apple_pay_session_expired, apple_pay_merchant_mismatch, apple_pay_gateway_mismatch. Provider payload limits also apply. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestPaymentError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Persistence could not be confirmed after channel acceptance. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestPaymentError"];
+                };
+            };
+            /** @description Channel sending failed; acceptance may be unknown. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestPaymentError"];
                 };
             };
             /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
@@ -6208,6 +6705,127 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SendMessageError"];
+                };
+            };
+            /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */
+            503: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    sendConversationTyping: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    conversationId: string;
+                    /** @enum {string} */
+                    state: "start" | "end";
+                };
+            };
+        };
+        responses: {
+            /** @description Typing indicator accepted by the channel. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid typing request. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Missing or invalid authentication credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conversation or channel unavailable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Conversation opted out. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Request body exceeds the size limit. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Channel does not support typing. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying. */
+            429: {
+                headers: {
+                    /** @description Seconds to wait before retrying. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Channel acceptance could not be confirmed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
             /** @description The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval. */

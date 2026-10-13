@@ -1,3 +1,4 @@
+import { isMspApiError } from '@1440io/msp-api';
 import { createServer, type Server } from 'node:http';
 import { afterAll, expect, it } from 'vitest';
 import { MemoryReplayCache, WebhookReceiver } from '@1440io/msp-webhooks';
@@ -94,14 +95,31 @@ describeWebhookLive('webhooks: live end-to-end', () => {
       // produces messaging_invitation.updated transitions to this endpoint.
       let expectedInvitationId: string | undefined;
       if (env.allowInitiate && env.phoneNumber) {
-        const invitation = await testClient().invitations.create({
-          phoneNumber: env.phoneNumber,
-          callerReference: `${RUN_ID}-live-webhook`,
-          targetAgentStatus: 'bot',
-        });
-        expectedInvitationId = invitation.id;
-        console.log(`   provoked invitation ${invitation.id} — waiting for its webhook`);
-      } else {
+        // Invitations may not be enabled for this org, which is a documented
+        // 422 rather than a failure — fall back to waiting passively.
+        const invitation = await testClient()
+          .invitations.create({
+            phoneNumber: env.phoneNumber,
+            callerReference: `${RUN_ID}-live-webhook`,
+            targetAgentStatus: 'bot',
+          })
+          .catch((error: unknown) => {
+            const body = isMspApiError(error)
+              ? (error.body as { code?: string; error?: string } | undefined)
+              : undefined;
+            const unavailable =
+              body?.code === 'messaging_invitation_unavailable' ||
+              body?.error?.includes('not available');
+            if (!unavailable) throw error;
+            console.log('   messaging invitations are not enabled for this org');
+            return undefined;
+          });
+        expectedInvitationId = invitation?.id;
+        if (invitation) {
+          console.log(`   provoked invitation ${invitation.id} — waiting for its webhook`);
+        }
+      }
+      if (!expectedInvitationId) {
         console.log(
           `   waiting up to ${env.webhookTimeoutMs / 1000}s for any delivery — ` +
             'send a message to the business from a device now',

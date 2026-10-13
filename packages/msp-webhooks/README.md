@@ -15,6 +15,8 @@ Verification is built on Web Crypto, so the same code runs on Node 20.10+, Cloud
 | `message.received` | A customer sends an inbound message. `message.content` is a union tagged by `kind` — `text`, `opt_out`, `amb.quick_reply_response`, `amb.list_picker_response`, `amb.time_picker_response`, `amb.form_response`, `amb.authentication_response`, and a few more. |
 | `messaging_invitation.updated` | A messaging invitation changes status. |
 
+A payment reply arrives as `amb.payment_response`. It means the customer acted, not that funds moved — the Apple Pay token goes to your payment gateway rather than through 1440, so confirm settlement there.
+
 The envelope carries `eventId`, `v`, `organizationId`, `conversationId`, `channelAddress`, `intentId`, `groupId`, `locale`, and `capabilityList` — the rich-messaging capabilities the customer's device advertised, which is what to check before choosing a template.
 
 Both arrive as an HTTP POST with a `Webhook-Id`, `Webhook-Timestamp`, and `Webhook-Signature` header. Any 2xx acknowledges; a non-2xx or a timeout is retried with backoff over several minutes and then abandoned. A `410 Gone` is terminal and disables delivery for the integration, so never return one by accident.
@@ -232,6 +234,11 @@ on: {
           break;
         case 'amb.authentication_response':
           console.log(authenticationStatus(content));  // success | failure | cancel | unknown
+          break;
+        case 'amb.payment_response':
+          // `state` is the value you supplied on the request, echoed back —
+          // the key that ties this response to its order.
+          console.log(paymentState(content), paymentRequestOf(content)?.total);
           break;
       }
     }

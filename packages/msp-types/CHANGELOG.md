@@ -1,5 +1,23 @@
 # @1440io/msp-types
 
+## 0.5.0
+
+### Minor Changes
+
+- Add Apple Pay payment requests and typing indicators, from the current MSP API spec. Everything else is additive — no existing call changes.
+
+  **`messaging.requestPayment({ conversationId, merchantSession, paymentRequest, receivedMessage, replyMessage, images? })`** requests an Apple Pay payment. It needs the new `RequestPayments` permission on top of `SendMessages`, plus platform approval and business enablement; without them it is a 403 or an `apple_pay_unavailable` rejection. The `merchantSession` comes from Apple via your own merchant backend — 1440 passes it through and never mints one — and the customer's Apple Pay token goes to your payment gateway rather than through 1440, so a success here confirms delivery, not settlement.
+
+  This call is deliberately **not retried automatically**, unlike every other idempotent write in the client. Identical bytes replay the persisted result, but the spec warns an uncertain send can still reach the provider more than once and create a second payable bubble, so your gateway must deduplicate on `requestMessageId` and the SDK will not quietly retry something that could bill a customer twice.
+
+  **`messaging.sendTyping({ conversationId, state })`** shows or clears a typing indicator — `start` or `end`, answering `204` with no body. Transient and best effort: one provider attempt with a two-second timeout, no persistence, no retries, no idempotency. Also not retried, since a stale indicator is worse than none. Treat it as decoration, never as a precondition for sending.
+
+  **Reading payment responses.** A customer's reply arrives as the new `amb.payment_response` content kind. `paymentState(content)` returns the opaque `state` you supplied, echoed back — the correlation key that ties a response to its order — and `paymentRequestOf(content)` returns the currency, total, and line items they were asked to approve.
+
+  **New types**: `RequestPaymentBody`, `RequestPaymentError`, `ApplePayMerchantSession`, `ApplePayPaymentRequest`, `InboundPaymentResponse`, `OutboundPayment`, `TypingState`, `MessagingInvitationPersistenceUnconfirmed`, `MessagingInvitationErrorCode`, and a `PERMISSION_KEYS` vocabulary so a future permission addition fails the build rather than drifting. `amb.payment_response` joins `INBOUND_CONTENT_KINDS`.
+
+  **Worth knowing if you branch on invitation errors.** `MessagingInvitationError` moved its stable reason from `error` to a new required `code`, with `error` now carrying the human-readable message, and dropped `request_in_progress` from the set. Code reading `body.error === 'messaging_invitation_unavailable'` should read `body.code` instead. `BusinessSettings` also dropped `isActive`.
+
 ## 0.4.0
 
 ### Minor Changes

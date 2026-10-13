@@ -87,6 +87,21 @@ export type SendTemplateMessageBody = Schemas['SendTemplateMessageBody'];
 export type SendAuthenticationMessageBody = Schemas['SendAuthenticationMessageBody'];
 /** Channel-native passthrough send. */
 export type SendRawMessageBody = Schemas['SendRawMessageBody'];
+/** Body for requesting an Apple Pay payment. */
+export type RequestPaymentBody = Schemas['RequestPaymentBody'];
+/** Error envelope for the payment-request route. */
+export type RequestPaymentError = Schemas['RequestPaymentError'];
+
+/** The Apple merchant session a payment request carries. */
+export type ApplePayMerchantSession = RequestPaymentBody['merchantSession'];
+/** The payment being requested — currency, total, and line items. */
+export type ApplePayPaymentRequest = RequestPaymentBody['paymentRequest'];
+
+/** Whether a typing indicator starts or ends. */
+export type TypingState = 'start' | 'end';
+
+/** Every typing state the spec declares. */
+export const TYPING_STATES = ['start', 'end'] as const satisfies readonly TypingState[];
 /** Result of a send. */
 export type SendMessageSuccess = Schemas['SendMessageResult'];
 
@@ -103,8 +118,13 @@ export type MessagingInvitation = Schemas['MessagingInvitation'];
 export type CreateMessagingInvitation = Schemas['CreateMessagingInvitationBody'];
 /** A cursor-paginated page of messaging invitations. */
 export type MessagingInvitationList = Schemas['MessagingInvitationList'];
-/** Error envelope for the invitation routes. */
+/** Error envelope for the invitation routes: a stable `code` plus readable `error`. */
 export type MessagingInvitationError = Schemas['MessagingInvitationError'];
+/** The stable reason an invitation was refused. */
+export type MessagingInvitationErrorCode = MessagingInvitationError['code'];
+/** The channel accepted an invitation but persistence could not be confirmed. */
+export type MessagingInvitationPersistenceUnconfirmed =
+  Schemas['MessagingInvitationPersistenceUnconfirmed'];
 /** Validation error for an invitation request. */
 export type MessagingInvitationRequestError = Schemas['MessagingInvitationRequestError'];
 /** The invitation body exceeded its size cap. */
@@ -375,6 +395,11 @@ export type InboundInvitationResponse = Schemas['InboundMessageContentAmbInvitat
 /** An interactive reply the platform could not classify. */
 export type InboundUnrecognizedInteractiveResponse =
   Schemas['InboundMessageContentAmbUnrecognizedInteractiveResponse'];
+/** The customer's response to an Apple Pay request. */
+export type InboundPaymentResponse = Schemas['InboundMessageContentAmbPaymentResponse'];
+
+/** Stored outbound Apple Pay content. */
+export type OutboundPayment = Schemas['OutboundMessageContentAmbPayment'];
 
 /** Stored outbound content, discriminated by `kind`. */
 export type OutboundContent = Schemas['OutboundMessageContent'];
@@ -404,6 +429,7 @@ export const INBOUND_CONTENT_KINDS = [
   'amb.imessage_app_response',
   'amb.invitation_response',
   'amb.unrecognized_interactive_response',
+  'amb.payment_response',
 ] as const;
 
 /** The kinds that represent a customer answering a rich message. */
@@ -436,6 +462,46 @@ export const DEVICE_CAPABILITIES = [
   'AUTH2',
   'FORM',
 ] as const satisfies readonly DeviceCapability[];
+
+/** A permission an integration's grant can carry. */
+export type PermissionKey = ActorGrant['permissionKeys'][number];
+
+/**
+ * Every permission the spec declares.
+ *
+ * `RequestPayments` arrived with the Apple Pay route; a grant missing it gets a
+ * 403 from `messaging.requestPayment`.
+ */
+export const PERMISSION_KEYS = [
+  'ViewBusiness',
+  'ManageBusiness',
+  'ViewMembers',
+  'ManageMembers',
+  'ViewChannels',
+  'ManageChannels',
+  'SendMessagingInvitations',
+  'SendMessages',
+  'ViewMessages',
+  'ViewConversations',
+  'ManageConversations',
+  'ViewTemplates',
+  'ManageTemplates',
+  'ViewCustomers',
+  'ManageCustomers',
+  'ViewAudit',
+  'ViewPermissionSets',
+  'CreatePermissionSets',
+  'DeletePermissionSets',
+  'ViewSandboxes',
+  'ManageSandboxes',
+  'SyncSandbox',
+  'ViewIntegrations',
+  'ManageIntegrations',
+  'ManagePermissions',
+  'ViewSensitiveResponses',
+  'SendRawChannelPayloads',
+  'RequestPayments',
+] as const satisfies readonly PermissionKey[];
 
 /** Outcome of an authentication (OAuth) request. */
 export type AuthenticationStatus = 'success' | 'failure' | 'cancel' | 'unknown';

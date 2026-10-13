@@ -74,8 +74,12 @@ describeApi('messaging invitations: reading', () => {
  */
 function unavailable(error: unknown): boolean {
   if (!isMspApiError(error) || error.status !== 422) return false;
-  const body = error.body as { error?: string } | undefined;
-  const isUnavailable = body?.error === 'messaging_invitation_unavailable';
+  // The stable reason moved from `error` to `code` in this spec revision;
+  // `error` now carries the human-readable message.
+  const body = error.body as { code?: string; error?: string } | undefined;
+  const isUnavailable =
+    body?.code === 'messaging_invitation_unavailable' ||
+    body?.error === 'messaging_invitation_unavailable';
   if (isUnavailable) {
     console.log('   messaging invitations are not enabled for this org — skipped');
   }
@@ -158,10 +162,13 @@ describeInitiate('messaging invitations: reaching a real device', () => {
     if (!isMspApiError(error)) return;
     expect(error.status).toBeGreaterThanOrEqual(400);
     expect(error.status).toBeLessThan(500);
-    // Documented as invalid_recipient rather than a generic failure.
-    const body = error.body as { error?: string } | undefined;
-    if (body?.error) {
-      expect(['invalid_recipient', 'messaging_invitation_unavailable']).toContain(body.error);
+    // Documented as invalid_recipient rather than a generic failure, and the
+    // stable reason now lives on `code`.
+    const body = error.body as { code?: string; error?: string } | undefined;
+    const reason = body?.code ?? body?.error;
+    if (reason) {
+      expect(['invalid_recipient', 'messaging_invitation_unavailable']).toContain(reason);
     }
+    expect(body?.error, 'the readable message should still be present').toBeTruthy();
   });
 });

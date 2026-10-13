@@ -51,8 +51,10 @@ export {
 } from './resources/conversations.js';
 export {
   MessagingResource,
+  type RequestPaymentParams,
   type SendAuthenticationParams,
   type SendRawParams,
+  type SendTypingParams,
   type SendTemplateParams,
   type SendTextParams,
 } from './resources/messaging.js';

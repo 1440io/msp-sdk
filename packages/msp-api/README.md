@@ -138,6 +138,28 @@ Supply your own `requestMessageId` when a retry might span a process restart —
 
 That collapse is best effort, not a guarantee. Concurrent sends can both reach Apple before either is persisted, and a `502` (channel preparation or sending failed) or a `500` (persistence not confirmed) leaves the outcome genuinely unknown — the message may already have been delivered. The client retries those automatically under the same `requestMessageId`, which is the documented recovery, but a retry can deliver a second copy. If a duplicate would be costly, catch `MspServerError` and reconcile against conversation history instead of retrying blind.
 
+## Apple Pay and typing
+
+```ts
+// Requires the RequestPayments permission, plus platform approval.
+await client.messaging.requestPayment({
+  conversationId,
+  merchantSession,     // from Apple, via your own merchant backend
+  paymentRequest: { currencyCode: 'USD', total: { label: 'Acme', amount: '42.00', type: 'final' } },
+  receivedMessage: { title: 'Pay for your order' },
+  replyMessage: { title: 'Thanks' },
+});
+
+await client.messaging.sendTyping({ conversationId, state: 'start' });
+```
+
+Two things differ from every other write in this client, both deliberate:
+
+- **Neither is retried automatically.** A payment request whose outcome is uncertain can still reach the provider twice and create a second payable bubble, so the SDK will not retry something that could bill a customer twice — deduplicate on `requestMessageId` in your gateway. Typing is transient, and a stale indicator is worse than none.
+- **A successful payment request means delivered, not paid.** The customer's Apple Pay token goes to your payment gateway, not through 1440. Confirm settlement there.
+
+Typing answers `204` with no body and persists nothing, so it leaves no trace in message history. Treat it as decoration rather than a precondition for sending.
+
 ## Messaging invitations
 
 Reaching a customer first. Creation is asynchronous: an invitation starts at `submitting` and lands on `accepted`, `declined`, `provider_rejected`, or `error`. Watch the `messaging_invitation.updated` webhook instead of polling where you can.

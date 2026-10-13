@@ -9,6 +9,8 @@ import {
   isRedacted,
   isVisible,
   parseAppleTimestamp,
+  paymentRequestOf,
+  paymentState,
   respondsTo,
   selectedIds,
   selectedTimeslot,
@@ -247,6 +249,46 @@ describe('authentication responses', () => {
 
   it('returns null for content that is not an authentication reply', () => {
     expect(authenticationStatus(content({ kind: 'text', body: 'x' }))).toBeNull();
+  });
+});
+
+describe('payment responses', () => {
+  const reply = content({
+    kind: 'amb.payment_response',
+    sessionIdentifier: 'sess-pay',
+    data: {
+      payment: {
+        state: 'order-4815',
+        paymentRequest: {
+          currencyCode: 'USD',
+          countryCode: 'US',
+          total: { label: 'Acme', amount: '42.00', type: 'final' },
+          lineItems: [{ label: 'Widget', amount: '42.00', type: 'final' }],
+        },
+      },
+    },
+  });
+
+  it('echoes the state back so a payment can be tied to its order', () => {
+    expect(paymentState(reply)).toBe('order-4815');
+  });
+
+  it('exposes what the customer was asked to approve', () => {
+    const request = paymentRequestOf(reply);
+
+    expect(request?.currencyCode).toBe('USD');
+    expect(request?.total?.amount).toBe('42.00');
+    expect(request?.lineItems).toHaveLength(1);
+  });
+
+  it('returns null for content that is not a payment reply', () => {
+    expect(paymentState(content({ kind: 'text', body: 'x' }))).toBeNull();
+    expect(paymentRequestOf(content({ kind: 'text', body: 'x' }))).toBeNull();
+    expect(paymentState(null)).toBeNull();
+  });
+
+  it('counts as an interactive response', () => {
+    expect(isInteractiveResponse(reply)).toBe(true);
   });
 });
 

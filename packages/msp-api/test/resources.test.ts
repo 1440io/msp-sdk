@@ -210,6 +210,91 @@ describe('messaging', () => {
   });
 });
 
+describe('payments and typing', () => {
+  const merchantSession = {
+    epochTimestamp: 1_760_000_000_000,
+    expiresAt: 1_760_000_300_000,
+    merchantSessionIdentifier: 'session-1',
+    nonce: 'nonce-1',
+    merchantIdentifier: 'a'.repeat(64),
+    displayName: 'Acme',
+    initiative: 'messaging' as const,
+    initiativeContext: 'https://acme.example/checkout',
+    signature: 'sig',
+  };
+  const paymentRequest = {
+    currencyCode: 'USD',
+    total: { label: 'Acme', amount: '42.00', type: 'final' as const },
+  } as never;
+  const bubble = { title: 'Pay for your order' } as never;
+
+  it('builds a payment request and mints a request key', async () => {
+    const { client: c, requests } = client([{ body: { messageId: 'p1', duplicate: false } }]);
+
+    await c.messaging.requestPayment({
+      conversationId: 'conv-1',
+      merchantSession,
+      paymentRequest,
+      receivedMessage: bubble,
+      replyMessage: bubble,
+    });
+
+    expect(new URL(requests[0]!.url).pathname).toBe('/api/v0/messaging/request-payment');
+    const body = JSON.parse(requests[0]!.body!) as Record<string, any>;
+    expect(body.conversationId).toBe('conv-1');
+    expect(body.merchantSession.merchantSessionIdentifier).toBe('session-1');
+    expect(body.paymentRequest.total.amount).toBe('42.00');
+    expect(body.requestMessageId).toMatch(/^[0-9a-f-]{36}$/i);
+  });
+
+  it('does not retry a payment request, even on a retryable status', async () => {
+    const { client: c, requests } = client(
+      [
+        { status: 502, body: { error: 'gateway', code: 'apple_pay_unavailable' } },
+        { body: { messageId: 'p2', duplicate: false } },
+      ],
+      { retry: { maxRetries: 2, initialDelayMs: 1 } },
+    );
+
+    await expect(
+      c.messaging.requestPayment({
+        conversationId: 'conv-1',
+        merchantSession,
+        paymentRequest,
+        receivedMessage: bubble,
+        replyMessage: bubble,
+      }),
+    ).rejects.toMatchObject({ status: 502 });
+
+    // An uncertain payment send can reach the provider twice and create a
+    // second payable bubble, so a transparent retry is not safe here.
+    expect(requests).toHaveLength(1);
+  });
+
+  it('sends a typing indicator and expects no content back', async () => {
+    const { client: c, requests } = client([{ status: 204 }]);
+
+    await expect(
+      c.messaging.sendTyping({ conversationId: 'conv-1', state: 'start' }),
+    ).resolves.toBeUndefined();
+
+    expect(new URL(requests[0]!.url).pathname).toBe('/api/v0/messaging/typing');
+    expect(JSON.parse(requests[0]!.body!)).toEqual({ conversationId: 'conv-1', state: 'start' });
+  });
+
+  it('does not retry a typing indicator', async () => {
+    const { client: c, requests } = client([{ status: 502, body: { error: 'provider down' } }], {
+      retry: { maxRetries: 2, initialDelayMs: 1 },
+    });
+
+    await expect(
+      c.messaging.sendTyping({ conversationId: 'conv-1', state: 'end' }),
+    ).rejects.toMatchObject({ status: 502 });
+    // Transient and best effort — a stale indicator is worse than none.
+    expect(requests).toHaveLength(1);
+  });
+});
+
 describe('messaging invitations', () => {
   it('defaults channel and purpose, and keeps the idempotency key', async () => {
     const { client: c, requests } = client([{ body: { id: 'inv-1', status: 'submitting' } }]);

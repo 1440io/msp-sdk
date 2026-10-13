@@ -260,6 +260,9 @@
             "$ref": "#/components/schemas/InboundMessageContentOptOut"
           },
           {
+            "$ref": "#/components/schemas/InboundMessageContentAmbPaymentResponse"
+          },
+          {
             "$ref": "#/components/schemas/InboundMessageContentAmbQuickReplyResponse"
           },
           {
@@ -289,6 +292,7 @@
           "mapping": {
             "text": "#/components/schemas/InboundMessageContentText",
             "opt_out": "#/components/schemas/InboundMessageContentOptOut",
+            "amb.payment_response": "#/components/schemas/InboundMessageContentAmbPaymentResponse",
             "amb.quick_reply_response": "#/components/schemas/InboundMessageContentAmbQuickReplyResponse",
             "amb.list_picker_response": "#/components/schemas/InboundMessageContentAmbListPickerResponse",
             "amb.time_picker_response": "#/components/schemas/InboundMessageContentAmbTimePickerResponse",
@@ -337,6 +341,238 @@
           "kind"
         ],
         "description": "Stored inbound opt_out content."
+      },
+      "InboundMessageContentAmbPaymentResponse": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "amb.payment_response"
+            ]
+          },
+          "sessionIdentifier": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "payment": {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "paymentRequest": {
+                    "type": "object",
+                    "properties": {
+                      "countryCode": {
+                        "type": "string"
+                      },
+                      "currencyCode": {
+                        "type": "string"
+                      },
+                      "total": {
+                        "type": "object",
+                        "properties": {
+                          "label": {
+                            "type": "string"
+                          },
+                          "amount": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "lineItems": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "label": {
+                              "type": "string"
+                            },
+                            "amount": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "shippingMethods": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "identifier": {
+                              "type": "string"
+                            },
+                            "label": {
+                              "type": "string"
+                            },
+                            "detail": {
+                              "type": "string"
+                            },
+                            "amount": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "supportedCountries": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "requiredBillingContactFields": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "requiredShippingContactFields": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "state"
+                ]
+              },
+              "requestIdentifier": {
+                "type": "string"
+              },
+              "images": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "identifier": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "description": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "identifier",
+                    "name"
+                  ]
+                }
+              },
+              "receivedMessage": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "subtitle": {
+                    "type": "string"
+                  },
+                  "imageIdentifier": {
+                    "type": "string",
+                    "description": "Image identifier for this bubble."
+                  },
+                  "imageDescription": {
+                    "type": "string"
+                  },
+                  "style": {
+                    "type": "string",
+                    "enum": [
+                      "icon",
+                      "small",
+                      "large"
+                    ]
+                  },
+                  "imageTitle": {
+                    "type": "string"
+                  },
+                  "imageSubtitle": {
+                    "type": "string"
+                  },
+                  "secondarySubtitle": {
+                    "type": "string"
+                  },
+                  "tertiarySubtitle": {
+                    "type": "string"
+                  },
+                  "alternateTitle": {
+                    "type": "string"
+                  }
+                }
+              },
+              "replyMessage": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "subtitle": {
+                    "type": "string"
+                  },
+                  "imageIdentifier": {
+                    "type": "string",
+                    "description": "Image identifier for this bubble."
+                  },
+                  "imageDescription": {
+                    "type": "string"
+                  },
+                  "style": {
+                    "type": "string",
+                    "enum": [
+                      "icon",
+                      "small",
+                      "large"
+                    ]
+                  },
+                  "imageTitle": {
+                    "type": "string"
+                  },
+                  "imageSubtitle": {
+                    "type": "string"
+                  },
+                  "secondarySubtitle": {
+                    "type": "string"
+                  },
+                  "tertiarySubtitle": {
+                    "type": "string"
+                  },
+                  "alternateTitle": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "required": [
+              "payment"
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ],
+        "description": "Stored inbound amb.payment_response content."
       },
       "InboundMessageContentAmbQuickReplyResponse": {
         "type": "object",
@@ -1982,7 +2218,8 @@
                 "ManageIntegrations",
                 "ManagePermissions",
                 "ViewSensitiveResponses",
-                "SendRawChannelPayloads"
+                "SendRawChannelPayloads",
+                "RequestPayments"
               ]
             },
             "description": "Granted fine-grained permission keys."
@@ -2210,26 +2447,20 @@
               "null"
             ],
             "description": "Read-only short-lived signed URL of the current original logo, or `null` if none is set. The signature is valid for seven days. The immutable, versioned image response is privately cacheable by the browser for seven days."
-          },
-          "isActive": {
-            "type": "boolean",
-            "description": "Whether the business is currently active."
           }
         },
         "required": [
           "id",
           "name",
           "slug",
-          "logoUrl",
-          "isActive"
+          "logoUrl"
         ],
         "description": "The current settings for a business.",
         "example": {
           "id": "018f1a2b-0000-7000-8000-000000000001",
           "name": "Acme Home Services",
           "slug": "acme-home-services",
-          "logoUrl": "https://media.example.com/logos/acme.png?signature=example",
-          "isActive": true
+          "logoUrl": "https://media.example.com/logos/acme.png?signature=example"
         }
       },
       "RichAssetList": {
@@ -4932,6 +5163,9 @@
             "$ref": "#/components/schemas/OutboundMessageContentText"
           },
           {
+            "$ref": "#/components/schemas/OutboundMessageContentAmbPayment"
+          },
+          {
             "$ref": "#/components/schemas/OutboundMessageContentAmbQuickReply"
           },
           {
@@ -4960,6 +5194,7 @@
           "propertyName": "kind",
           "mapping": {
             "text": "#/components/schemas/OutboundMessageContentText",
+            "amb.payment": "#/components/schemas/OutboundMessageContentAmbPayment",
             "amb.quick_reply": "#/components/schemas/OutboundMessageContentAmbQuickReply",
             "amb.list_picker": "#/components/schemas/OutboundMessageContentAmbListPicker",
             "amb.time_picker": "#/components/schemas/OutboundMessageContentAmbTimePicker",
@@ -4994,6 +5229,319 @@
           "body"
         ],
         "description": "Stored outbound text content."
+      },
+      "OutboundMessageContentAmbPayment": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "amb.payment"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "payment": {
+                "type": "object",
+                "properties": {
+                  "expiresAt": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 8640000000000000
+                  },
+                  "paymentRequest": {
+                    "type": "object",
+                    "properties": {
+                      "currencyCode": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$"
+                      },
+                      "total": {
+                        "type": "object",
+                        "properties": {
+                          "label": {
+                            "type": "string",
+                            "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+                          },
+                          "amount": {
+                            "type": "string",
+                            "pattern": "^-?\\d+(?:\\.\\d+)?$"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "final",
+                              "pending"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "label",
+                          "amount"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "lineItems": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "label": {
+                              "type": "string",
+                              "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+                            },
+                            "amount": {
+                              "type": "string",
+                              "pattern": "^-?\\d+(?:\\.\\d+)?$"
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "final",
+                                "pending"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "label",
+                            "amount"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "minItems": 1,
+                        "maxItems": 20
+                      },
+                      "shippingMethods": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "identifier": {
+                              "type": "string",
+                              "description": "Non-blank identifier up to 200 code points without controls, ../, or straight quotes."
+                            },
+                            "label": {
+                              "type": "string",
+                              "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+                            },
+                            "detail": {
+                              "type": "string",
+                              "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+                            },
+                            "amount": {
+                              "type": "string",
+                              "pattern": "^-?\\d+(?:\\.\\d+)?$"
+                            }
+                          },
+                          "required": [
+                            "identifier",
+                            "label",
+                            "detail",
+                            "amount"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "minItems": 1,
+                        "maxItems": 100
+                      },
+                      "supportedCountries": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[A-Z]{2}$"
+                        },
+                        "minItems": 1
+                      },
+                      "requiredBillingContactFields": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "email",
+                            "name",
+                            "phone",
+                            "phoneticName",
+                            "post"
+                          ]
+                        }
+                      },
+                      "requiredShippingContactFields": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "email",
+                            "name",
+                            "phone",
+                            "phoneticName",
+                            "post"
+                          ]
+                        }
+                      },
+                      "countryCode": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{2}$"
+                      }
+                    },
+                    "required": [
+                      "currencyCode",
+                      "total",
+                      "countryCode"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "expiresAt",
+                  "paymentRequest"
+                ]
+              },
+              "images": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "identifier": {
+                      "type": "string",
+                      "description": "Non-blank identifier up to 200 code points without controls, ../, or straight quotes."
+                    },
+                    "name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "description": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "identifier",
+                    "name"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "payment"
+            ]
+          },
+          "receivedMessage": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "subtitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "imageIdentifier": {
+                "type": "string",
+                "description": "Non-blank identifier up to 200 code points without controls, ../, or straight quotes."
+              },
+              "imageDescription": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "style": {
+                "type": "string",
+                "enum": [
+                  "large"
+                ]
+              },
+              "imageTitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "imageSubtitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "secondarySubtitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "tertiarySubtitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "alternateTitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              }
+            },
+            "required": [
+              "title",
+              "style"
+            ],
+            "additionalProperties": false
+          },
+          "replyMessage": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "subtitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "imageIdentifier": {
+                "type": "string",
+                "description": "Non-blank identifier up to 200 code points without controls, ../, or straight quotes."
+              },
+              "imageDescription": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "style": {
+                "type": "string",
+                "enum": [
+                  "large"
+                ]
+              },
+              "imageTitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "imageSubtitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "secondarySubtitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "tertiarySubtitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "alternateTitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              }
+            },
+            "required": [
+              "title",
+              "style"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "kind",
+          "data",
+          "receivedMessage",
+          "replyMessage"
+        ],
+        "description": "Stored outbound amb.payment content."
       },
       "OutboundMessageContentAmbQuickReply": {
         "type": "object",
@@ -6716,7 +7264,7 @@
             ]
           }
         ],
-        "description": "Error envelope for the messaging send routes: a public `error` string, or `validation_failed` with field-level `issues`."
+        "description": "Error envelope for the messaging send routes: a readable `error` string, or `validation_failed` with field-level `issues`."
       },
       "SendMessageBody": {
         "oneOf": [
@@ -7123,7 +7671,7 @@
                     },
                     "data": {
                       "type": "string",
-                      "description": "PNG image Base64; callers enforce the 200,000-byte image limit.",
+                      "description": "PNG image Base64, at most 200,000 decoded bytes.",
                       "contentEncoding": "base64"
                     },
                     "description": {
@@ -7358,7 +7906,7 @@
                     },
                     "data": {
                       "type": "string",
-                      "description": "PNG image Base64; callers enforce the 200,000-byte image limit.",
+                      "description": "PNG image Base64, at most 200,000 decoded bytes.",
                       "contentEncoding": "base64"
                     },
                     "description": {
@@ -7921,7 +8469,7 @@
                     },
                     "data": {
                       "type": "string",
-                      "description": "PNG image Base64; callers enforce the 200,000-byte image limit.",
+                      "description": "PNG image Base64, at most 200,000 decoded bytes.",
                       "contentEncoding": "base64"
                     },
                     "description": {
@@ -8131,7 +8679,7 @@
                     },
                     "data": {
                       "type": "string",
-                      "description": "PNG image Base64; callers enforce the 200,000-byte image limit.",
+                      "description": "PNG image Base64, at most 200,000 decoded bytes.",
                       "contentEncoding": "base64"
                     },
                     "description": {
@@ -8300,7 +8848,7 @@
                     "properties": {
                       "data": {
                         "type": "string",
-                        "description": "PNG image Base64; callers enforce the 200,000-byte image limit.",
+                        "description": "PNG image Base64, at most 200,000 decoded bytes.",
                         "contentEncoding": "base64"
                       },
                       "mimeType": {
@@ -8604,6 +9152,425 @@
         "additionalProperties": false,
         "description": "Channel send input amb.url_payload content. Apple constructs a rich link from an Apple Music, Apple Maps, or App Clip URL at send time. No template is required."
       },
+      "RequestPaymentError": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string",
+                "enum": [
+                  "apple_pay_unavailable",
+                  "apple_pay_session_expired",
+                  "apple_pay_merchant_mismatch",
+                  "apple_pay_gateway_mismatch"
+                ]
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string",
+                "enum": [
+                  "validation_failed"
+                ]
+              },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "message"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "error",
+              "issues"
+            ]
+          }
+        ],
+        "description": "A readable `error`, with a stable `code` for Apple Pay rejections, or `validation_failed` with field-level `issues`."
+      },
+      "RequestPaymentBody": {
+        "type": "object",
+        "properties": {
+          "requestMessageId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Per-conversation request key. Identical bytes return an already-persisted result; differing bytes conflict. Concurrent requests or retries after an uncertain send can reach the provider more than once."
+          },
+          "conversationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "merchantSession": {
+            "type": "object",
+            "properties": {
+              "epochTimestamp": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 8640000000000000
+              },
+              "expiresAt": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 8640000000000000
+              },
+              "merchantSessionIdentifier": {
+                "type": "string",
+                "minLength": 1
+              },
+              "nonce": {
+                "type": "string",
+                "minLength": 1
+              },
+              "merchantIdentifier": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{64}$"
+              },
+              "displayName": {
+                "type": "string",
+                "minLength": 1
+              },
+              "initiative": {
+                "type": "string",
+                "enum": [
+                  "messaging"
+                ]
+              },
+              "initiativeContext": {
+                "type": "string",
+                "format": "uri",
+                "description": "Absolute HTTPS URL using printable ASCII, up to 8,192 bytes.",
+                "x-msp-allowed-protocols": [
+                  "https"
+                ]
+              },
+              "signature": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "epochTimestamp",
+              "expiresAt",
+              "merchantSessionIdentifier",
+              "nonce",
+              "merchantIdentifier",
+              "displayName",
+              "initiative",
+              "initiativeContext",
+              "signature"
+            ],
+            "additionalProperties": {
+              "type": [
+                "string",
+                "number",
+                "boolean",
+                "object",
+                "array",
+                "null"
+              ]
+            }
+          },
+          "paymentRequest": {
+            "type": "object",
+            "properties": {
+              "currencyCode": {
+                "type": "string",
+                "pattern": "^[A-Z]{3}$"
+              },
+              "total": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+                  },
+                  "amount": {
+                    "type": "string",
+                    "pattern": "^-?\\d+(?:\\.\\d+)?$"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "final",
+                      "pending"
+                    ]
+                  }
+                },
+                "required": [
+                  "label",
+                  "amount"
+                ],
+                "additionalProperties": false
+              },
+              "lineItems": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "type": "string",
+                      "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+                    },
+                    "amount": {
+                      "type": "string",
+                      "pattern": "^-?\\d+(?:\\.\\d+)?$"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "final",
+                        "pending"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "amount"
+                  ],
+                  "additionalProperties": false
+                },
+                "minItems": 1,
+                "maxItems": 20
+              },
+              "shippingMethods": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "identifier": {
+                      "type": "string",
+                      "description": "Non-blank identifier up to 200 code points without controls, ../, or straight quotes."
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+                    },
+                    "amount": {
+                      "type": "string",
+                      "pattern": "^-?\\d+(?:\\.\\d+)?$"
+                    }
+                  },
+                  "required": [
+                    "identifier",
+                    "label",
+                    "detail",
+                    "amount"
+                  ],
+                  "additionalProperties": false
+                },
+                "minItems": 1,
+                "maxItems": 100
+              },
+              "supportedCountries": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Z]{2}$"
+                },
+                "minItems": 1
+              },
+              "requiredBillingContactFields": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "email",
+                    "name",
+                    "phone",
+                    "phoneticName",
+                    "post"
+                  ]
+                }
+              },
+              "requiredShippingContactFields": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "email",
+                    "name",
+                    "phone",
+                    "phoneticName",
+                    "post"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "currencyCode",
+              "total"
+            ],
+            "additionalProperties": false
+          },
+          "receivedMessage": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "subtitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "imageIdentifier": {
+                "type": "string",
+                "description": "Non-blank identifier up to 200 code points without controls, ../, or straight quotes."
+              },
+              "imageDescription": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "style": {
+                "type": "string",
+                "enum": [
+                  "large"
+                ]
+              },
+              "imageTitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "imageSubtitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "secondarySubtitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "tertiarySubtitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "alternateTitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              }
+            },
+            "required": [
+              "title",
+              "style"
+            ],
+            "additionalProperties": false
+          },
+          "replyMessage": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "subtitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "imageIdentifier": {
+                "type": "string",
+                "description": "Non-blank identifier up to 200 code points without controls, ../, or straight quotes."
+              },
+              "imageDescription": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "style": {
+                "type": "string",
+                "enum": [
+                  "large"
+                ]
+              },
+              "imageTitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "imageSubtitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "secondarySubtitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "tertiarySubtitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              },
+              "alternateTitle": {
+                "type": "string",
+                "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+              }
+            },
+            "required": [
+              "title",
+              "style"
+            ],
+            "additionalProperties": false
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "identifier": {
+                  "type": "string",
+                  "description": "Non-blank identifier up to 200 code points without controls, ../, or straight quotes."
+                },
+                "data": {
+                  "type": "string",
+                  "description": "PNG image Base64, at most 200,000 decoded bytes.",
+                  "contentEncoding": "base64"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Non-blank UI text up to 200 Unicode code points without lone surrogates or non-whitespace controls."
+                }
+              },
+              "required": [
+                "identifier",
+                "data"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "requestMessageId",
+          "conversationId",
+          "merchantSession",
+          "paymentRequest",
+          "receivedMessage",
+          "replyMessage"
+        ],
+        "additionalProperties": false,
+        "description": "An Apple Pay request using the business merchant and gateway configuration."
+      },
       "MessagingInvitationCreateResult": {
         "type": "object",
         "properties": {
@@ -8620,7 +9587,7 @@
           "messageId",
           "duplicate"
         ],
-        "description": "Messaging invitation acceptance result. `duplicate` is true for an idempotent replay."
+        "description": "Apple accepted the submission and the invitation was persisted. `duplicate` is true for an idempotent replay of a persisted invitation; this does not mean the customer accepted it."
       },
       "MessagingInvitationCreateRequestError": {
         "anyOf": [
@@ -8679,24 +9646,27 @@
       "MessagingInvitationError": {
         "type": "object",
         "properties": {
-          "error": {
+          "code": {
             "type": "string",
             "enum": [
               "invalid_recipient",
               "invalid_target_name",
               "request_mismatch",
-              "request_in_progress",
               "messaging_invitation_unavailable",
               "custom_branding_not_approved",
               "invalid_brand_logo",
               "not_found"
             ]
+          },
+          "error": {
+            "type": "string"
           }
         },
         "required": [
+          "code",
           "error"
         ],
-        "description": "Error envelope for a rejected messaging-invitation request. `error` is a stable reason code: request conflicts (`request_mismatch`, `request_in_progress`) return 409, validation and eligibility failures return 422, and `not_found` returns 404."
+        "description": "A stable `code` and readable `error`. Request conflicts return 409, validation and eligibility failures return 422, and missing invitations return 404."
       },
       "MessagingInvitationBodyCapError": {
         "type": "object",
@@ -8710,13 +9680,38 @@
         ],
         "description": "Returned with 413 when the request body exceeds the messaging-invitation size cap before it is parsed."
       },
+      "MessagingInvitationPersistenceUnconfirmed": {
+        "type": "object",
+        "properties": {
+          "messageId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Identifier of this send attempt."
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "persistence_unconfirmed"
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "messageId",
+          "code",
+          "error"
+        ],
+        "description": "Returned with 500 when the channel accepted the submission but the invitation could not be confirmed as persisted. The recipient may already have the invitation."
+      },
       "MessagingInvitationSendFailure": {
         "type": "object",
         "properties": {
           "messageId": {
             "type": "string",
             "format": "uuid",
-            "description": "Messaging invitation id of the recorded, undelivered invitation."
+            "description": "Identifier of this send attempt. No invitation was persisted for this attempt, so this is not a readable invitation ID."
           },
           "reasonCode": {
             "type": "string",
@@ -8732,7 +9727,7 @@
           "messageId",
           "reasonCode"
         ],
-        "description": "Returned with 502 when the invitation was recorded but the channel rejected it or the send failed. The invitation remains readable by `messageId`; `reasonCode` explains the failure."
+        "description": "Returned with 502 when the channel rejected or did not confirm the submission. No invitation was persisted. `messageId` identifies the attempt and `reasonCode` explains the failure. The same request ID can be retried."
       },
       "CreateMessagingInvitationBody": {
         "type": "object",
@@ -8756,7 +9751,7 @@
           "requestMessageId": {
             "type": "string",
             "format": "uuid",
-            "description": "Caller-generated request identifier used for idempotency. Reusing it with identical request bytes replays the accepted result."
+            "description": "Caller-generated request identifier used for idempotency. After a successful submission, identical request bytes replay the persisted result. Failed attempts do not reserve this identifier."
           },
           "callerReference": {
             "type": [
@@ -8958,7 +9953,7 @@
           "createdAt",
           "updatedAt"
         ],
-        "description": "A messaging invitation and its delivery lifecycle. `status` moves from `submitting` through `submitted` to `accepted`, `declined`, `provider_rejected`, or `error`; `reasonCode` explains a rejection or error and `conversationId` is set once the recipient accepts."
+        "description": "A messaging invitation persisted after Apple accepts its submission. The current lifecycle is `submitted`, `declined`, or `accepted`; acceptance can supersede a decline. `reasonCode` is null for these records and `conversationId` is set once the recipient accepts."
       },
       "MediaAccessUrlResult": {
         "type": "object",
@@ -9638,7 +10633,7 @@
                       "rich_image_200",
                       "rich_icon_15"
                     ],
-                    "description": "Size class: `rich_image_200` (PNG <= 200,000 Base64 bytes) or `rich_icon_15` (PNG < 15,360 Base64 bytes)."
+                    "description": "Size class: `rich_image_200` (PNG <= 200,000 decoded bytes) or `rich_icon_15` (PNG < 15,360 Base64 bytes)."
                   },
                   "displayName": {
                     "type": "string",
@@ -9649,7 +10644,7 @@
                   "file": {
                     "type": "string",
                     "format": "binary",
-                    "description": "PNG image file. `rich_image_200`: PNG <= 200,000 Base64 bytes. `rich_icon_15`: PNG < 15,360 Base64 bytes."
+                    "description": "PNG image file. `rich_image_200`: PNG <= 200,000 decoded bytes. `rich_icon_15`: PNG < 15,360 Base64 bytes."
                   }
                 },
                 "required": [
@@ -9717,7 +10712,7 @@
             }
           },
           "413": {
-            "description": "Payload too large — PNG must be <= 200,000 Base64 bytes for `rich_image_200` or < 15,360 Base64 bytes for `rich_icon_15`.",
+            "description": "Payload too large — PNG must be <= 200,000 decoded bytes for `rich_image_200` or < 15,360 Base64 bytes for `rich_icon_15`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -11404,6 +12399,61 @@
                       ]
                     }
                   },
+                  "inbound-amb.payment_response": {
+                    "value": {
+                      "id": "0190f3f0-0000-7000-8000-000000000031",
+                      "businessId": "0190f3f0-0000-7000-8000-000000000032",
+                      "firstName": "Ada",
+                      "lastName": "Lovelace",
+                      "email": "ada@example.com",
+                      "optedOut": false,
+                      "channelPlatform": "amb",
+                      "channelAddress": "urn:mbid:AQAAY...",
+                      "status": "active",
+                      "agentStatus": "live",
+                      "intentId": null,
+                      "groupId": null,
+                      "locale": "en_US",
+                      "capabilityList": [
+                        "AUTH2"
+                      ],
+                      "assignedUserId": "0190f3f0-0000-7000-8000-000000000033",
+                      "lastMessageAt": "2026-09-08T12:00:00.000Z",
+                      "createdAt": "2026-09-08T11:00:00.000Z",
+                      "updatedAt": "2026-09-08T12:00:00.000Z",
+                      "messages": [
+                        {
+                          "id": "0190f3f0-0000-7000-8000-000000000034",
+                          "conversationId": "0190f3f0-0000-7000-8000-000000000031",
+                          "channel": "amb",
+                          "direction": "inbound",
+                          "externalId": "0190f3f0-0000-7000-8000-000000000036",
+                          "actor": {
+                            "type": "customer"
+                          },
+                          "content": {
+                            "kind": "amb.payment_response",
+                            "data": {
+                              "requestIdentifier": "00000000-0000-7000-8000-000000000001",
+                              "payment": {
+                                "state": "paid",
+                                "paymentRequest": {
+                                  "currencyCode": "USD",
+                                  "total": {
+                                    "amount": "1",
+                                    "type": "Final"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "redacted": false,
+                          "attachments": [],
+                          "createdAt": "2026-09-08T12:00:00.000Z"
+                        }
+                      ]
+                    }
+                  },
                   "inbound-amb.quick_reply_response": {
                     "value": {
                       "id": "0190f3f0-0000-7000-8000-000000000031",
@@ -12535,6 +13585,172 @@
         }
       }
     },
+    "/api/v0/messaging/typing": {
+      "post": {
+        "tags": [
+          "Messaging"
+        ],
+        "summary": "Send a typing indicator",
+        "operationId": "sendConversationTyping",
+        "description": "Send a transient typing start or end to an owned conversation. One provider attempt with a two-second timeout; no persistence, retries, or idempotency. Manual typing is independent of automatic typing settings. Provider failure is logged and has no effect on subsequent message requests.\n\n**Authentication:** Requires a business JWT.\n\n**Required Tier:** `member`\n\n**Required Permissions:** `SendMessages`",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "conversationId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "state": {
+                    "type": "string",
+                    "enum": [
+                      "start",
+                      "end"
+                    ]
+                  }
+                },
+                "required": [
+                  "conversationId",
+                  "state"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Typing indicator accepted by the channel."
+          },
+          "400": {
+            "description": "Invalid typing request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication credentials.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversation or channel unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Conversation opted out.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request body exceeds the size limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Channel does not support typing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Channel acceptance could not be confirmed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v0/messaging/send-raw": {
       "post": {
         "tags": [
@@ -12542,7 +13758,7 @@
         ],
         "summary": "Send channel content",
         "operationId": "sendRawChannelPayload",
-        "description": "Send channel content to a conversation owned by the authenticated business. `content.kind` selects the input; unknown fields are rejected.\n\nUse `amb.url_payload` for an Apple Music, Apple Maps, or App Clip URL without a template. Apple constructs the payload at send time and determines URL support.\n\nRequest bodies are limited to 5,000,000 bytes. Caller-supplied AMB images must be PNG and at most 200,000 bytes Base64-encoded. Verify image sizes and device rendering; provider acceptance does not guarantee rendering.\n\nRetry with identical bytes and the same per-conversation requestMessageId. Already-persisted requests return their original result even after opt-out. Concurrent sends and retries after an uncertain provider or persistence failure may send multiple copies; even conflicting requests can both reach Apple before one returns 409.\n\n**Authentication:** Requires a business JWT.\n\n**Required Tier:** `member`\n\n**Required Permissions:** `SendMessages`, `SendRawChannelPayloads`",
+        "description": "Send channel content to a conversation owned by the authenticated business. `content.kind` selects the input; unknown fields are rejected.\n\nUse `amb.url_payload` for an Apple Music, Apple Maps, or App Clip URL without a template. Apple constructs the payload at send time and determines URL support.\n\nRequest bodies are limited to 5,000,000 bytes. Caller-supplied AMB images must be PNG and at most 200,000 decoded bytes. Verify image sizes and device rendering; provider acceptance does not guarantee rendering.\n\nRetry with identical bytes and the same per-conversation requestMessageId. Already-persisted requests return their original result even after opt-out. Concurrent sends and retries after an uncertain provider or persistence failure may send multiple copies; even conflicting requests can both reach Apple before one returns 409.\n\n**Authentication:** Requires a business JWT.\n\n**Required Tier:** `member`\n\n**Required Permissions:** `SendMessages`, `SendRawChannelPayloads`",
         "security": [
           {
             "bearerAuth": []
@@ -12921,6 +14137,181 @@
         }
       }
     },
+    "/api/v0/messaging/request-payment": {
+      "post": {
+        "tags": [
+          "Messaging"
+        ],
+        "summary": "Request an Apple Pay payment",
+        "operationId": "requestPayment",
+        "description": "Request an Apple Pay payment in an existing AMB conversation. Requires platform approval and business configuration/enablement. Exact persisted replays return their original result. Uncertain sends can create multiple payable bubbles; the customer gateway must deduplicate processing by requestMessageId.\n\n**Authentication:** Requires a business JWT.\n\n**Required Tier:** `member`\n\n**Required Permissions:** `SendMessages`, `RequestPayments`",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestPaymentBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Channel accepted and persisted, or an exact persisted replay.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendMessageResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestPaymentError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication credentials.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient membership tier or permission. A permission denial returns `code: PERMISSION_DENIED` with the missing key in `missingPermission`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversation or channel unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestPaymentError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "requestMessageId was reused with different bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestPaymentError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Conversation opted out.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestPaymentError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request body exceeds the size limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestPaymentError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Payment checks run in this order: apple_pay_unavailable, apple_pay_session_expired, apple_pay_merchant_mismatch, apple_pay_gateway_mismatch. Provider payload limits also apply.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestPaymentError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded (code: TOO_MANY_REQUESTS). Wait for the Retry-After interval before retrying.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Persistence could not be confirmed after channel acceptance.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestPaymentError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Channel sending failed; acceptance may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestPaymentError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The instance is behind a newer deployment (code: INSTANCE_BEHIND). Retry after the Retry-After interval.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v0/messaging/invitations": {
       "post": {
         "tags": [
@@ -12928,7 +14319,7 @@
         ],
         "summary": "Create a messaging invitation",
         "operationId": "createMessagingInvitation",
-        "description": "Create a messaging invitation for the authenticated business. `requestMessageId` makes the request idempotent: identical request bytes replay the recorded outcome. The request body is limited to 256 KiB.\n\n**Authentication:** Requires a business JWT.\n\n**Required Tier:** `member`\n\n**Required Permissions:** `SendMessagingInvitations`, `SendMessages`",
+        "description": "Create a messaging invitation for the authenticated business. `requestMessageId` makes the request idempotent: identical request bytes replay a successfully persisted invitation. Failed attempts do not reserve the request ID. The request body is limited to 256 KiB.\n\n**Authentication:** Requires a business JWT.\n\n**Required Tier:** `member`\n\n**Required Permissions:** `SendMessagingInvitations`, `SendMessages`",
         "security": [
           {
             "bearerAuth": []
@@ -12971,7 +14362,7 @@
         },
         "responses": {
           "200": {
-            "description": "Messaging invitation accepted once, or an idempotent replay.",
+            "description": "Apple accepted the submission and the invitation was persisted, or an idempotent replay.",
             "content": {
               "application/json": {
                 "examples": {
@@ -13043,18 +14434,14 @@
             }
           },
           "409": {
-            "description": "Request ID is already submitting or is reused with different request bytes.",
+            "description": "A persisted request ID was reused with different request bytes.",
             "content": {
               "application/json": {
                 "examples": {
                   "requestMismatch": {
                     "value": {
-                      "error": "request_mismatch"
-                    }
-                  },
-                  "requestInProgress": {
-                    "value": {
-                      "error": "request_in_progress"
+                      "code": "request_mismatch",
+                      "error": "requestMessageId was reused with different request bytes."
                     }
                   }
                 },
@@ -13081,7 +14468,8 @@
                 "examples": {
                   "rejected": {
                     "value": {
-                      "error": "invalid_recipient"
+                      "code": "invalid_recipient",
+                      "error": "The recipient phone number is invalid."
                     }
                   }
                 },
@@ -13110,14 +14498,24 @@
               }
             }
           },
+          "500": {
+            "description": "The channel accepted the submission, but persistence could not be confirmed. The recipient may already have the invitation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessagingInvitationPersistenceUnconfirmed"
+                }
+              }
+            }
+          },
           "502": {
-            "description": "The request was recorded but the channel rejected or could not send it.",
+            "description": "The channel rejected or did not confirm the submission. No invitation was recorded; messageId identifies this attempt.",
             "content": {
               "application/json": {
                 "examples": {
                   "sendFailure": {
                     "value": {
-                      "messageId": "0190f3f0-0000-7000-8000-000000000022",
+                      "messageId": "0190f3f0-0000-7000-8000-000000000025",
                       "reasonCode": "recipient_unavailable"
                     }
                   }
@@ -13212,7 +14610,7 @@
                     "value": {
                       "messagingInvitations": [
                         {
-                          "id": "0190f3f0-0000-7000-8000-000000000005",
+                          "id": "0190f3f0-0000-7000-8000-000000000008",
                           "channel": "amb",
                           "purpose": "connect",
                           "callerReference": "order-123",
@@ -13229,7 +14627,7 @@
                           "actorId": "0190f3f0-0000-7000-8000-000000000023"
                         },
                         {
-                          "id": "0190f3f0-0000-7000-8000-000000000006",
+                          "id": "0190f3f0-0000-7000-8000-000000000007",
                           "channel": "amb",
                           "purpose": "connect",
                           "callerReference": "order-123",
@@ -13246,41 +14644,7 @@
                           "actorId": "0190f3f0-0000-7000-8000-000000000023"
                         },
                         {
-                          "id": "0190f3f0-0000-7000-8000-000000000007",
-                          "channel": "amb",
-                          "purpose": "connect",
-                          "callerReference": "order-123",
-                          "effectiveReference": "order-123",
-                          "status": "error",
-                          "reasonCode": "transport_error",
-                          "conversationId": null,
-                          "createdAt": "2026-09-08T12:00:03.000Z",
-                          "updatedAt": "2026-09-08T12:00:03.000Z",
-                          "targetAgentStatus": "live",
-                          "targetFirstName": "Ada",
-                          "targetLastName": "Lovelace",
-                          "actorType": "user",
-                          "actorId": "0190f3f0-0000-7000-8000-000000000023"
-                        },
-                        {
-                          "id": "0190f3f0-0000-7000-8000-000000000008",
-                          "channel": "amb",
-                          "purpose": "connect",
-                          "callerReference": "order-123",
-                          "effectiveReference": "order-123",
-                          "status": "provider_rejected",
-                          "reasonCode": "recipient_unavailable",
-                          "conversationId": null,
-                          "createdAt": "2026-09-08T12:00:02.000Z",
-                          "updatedAt": "2026-09-08T12:00:02.000Z",
-                          "targetAgentStatus": "live",
-                          "targetFirstName": "Ada",
-                          "targetLastName": "Lovelace",
-                          "actorType": "user",
-                          "actorId": "0190f3f0-0000-7000-8000-000000000023"
-                        },
-                        {
-                          "id": "0190f3f0-0000-7000-8000-000000000009",
+                          "id": "0190f3f0-0000-7000-8000-000000000006",
                           "channel": "amb",
                           "purpose": "connect",
                           "callerReference": "order-123",
@@ -13290,23 +14654,6 @@
                           "conversationId": null,
                           "createdAt": "2026-09-08T12:00:01.000Z",
                           "updatedAt": "2026-09-08T12:00:01.000Z",
-                          "targetAgentStatus": "live",
-                          "targetFirstName": "Ada",
-                          "targetLastName": "Lovelace",
-                          "actorType": "user",
-                          "actorId": "0190f3f0-0000-7000-8000-000000000023"
-                        },
-                        {
-                          "id": "0190f3f0-0000-7000-8000-00000000000a",
-                          "channel": "amb",
-                          "purpose": "connect",
-                          "callerReference": "order-123",
-                          "effectiveReference": "order-123",
-                          "status": "submitting",
-                          "reasonCode": null,
-                          "conversationId": null,
-                          "createdAt": "2026-09-08T12:00:00.000Z",
-                          "updatedAt": "2026-09-08T12:00:00.000Z",
                           "targetAgentStatus": "live",
                           "targetFirstName": "Ada",
                           "targetLastName": "Lovelace",
@@ -13907,7 +15254,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "error": "Failed to create attachment access URL"
+                  "error": "Unexpected API error"
                 },
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
@@ -14307,7 +15654,7 @@
                     }
                   }
                 },
-                "amb.quick_reply_response": {
+                "amb.payment_response": {
                   "value": {
                     "eventId": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9012",
                     "type": "message.received",
@@ -14321,6 +15668,47 @@
                     "capabilityList": [
                       "QUICK"
                     ],
+                    "message": {
+                      "id": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9012",
+                      "channel": "amb",
+                      "externalId": "apple-message-1",
+                      "createdAt": "2026-09-04T14:30:00.000Z",
+                      "actor": {
+                        "type": "customer"
+                      },
+                      "attachments": [],
+                      "redacted": false,
+                      "content": {
+                        "kind": "amb.payment_response",
+                        "data": {
+                          "requestIdentifier": "00000000-0000-7000-8000-000000000001",
+                          "payment": {
+                            "state": "paid",
+                            "paymentRequest": {
+                              "currencyCode": "USD",
+                              "total": {
+                                "amount": "1",
+                                "type": "Final"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "amb.quick_reply_response": {
+                  "value": {
+                    "eventId": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9012",
+                    "type": "message.received",
+                    "v": 0,
+                    "organizationId": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a1111",
+                    "conversationId": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a5678",
+                    "channelAddress": "apple-customer-1",
+                    "intentId": null,
+                    "groupId": null,
+                    "locale": null,
+                    "capabilityList": null,
                     "message": {
                       "id": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9012",
                       "channel": "amb",
@@ -14353,7 +15741,7 @@
                     "intentId": null,
                     "groupId": null,
                     "locale": null,
-                    "capabilityList": null,
+                    "capabilityList": [],
                     "message": {
                       "id": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9012",
                       "channel": "amb",
@@ -14394,7 +15782,9 @@
                     "intentId": null,
                     "groupId": null,
                     "locale": null,
-                    "capabilityList": [],
+                    "capabilityList": [
+                      "QUICK"
+                    ],
                     "message": {
                       "id": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9012",
                       "channel": "amb",
@@ -14434,9 +15824,7 @@
                     "intentId": null,
                     "groupId": null,
                     "locale": null,
-                    "capabilityList": [
-                      "QUICK"
-                    ],
+                    "capabilityList": null,
                     "message": {
                       "id": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9012",
                       "channel": "amb",
@@ -14471,9 +15859,7 @@
                     "intentId": null,
                     "groupId": null,
                     "locale": null,
-                    "capabilityList": [
-                      "QUICK"
-                    ],
+                    "capabilityList": null,
                     "message": {
                       "id": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9012",
                       "channel": "amb",
@@ -14509,7 +15895,7 @@
                     "intentId": null,
                     "groupId": null,
                     "locale": null,
-                    "capabilityList": null,
+                    "capabilityList": [],
                     "message": {
                       "id": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9012",
                       "channel": "amb",
@@ -14542,7 +15928,9 @@
                     "intentId": null,
                     "groupId": null,
                     "locale": null,
-                    "capabilityList": [],
+                    "capabilityList": [
+                      "QUICK"
+                    ],
                     "message": {
                       "id": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9012",
                       "channel": "amb",
@@ -14571,9 +15959,7 @@
                     "intentId": null,
                     "groupId": null,
                     "locale": null,
-                    "capabilityList": [
-                      "QUICK"
-                    ],
+                    "capabilityList": null,
                     "message": {
                       "id": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9012",
                       "channel": "amb",
@@ -14604,7 +15990,7 @@
                     "intentId": null,
                     "groupId": null,
                     "locale": null,
-                    "capabilityList": null,
+                    "capabilityList": [],
                     "message": {
                       "id": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9012",
                       "channel": "amb",
@@ -14638,9 +16024,7 @@
                     "intentId": null,
                     "groupId": null,
                     "locale": null,
-                    "capabilityList": [
-                      "QUICK"
-                    ],
+                    "capabilityList": null,
                     "message": {
                       "id": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9012",
                       "channel": "amb",
@@ -14676,7 +16060,7 @@
         ],
         "operationId": "webhookMessagingInvitationUpdated",
         "summary": "A messaging invitation changed status",
-        "description": "Fired after a messaging invitation status update. `messagingInvitation` contains the post-update transition values; `conversationId` is null until a conversation exists.\n\nUses the signing and retry contract documented by `message.received`.",
+        "description": "Fired when an invitation is persisted as `submitted` or subsequently changes to `declined` or `accepted`. Acceptance supersedes a previous decline. Failed send attempts do not create an invitation or emit this event. `messagingInvitation` contains the post-update transition values; `conversationId` is null until a conversation exists.\n\nUses the signing and retry contract documented by `message.received`.",
         "parameters": [
           {
             "name": "Webhook-Id",
@@ -14712,29 +16096,6 @@
           "content": {
             "application/json": {
               "examples": {
-                "submitting": {
-                  "value": {
-                    "eventId": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9013",
-                    "type": "messaging_invitation.updated",
-                    "v": 0,
-                    "organizationId": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a1111",
-                    "conversationId": null,
-                    "messagingInvitation": {
-                      "transition": {
-                        "id": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9013",
-                        "type": "status_changed"
-                      },
-                      "messagingInvitationId": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9014",
-                      "channel": "amb",
-                      "purpose": "connect",
-                      "callerReference": null,
-                      "effectiveReference": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9014",
-                      "reasonCode": null,
-                      "occurredAt": "2026-09-04T14:30:00.000Z",
-                      "status": "submitting"
-                    }
-                  }
-                },
                 "submitted": {
                   "value": {
                     "eventId": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9013",
@@ -14758,7 +16119,7 @@
                     }
                   }
                 },
-                "provider_rejected": {
+                "declined": {
                   "value": {
                     "eventId": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9013",
                     "type": "messaging_invitation.updated",
@@ -14775,32 +16136,9 @@
                       "purpose": "connect",
                       "callerReference": null,
                       "effectiveReference": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9014",
-                      "reasonCode": "provider_rejected",
+                      "reasonCode": null,
                       "occurredAt": "2026-09-04T14:30:00.000Z",
-                      "status": "provider_rejected"
-                    }
-                  }
-                },
-                "error": {
-                  "value": {
-                    "eventId": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9013",
-                    "type": "messaging_invitation.updated",
-                    "v": 0,
-                    "organizationId": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a1111",
-                    "conversationId": null,
-                    "messagingInvitation": {
-                      "transition": {
-                        "id": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9013",
-                        "type": "status_changed"
-                      },
-                      "messagingInvitationId": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9014",
-                      "channel": "amb",
-                      "purpose": "connect",
-                      "callerReference": null,
-                      "effectiveReference": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9014",
-                      "reasonCode": "provider_error",
-                      "occurredAt": "2026-09-04T14:30:00.000Z",
-                      "status": "error"
+                      "status": "declined"
                     }
                   }
                 },
@@ -14824,29 +16162,6 @@
                       "reasonCode": null,
                       "occurredAt": "2026-09-04T14:30:00.000Z",
                       "status": "accepted"
-                    }
-                  }
-                },
-                "declined": {
-                  "value": {
-                    "eventId": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9013",
-                    "type": "messaging_invitation.updated",
-                    "v": 0,
-                    "organizationId": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a1111",
-                    "conversationId": null,
-                    "messagingInvitation": {
-                      "transition": {
-                        "id": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9013",
-                        "type": "status_changed"
-                      },
-                      "messagingInvitationId": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9014",
-                      "channel": "amb",
-                      "purpose": "connect",
-                      "callerReference": null,
-                      "effectiveReference": "0196f1f8-4a2b-7a31-8f5c-0d9e7b6a9014",
-                      "reasonCode": null,
-                      "occurredAt": "2026-09-04T14:30:00.000Z",
-                      "status": "declined"
                     }
                   }
                 }

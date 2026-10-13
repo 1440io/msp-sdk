@@ -1,9 +1,13 @@
 import type {
+  ApplePayMerchantSession,
+  ApplePayPaymentRequest,
+  RequestPaymentBody,
   SendAuthenticationMessageBody,
   SendMessageBody,
   SendMessageSuccess,
   SendRawMessageBody,
   TemplateVariableValue,
+  TypingState,
 } from '@1440io/msp-types';
 import { uuidv7 } from '../uuid.js';
 import { Resource, type RequestOverrides } from './base.js';
@@ -64,6 +68,37 @@ export interface SendRawParams extends RequestOverrides {
   content: SendRawMessageBody['content'];
   /** Idempotency key. Generated as a UUIDv7 when omitted. */
   requestMessageId?: string;
+}
+
+export interface RequestPaymentParams extends RequestOverrides {
+  /** Conversation to request payment in. */
+  conversationId: string;
+  /**
+   * The Apple merchant session, obtained from Apple by your own merchant
+   * backend. 1440 passes it through; it never mints one for you.
+   */
+  merchantSession: ApplePayMerchantSession;
+  /** What is being charged — currency, total, and any line items. */
+  paymentRequest: ApplePayPaymentRequest;
+  /** The bubble the customer sees before paying. */
+  receivedMessage: RequestPaymentBody['receivedMessage'];
+  /** The bubble shown after they respond. */
+  replyMessage: RequestPaymentBody['replyMessage'];
+  /** Images referenced by the bubbles. */
+  images?: RequestPaymentBody['images'];
+  /**
+   * Request key. Identical bytes return the persisted result; differing bytes
+   * conflict. Generated as a UUIDv7 when omitted — but see the warning on
+   * {@link MessagingResource.requestPayment} about retries.
+   */
+  requestMessageId?: string;
+}
+
+export interface SendTypingParams extends RequestOverrides {
+  /** Conversation to show the indicator in. */
+  conversationId: string;
+  /** Whether typing starts or ends. */
+  state: TypingState;
 }
 
 /**
@@ -145,6 +180,68 @@ export class MessagingResource extends Resource {
       timeoutMs: options.timeoutMs,
     });
   }
+
+  /**
+   * Request an Apple Pay payment in a conversation.
+   *
+   * Requires the `RequestPayments` permission on top of `SendMessages`, plus
+   * platform approval and business enablement — otherwise this is a 403 or an
+   * `apple_pay_unavailable` rejection.
+   *
+   * The `merchantSession` comes from Apple via your own merchant backend; 1440
+   * passes it through and never mints one. The customer's Apple Pay token goes
+   * to your payment gateway rather than through 1440, so a success here only
+   * confirms the request was delivered, not that money moved.
+   *
+   * **Not retried automatically.** Identical bytes replay the persisted
+   * result, but the spec warns an uncertain send can still reach the provider
+   * more than once and create multiple payable bubbles — so your gateway must
+   * deduplicate on `requestMessageId`, and this SDK will not quietly retry a
+   * request that could bill someone twice.
+   */
+  async requestPayment(params: RequestPaymentParams): Promise<SendMessageSuccess> {
+    const body: RequestPaymentBody = {
+      requestMessageId: params.requestMessageId ?? uuidv7(),
+      conversationId: params.conversationId,
+      merchantSession: params.merchantSession,
+      paymentRequest: params.paymentRequest,
+      receivedMessage: params.receivedMessage,
+      replyMessage: params.replyMessage,
+      ...(params.images !== undefined ? { images: params.images } : {}),
+    };
+
+    return this.http.request<SendMessageSuccess>({
+      method: 'POST',
+      path: '/api/v0/messaging/request-payment',
+      body,
+      idempotent: false,
+      headers: params.headers,
+      signal: params.signal,
+      timeoutMs: params.timeoutMs,
+    });
+  }
+
+  /**
+   * Show or clear a typing indicator in a conversation.
+   *
+   * Transient and best effort: one provider attempt with a two-second timeout,
+   * no persistence, no retries, no idempotency. A provider failure is logged
+   * and does not affect later sends, so this is decoration — never await it as
+   * a precondition for messaging. Independent of any automatic typing the
+   * platform does on its own.
+   */
+  async sendTyping(params: SendTypingParams): Promise<void> {
+    await this.http.request<void>({
+      method: 'POST',
+      path: '/api/v0/messaging/typing',
+      body: { conversationId: params.conversationId, state: params.state },
+      idempotent: false, // transient; replaying it means nothing
+      headers: params.headers,
+      signal: params.signal,
+      timeoutMs: params.timeoutMs ?? 10_000,
+    });
+  }
+
 
   /**
    * Send channel content straight through, bypassing templates.
