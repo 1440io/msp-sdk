@@ -114,9 +114,9 @@ describeWebhookLive('webhooks: live end-to-end', () => {
             console.log('   messaging invitations are not enabled for this org');
             return undefined;
           });
-        expectedInvitationId = invitation?.id;
+        expectedInvitationId = invitation?.messageId;
         if (invitation) {
-          console.log(`   provoked invitation ${invitation.id} — waiting for its webhook`);
+          console.log(`   provoked invitation ${invitation.messageId} — waiting for its webhook`);
         }
       }
       if (!expectedInvitationId) {

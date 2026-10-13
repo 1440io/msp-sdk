@@ -1,5 +1,17 @@
 # @1440io/msp-types
 
+## 0.6.0
+
+### Minor Changes
+
+- Fix the return type of `invitations.create()`. It declared `MessagingInvitation` but the route returns `MessagingInvitationCreateResult` — `{ messageId, duplicate }` — where `messageId` **is** the invitation id. Code reading `.status` or `.id` off the result was reading `undefined` at runtime; it now fails to compile, which is the point.
+
+  Read the invitation back with `invitations.get(messageId)`, and treat `duplicate: true` as "this replayed a persisted invitation", not as the customer having accepted anything.
+
+  Adds `MessagingInvitationCreateResult` and `MessagingInvitationCreateRequestError` to `@1440io/msp-types`.
+
+  The mistake survived three releases because the test org had messaging invitations disabled, so the create path never returned a 200 until the feature was switched on. The integration test that should have caught it compared `replay.id` to `first.id` and passed vacuously, both being `undefined`; it now asserts the id is present and that the replay is flagged as a duplicate.
+
 ## 0.5.1
 
 ## 0.5.0

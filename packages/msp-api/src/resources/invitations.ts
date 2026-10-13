@@ -2,6 +2,7 @@ import type {
   CreateMessagingInvitation,
   InvitationStatus,
   MessagingInvitation,
+  MessagingInvitationCreateResult,
   MessagingInvitationList,
 } from '@1440io/msp-types';
 import { Paginator } from '../pagination.js';
@@ -68,10 +69,20 @@ export class InvitationsResource extends Resource {
     });
   }
 
-  /** Invite a customer into a conversation by phone number. */
-  async create(params: CreateInvitationParams): Promise<MessagingInvitation> {
+  /**
+   * Invite a customer into a conversation by phone number.
+   *
+   * Returns `{ messageId, duplicate }` rather than the invitation itself —
+   * `messageId` **is** the invitation id, so pass it to {@link get} to read the
+   * status. `duplicate: true` means this replayed a persisted invitation, not
+   * that the customer accepted anything.
+   *
+   * Acceptance is asynchronous: watch `messaging_invitation.updated`, or poll
+   * {@link get} until {@link isTerminalInvitationStatus}.
+   */
+  async create(params: CreateInvitationParams): Promise<MessagingInvitationCreateResult> {
     const { signal, timeoutMs, headers, requestMessageId, ...rest } = params;
-    return this.http.request<MessagingInvitation>({
+    return this.http.request<MessagingInvitationCreateResult>({
       method: 'POST',
       path: '/api/v0/messaging/invitations',
       body: {

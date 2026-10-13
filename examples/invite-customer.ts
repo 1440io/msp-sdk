@@ -15,16 +15,20 @@ if (!phoneNumber) {
 
 const client = MspClient.fromEnv();
 
-let invitation = await client.invitations.create({
+// Creating returns { messageId, duplicate } — messageId is the invitation id.
+const { messageId, duplicate } = await client.invitations.create({
   phoneNumber,
   targetAgentStatus: 'live',
   targetFirstName: 'Ada',
 });
-console.log('created:', invitation.id, invitation.status);
+console.log('created:', messageId, duplicate ? '(replay of a persisted invitation)' : '');
+
+let invitation = await client.invitations.get(messageId);
+console.log('status:', invitation.status);
 
 while (!isTerminalInvitationStatus(invitation.status)) {
   await new Promise((resolve) => setTimeout(resolve, 2000));
-  invitation = await client.invitations.get(invitation.id);
+  invitation = await client.invitations.get(messageId);
   console.log('status:', invitation.status);
 }
 

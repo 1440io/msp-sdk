@@ -164,13 +164,18 @@ Typing answers `204` with no body and persists nothing, so it leaves no trace in
 
 Reaching a customer first. Creation is asynchronous: an invitation starts at `submitting` and lands on `accepted`, `declined`, `provider_rejected`, or `error`. Watch the `messaging_invitation.updated` webhook instead of polling where you can.
 
+Creating returns `{ messageId, duplicate }`, where `messageId` is the invitation id — not the invitation itself. Read it back to see the status:
+
 ```ts
-const invitation = await client.invitations.create({
+const { messageId } = await client.invitations.create({
   phoneNumber: '+15551234567',
   targetFirstName: 'Ada',
   targetAgentStatus: 'live',
   branding: { brandName: 'Acme Dental', brandLogoPngBase64: logo },
 });
+
+const invitation = await client.invitations.get(messageId);
+invitation.status;   // submitting → accepted | declined | provider_rejected | error
 
 for await (const item of client.invitations.list({ status: 'submitted' })) {
   // …

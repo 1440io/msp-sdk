@@ -1,5 +1,12 @@
 # @1440io/msp-webhooks
 
+## 0.6.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @1440io/msp-types@0.6.0
+
 ## 0.5.1
 
 ### Patch Changes

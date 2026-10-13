@@ -107,16 +107,23 @@ describeInitiate('messaging invitations: reaching a real device', () => {
       });
     if (!created) return;
 
-    assertMatchesSchema('MessagingInvitation', created, 'POST /messaging/invitations');
-    expect(created.effectiveReference).toBe(RUN_ID);
-    expect(INVITATION_STATUSES as readonly string[]).toContain(created.status);
-    console.log(`   invitation ${created.id} → ${created.status}`);
+    // Creating returns { messageId, duplicate } — messageId is the invitation
+    // id — not the invitation itself.
+    assertMatchesSchema('MessagingInvitationCreateResult', created, 'POST /messaging/invitations');
+    expect(created.messageId).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(created.duplicate).toBe(false);
+    console.log(`   invitation ${created.messageId} created`);
 
-    let current = created;
+    let current = await client.invitations.get(created.messageId);
+    assertMatchesSchema('MessagingInvitation', current, 'GET /messaging/invitations/{id}');
+    expect(current.effectiveReference).toBe(RUN_ID);
+    expect(INVITATION_STATUSES as readonly string[]).toContain(current.status);
+    console.log(`   status ${current.status}`);
+
     const deadline = Date.now() + 45_000;
     while (!isTerminalInvitationStatus(current.status) && Date.now() < deadline) {
       await new Promise((resolve) => setTimeout(resolve, 3000));
-      current = await client.invitations.get(created.id);
+      current = await client.invitations.get(created.messageId);
     }
 
     console.log(
@@ -149,8 +156,13 @@ describeInitiate('messaging invitations: reaching a real device', () => {
 
     const replay = await invite();
 
-    // The device must have been contacted once, not once per call.
-    expect(replay.id).toBe(first.id);
+    // The device must have been contacted once, not once per call. Comparing
+    // ids alone used to pass vacuously, because both were undefined on a shape
+    // this client described wrongly — so assert the duplicate flag too.
+    expect(first.messageId).toBeTruthy();
+    expect(replay.messageId).toBe(first.messageId);
+    expect(first.duplicate).toBe(false);
+    expect(replay.duplicate).toBe(true);
   });
 
   it('rejects a malformed phone number without contacting anyone', async () => {

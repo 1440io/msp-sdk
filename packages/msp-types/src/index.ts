@@ -116,6 +116,15 @@ export type TemplateVariableValue = NonNullable<SendTemplateMessageBody['variabl
 export type MessagingInvitation = Schemas['MessagingInvitation'];
 /** Body for inviting a customer into a conversation. */
 export type CreateMessagingInvitation = Schemas['CreateMessagingInvitationBody'];
+/**
+ * What creating an invitation returns — the invitation id and whether this was
+ * an idempotent replay. Not a full {@link MessagingInvitation}: read that back
+ * with `invitations.get(messageId)`.
+ */
+export type MessagingInvitationCreateResult = Schemas['MessagingInvitationCreateResult'];
+/** Validation error from creating an invitation. */
+export type MessagingInvitationCreateRequestError =
+  Schemas['MessagingInvitationCreateRequestError'];
 /** A cursor-paginated page of messaging invitations. */
 export type MessagingInvitationList = Schemas['MessagingInvitationList'];
 /** Error envelope for the invitation routes: a stable `code` plus readable `error`. */
