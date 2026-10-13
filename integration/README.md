@@ -128,7 +128,9 @@ it can before spending that window, and is a dry run unless you pass `--send`.
 1. Generate a session with `initiative: "messaging"` and your registered
    `initiativeContext` URL.
 2. Save Apple's raw JSON response as `merchant-session.json` in the repo root
-   (gitignored).
+   (gitignored). `merchant-session.example.json` shows the shape, including the
+   extra fields Apple returns alongside the signed ones — copy it and replace
+   every value, rather than editing a few.
 3. Check it, then send:
 
 ```bash

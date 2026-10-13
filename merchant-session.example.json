@@ -1,0 +1,24 @@
+{
+  "epochTimestamp": 1760000000000,
+  "expiresAt": 1760000300000,
+  "merchantSessionIdentifier": "REPLACE_SSH0123456789ABCDEF0123456789ABCDEF",
+  "nonce": "0b1c2d3e",
+  "merchantIdentifier": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+  "displayName": "1440",
+  "initiative": "messaging",
+  "initiativeContext": "https://1440.io",
+  "signature": "REPLACE_WITH_THE_PKCS7_SIGNATURE_APPLE_RETURNS",
+  "operationalAnalyticsIdentifier": "1440:deadbeefdeadbeefdeadbeefdeadbeef",
+  "domainName": "1440.io",
+  "signedFields": [
+    "merchantIdentifier",
+    "merchantSessionIdentifier",
+    "initiative",
+    "initiativeContext",
+    "nonce",
+    "epochTimestamp",
+    "expiresAt",
+    "operationalAnalyticsIdentifier"
+  ],
+  "retries": 0
+}
