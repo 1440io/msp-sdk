@@ -9,3 +9,4 @@ coverage/
 npm-debug.log*
 examples/cloudflare-durable-objects/.wrangler/
 examples/cloudflare-durable-objects/.dev.vars
+merchant-session.json

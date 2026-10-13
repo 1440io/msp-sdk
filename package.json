@@ -30,7 +30,9 @@
     "integration:cleanup": "npm run build && node --experimental-strip-types integration/scripts/cleanup.ts",
     "webhook:listen": "npm run build && node --experimental-strip-types integration/scripts/webhook-listen.ts",
     "prepare": "npm run build",
-    "payment:readiness": "npm run build && node --experimental-strip-types integration/scripts/payment-readiness.ts"
+    "payment:readiness": "npm run build && node --experimental-strip-types integration/scripts/payment-readiness.ts",
+    "payment:send": "npm run build && node --experimental-strip-types integration/scripts/payment-send.ts",
+    "payment:watch": "npm run build && node --experimental-strip-types integration/scripts/payment-watch.ts"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.7",

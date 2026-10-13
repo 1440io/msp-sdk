@@ -120,6 +120,38 @@ after each configuration change. `apple_pay_merchant_mismatch` is the furthest
 a probe can get and means configuration is complete; from there a real merchant
 session is needed.
 
+## Sending a real Apple Pay request
+
+Merchant sessions last about five minutes, so the harness validates everything
+it can before spending that window, and is a dry run unless you pass `--send`.
+
+1. Generate a session with `initiative: "messaging"` and your registered
+   `initiativeContext` URL.
+2. Save Apple's raw JSON response as `merchant-session.json` in the repo root
+   (gitignored).
+3. Check it, then send:
+
+```bash
+npm run payment:send              # validate only
+npm run payment:send -- --send    # puts a real payable bubble on the device
+npm run payment:watch             # wait for the customer's response
+```
+
+Amount and label come from `PAYMENT_AMOUNT`, `PAYMENT_CURRENCY`, and
+`PAYMENT_LABEL`, defaulting to 1.00 USD.
+
+**The merchant identifier catches people out.** Apple uses that name for two
+different values: you send `merchant.yourcompany` when *requesting* a session,
+and the session Apple returns contains a 64-character hex hash. 1440 compares
+against the hash, so that is what must be configured there — the literal
+`merchant.…` string produces `apple_pay_merchant_mismatch`, which reads like a
+session problem. The pre-flight checks this before sending.
+
+**Settlement is not visible here.** On approval Apple posts the encrypted token
+to the payment gateway registered for the business, never to 1440, so
+`amb.payment_response` means the customer acted. Confirm the money with your
+PSP.
+
 ## After a crash
 
 Everything the suite creates is named `msp-it-*`. If a run dies before its cleanup:
