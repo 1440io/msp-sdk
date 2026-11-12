@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+.DS_Store
+.env
+.env.*
+!.env.example
+npm-debug.log*
+examples/cloudflare-durable-objects/.wrangler/
+examples/cloudflare-durable-objects/.dev.vars
+merchant-session.json
+
+# Written by payment:send so payment:watch can correlate the reply.
+integration/.payment-last.json

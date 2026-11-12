@@ -1,0 +1,198 @@
+import { expect, it } from 'vitest';
+import { isMspApiError, uuidv7 } from '@1440io/msp-api';
+import { INVITATION_STATUSES, isTerminalInvitationStatus } from '@1440io/msp-types';
+import { describeApi, describeInitiate } from '../gates.ts';
+import { env, RUN_ID } from '../env.ts';
+import { testClient } from '../client.ts';
+import { assertEachMatchesSchema, assertMatchesSchema } from '../schema.ts';
+
+describeApi('messaging invitations: reading', () => {
+  it('lists invitations in the documented envelope', async () => {
+    const page = await testClient().invitations.list({ count: 5 });
+
+    assertMatchesSchema('MessagingInvitationList', page, 'GET /messaging/invitations');
+    assertEachMatchesSchema('MessagingInvitation', page.messagingInvitations, 'invitations');
+    console.log(`   ${page.messagingInvitations.length} invitation(s)`);
+  });
+
+  it('only reports statuses the spec declares', async () => {
+    const page = await testClient().invitations.list({ count: 25 });
+
+    for (const invitation of page.messagingInvitations) {
+      expect(INVITATION_STATUSES as readonly string[]).toContain(invitation.status);
+      if (invitation.status === 'accepted') {
+        // An accepted invitation with no conversation is unusable.
+        expect(invitation.conversationId).not.toBeNull();
+      }
+    }
+  });
+
+  it('filters by status', async () => {
+    const page = await testClient().invitations.list({ count: 10, status: 'accepted' });
+
+    for (const invitation of page.messagingInvitations) {
+      expect(invitation.status).toBe('accepted');
+    }
+  });
+
+  it('gets one invitation by id', async () => {
+    const client = testClient();
+    const page = await client.invitations.list({ count: 1 });
+    const first = page.messagingInvitations[0];
+
+    if (!first) {
+      console.log('   no invitations in this org — detail test skipped');
+      return;
+    }
+
+    const one = await client.invitations.get(first.id);
+
+    assertMatchesSchema('MessagingInvitation', one, 'GET /messaging/invitations/{id}');
+    expect(one.id).toBe(first.id);
+  });
+
+  it('404s on an invitation id that does not exist', async () => {
+    const error = await testClient()
+      .invitations.get('01890000-0000-7000-8000-00000000f00d')
+      .catch((e: unknown) => e);
+
+    expect(isMspApiError(error)).toBe(true);
+    expect(isMspApiError(error) && error.status).toBe(404);
+  });
+
+  it('no longer exposes the retired initiations route', async () => {
+    // The old path was removed server-side; this pins that the client is not
+    // silently pointing at something that 404s.
+    expect('initiations' in testClient()).toBe(false);
+  });
+});
+
+/**
+ * `messaging_invitation_unavailable` is a documented 422: the capability is not
+ * available for this org, not a malformed request. Report and skip rather than
+ * failing a run for a configuration the SDK cannot influence.
+ */
+function unavailable(error: unknown): boolean {
+  if (!isMspApiError(error) || error.status !== 422) return false;
+  // The stable reason moved from `error` to `code` in this spec revision;
+  // `error` now carries the human-readable message.
+  const body = error.body as { code?: string; error?: string } | undefined;
+  const isUnavailable =
+    body?.code === 'messaging_invitation_unavailable' ||
+    body?.error === 'messaging_invitation_unavailable';
+  if (isUnavailable) {
+    console.log('   messaging invitations are not enabled for this org — skipped');
+  }
+  return isUnavailable;
+}
+
+describeInitiate('messaging invitations: reaching a real device', () => {
+  // Settling needs a human to tap on the device, so this cannot assert a
+  // terminal status without making the suite depend on someone being there.
+  // It asserts the create contract and whatever status we do reach, and says
+  // loudly when the invitation is left hanging — the old name claimed more
+  // than the body checked.
+  it('invites a customer and reports a documented status', async () => {
+    const client = testClient();
+    // Stable per run, so a re-run inside the same run does not ping twice.
+    const requestMessageId = uuidv7();
+
+    const created = await client.invitations
+      .create({
+        phoneNumber: env.phoneNumber!,
+        requestMessageId,
+        callerReference: RUN_ID,
+        targetStatus: 'bot',
+        targetFirstName: 'Integration',
+        targetLastName: 'Test',
+      })
+      .catch((error: unknown) => {
+        if (unavailable(error)) return undefined;
+        throw error;
+      });
+    if (!created) return;
+
+    // Creating returns { messageId, duplicate } — messageId is the invitation
+    // id — not the invitation itself.
+    assertMatchesSchema('MessagingInvitationCreateResult', created, 'POST /messaging/invitations');
+    expect(created.messageId).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(created.duplicate).toBe(false);
+    console.log(`   invitation ${created.messageId} created`);
+
+    let current = await client.invitations.get(created.messageId);
+    assertMatchesSchema('MessagingInvitation', current, 'GET /messaging/invitations/{id}');
+    expect(current.effectiveReference).toBe(RUN_ID);
+    expect(INVITATION_STATUSES as readonly string[]).toContain(current.status);
+    console.log(`   status ${current.status}`);
+
+    const deadline = Date.now() + 45_000;
+    while (!isTerminalInvitationStatus(current.status) && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      current = await client.invitations.get(created.messageId);
+    }
+
+    if (!isTerminalInvitationStatus(current.status)) {
+      console.log(
+        `   still ${current.status} after 45s — nobody acted on the device.` +
+          ' The create contract is verified; acceptance is not.',
+      );
+    } else {
+      console.log(
+        `   settled at ${current.status}${current.reasonCode ? ` (${current.reasonCode})` : ''}`,
+      );
+    }
+    if (isTerminalInvitationStatus(current.status)) {
+      if (current.status === 'accepted') expect(current.conversationId).not.toBeNull();
+      else if (current.status !== 'declined') expect(current.reasonCode).not.toBeNull();
+    }
+  }, 90_000);
+
+  it('replays the same requestMessageId instead of inviting twice', async () => {
+    const client = testClient();
+    const requestMessageId = uuidv7();
+    const reference = `${RUN_ID}-replay`;
+
+    const invite = () =>
+      client.invitations.create({
+        phoneNumber: env.phoneNumber!,
+        requestMessageId,
+        callerReference: reference,
+        targetStatus: 'bot',
+      });
+
+    const first = await invite().catch((error: unknown) => {
+      if (unavailable(error)) return undefined;
+      throw error;
+    });
+    if (!first) return;
+
+    const replay = await invite();
+
+    // The device must have been contacted once, not once per call. Comparing
+    // ids alone used to pass vacuously, because both were undefined on a shape
+    // this client described wrongly — so assert the duplicate flag too.
+    expect(first.messageId).toBeTruthy();
+    expect(replay.messageId).toBe(first.messageId);
+    expect(first.duplicate).toBe(false);
+    expect(replay.duplicate).toBe(true);
+  });
+
+  it('rejects a malformed phone number without contacting anyone', async () => {
+    const error = await testClient()
+      .invitations.create({ phoneNumber: 'not-a-phone-number' })
+      .catch((e: unknown) => e);
+
+    expect(isMspApiError(error)).toBe(true);
+    if (!isMspApiError(error)) return;
+    expect(error.status).toBeGreaterThanOrEqual(400);
+    expect(error.status).toBeLessThan(500);
+    // Documented as invalid_recipient rather than a generic failure, and the
+    // stable reason now lives on `code`.
+    const body = error.body as { code?: string; error?: string } | undefined;
+    const reason = body?.code ?? body?.error;
+    if (reason) {
+      expect(['invalid_recipient', 'messaging_invitation_unavailable']).toContain(reason);
+    }
+    expect(body?.error, 'the readable message should still be present').toBeTruthy();
+  });
+});
